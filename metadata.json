@@ -1,0 +1,5 @@
+{
+  "name": "Copy of PitchSide AI",
+  "description": "An automated Media Officer for football clubs. Manages fixtures and generates match previews, reports, and social content using Gemini AI.",
+  "requestFramePermissions": []
+}

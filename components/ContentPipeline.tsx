@@ -1,0 +1,202 @@
+
+import React, { useState } from 'react';
+import { ContentItem, Fixture, Club } from '../types';
+import ContentCard from './ContentCard';
+import ContentEditorModal from './ContentEditorModal';
+import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock } from 'lucide-react';
+
+interface ContentPipelineProps {
+  contentItems: ContentItem[];
+  fixtures: Fixture[];
+  club: Club;
+  isGenerating: boolean;
+  onManualGenerate: () => Promise<void>;
+  onUpdateContent: (updatedItem: ContentItem) => void;
+}
+
+const ContentPipeline: React.FC<ContentPipelineProps> = ({ 
+  contentItems, 
+  fixtures, 
+  club,
+  isGenerating, 
+  onManualGenerate,
+  onUpdateContent
+}) => {
+  const [viewMode, setViewMode] = useState<'GRID' | 'PIPELINE'>('PIPELINE');
+  const [filterType, setFilterType] = useState<'ALL' | 'SOCIAL' | 'WEB' | 'GRAPHICS'>('ALL');
+  const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
+
+  // Filter Logic
+  const filteredItems = contentItems.filter(item => {
+      if (filterType === 'ALL') return true;
+      if (filterType === 'SOCIAL') return item.type === 'SOCIAL';
+      if (filterType === 'WEB') return item.type === 'PREVIEW' || item.type === 'REPORT' || item.type === 'ARTICLE';
+      if (filterType === 'GRAPHICS') return item.type === 'GRAPHIC_COPY';
+      return true;
+  });
+
+  const draftItems = filteredItems.filter(i => i.status === 'DRAFT');
+  const approvedItems = filteredItems.filter(i => i.status === 'APPROVED');
+  const publishedItems = filteredItems.filter(i => i.status === 'PUBLISHED');
+
+  const StatsCard = ({ label, value, icon: Icon, color }: any) => (
+      <div className="glass-card p-4 rounded-xl border border-white/5 flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-white/5 ${color}`}>
+              <Icon size={20} />
+          </div>
+          <div>
+              <p className="text-[10px] font-mono text-slate-500 uppercase">{label}</p>
+              <p className="text-xl font-display font-bold text-white">{value}</p>
+          </div>
+      </div>
+  );
+
+  return (
+    <div className="space-y-6 animate-fade-in h-full flex flex-col">
+        {/* Header HUD */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+            <div>
+                <h2 className="text-3xl font-display font-bold text-white glow-text">HOLO-<span className="text-neon-pink">CONTENT</span></h2>
+                <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Automation.</p>
+            </div>
+            
+            <div className="flex gap-4">
+                <StatsCard label="Pending Review" value={draftItems.length} icon={Clock} color="text-amber-400" />
+                <StatsCard label="Ready to Post" value={approvedItems.length} icon={CheckCircle2} color="text-neon-green" />
+                <StatsCard label="Live Assets" value={publishedItems.length} icon={Send} color="text-neon-blue" />
+            </div>
+
+            <button 
+                onClick={onManualGenerate}
+                disabled={isGenerating}
+                className="flex items-center gap-2 bg-neon-pink/10 border border-neon-pink/50 text-neon-pink px-6 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-pink/20 transition-all shadow-[0_0_15px_rgba(255,0,85,0.2)] hover:shadow-[0_0_25px_rgba(255,0,85,0.4)] disabled:opacity-50 disabled:cursor-not-allowed ml-auto xl:ml-0"
+            >
+                {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                {isGenerating ? 'RUNNING SIMULATION...' : 'RUN WEEKLY SCOUT'}
+            </button>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-black/20 p-2 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 custom-scrollbar">
+                <Filter size={16} className="text-slate-500 ml-2 mr-2" />
+                {['ALL', 'SOCIAL', 'WEB', 'GRAPHICS'].map(type => (
+                    <button
+                        key={type}
+                        onClick={() => setFilterType(type as any)}
+                        className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap ${filterType === type ? 'bg-white/10 text-white border border-white/20' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        {type}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
+                <button 
+                    onClick={() => setViewMode('GRID')}
+                    className={`p-2 rounded transition-all ${viewMode === 'GRID' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
+                >
+                    <LayoutGrid size={16} />
+                </button>
+                <button 
+                    onClick={() => setViewMode('PIPELINE')}
+                    className={`p-2 rounded transition-all ${viewMode === 'PIPELINE' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
+                >
+                    <Kanban size={16} />
+                </button>
+            </div>
+        </div>
+        
+        {/* Main View Area */}
+        <div className="flex-1 min-h-0 relative">
+            
+            {/* GRID VIEW */}
+            {viewMode === 'GRID' && (
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 overflow-y-auto h-full pr-2 custom-scrollbar content-start">
+                    {filteredItems.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(item => {
+                        const fixture = fixtures.find(f => f.id === item.fixture_id);
+                        return (
+                            <div key={item.id} onClick={() => setSelectedItem(item)} className="cursor-pointer">
+                                <ContentCard item={item} fixture={fixture} />
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* PIPELINE VIEW */}
+            {viewMode === 'PIPELINE' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[500px]">
+                    
+                    {/* Draft Column */}
+                    <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden">
+                        <div className="p-4 border-b border-white/5 bg-amber-500/5 flex justify-between items-center">
+                            <span className="text-xs font-bold font-display uppercase text-amber-500">Drafting</span>
+                            <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 rounded-full">{draftItems.length}</span>
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                            {draftItems.map(item => (
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className="cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
+                                     <ContentCard item={item} fixture={fixtures.find(f => f.id === item.fixture_id)} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Approved Column */}
+                    <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden">
+                        <div className="p-4 border-b border-white/5 bg-neon-green/5 flex justify-between items-center">
+                            <span className="text-xs font-bold font-display uppercase text-neon-green">Approved / Ready</span>
+                            <span className="text-[10px] bg-neon-green/20 text-neon-green px-2 rounded-full">{approvedItems.length}</span>
+                        </div>
+                         <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                            {approvedItems.map(item => (
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className="cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
+                                     <ContentCard item={item} fixture={fixtures.find(f => f.id === item.fixture_id)} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Published Column */}
+                    <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden">
+                        <div className="p-4 border-b border-white/5 bg-neon-blue/5 flex justify-between items-center">
+                            <span className="text-xs font-bold font-display uppercase text-neon-blue">Published</span>
+                            <span className="text-[10px] bg-neon-blue/20 text-neon-blue px-2 rounded-full">{publishedItems.length}</span>
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                            {publishedItems.map(item => (
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className="cursor-pointer opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
+                                     <ContentCard item={item} fixture={fixtures.find(f => f.id === item.fixture_id)} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                </div>
+            )}
+
+            {filteredItems.length === 0 && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-slate-500 mb-4">
+                        <Zap size={32} />
+                    </div>
+                    <p className="text-slate-500 font-mono text-xs">No content signals detected in this channel.</p>
+                </div>
+            )}
+        </div>
+
+        {/* Editor Modal */}
+        {selectedItem && (
+            <ContentEditorModal 
+                item={selectedItem} 
+                club={club}
+                onClose={() => setSelectedItem(null)}
+                onSave={onUpdateContent}
+            />
+        )}
+    </div>
+  );
+};
+
+export default ContentPipeline;
