@@ -2,22 +2,43 @@
 import React, { useState } from 'react';
 import { ContentItem, Club } from '../types';
 import { rewriteContent } from '../services/geminiService';
-import { updateContentItem } from '../services/contentService';
-import { X, Save, Sparkles, Loader2, Check, Copy, Wand2 } from 'lucide-react';
+import { updateContentItem, deleteContentItem } from '../services/contentService';
+import { X, Save, Sparkles, Loader2, Check, Copy, Wand2, Trash2 } from 'lucide-react';
 
 interface ContentEditorModalProps {
   item: ContentItem;
   club: Club;
   onSave: (updatedItem: ContentItem) => void;
   onClose: () => void;
+  onDelete?: (contentId: string) => Promise<void>;
 }
 
-const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onSave, onClose }) => {
+const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onSave, onClose, onDelete }) => {
   const [editedBody, setEditedBody] = useState(item.body);
   const [status, setStatus] = useState(item.status);
   const [instruction, setInstruction] = useState('');
   const [isRewriting, setIsRewriting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this content?')) return;
+    
+    setIsDeleting(true);
+    try {
+      if (onDelete) {
+        await onDelete(item.id);
+      } else {
+        await deleteContentItem(item.id);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      alert('Failed to delete content. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleRewrite = async () => {
     if (!instruction) return;
@@ -167,13 +188,23 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
 
         </div>
 
-        <div className="p-6 border-t border-white/10 bg-black/50 flex justify-end gap-4">
-            <button onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
-                Cancel
+        <div className="p-6 border-t border-white/10 bg-black/50 flex justify-between">
+            <button 
+                onClick={handleDelete} 
+                disabled={isDeleting}
+                className="px-4 py-2 rounded text-xs font-bold uppercase text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+                {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Delete
             </button>
-            <button onClick={handleSave} className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
-                <Save size={16} /> Save Changes
-            </button>
+            <div className="flex gap-4">
+                <button onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button onClick={handleSave} className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
+                    <Save size={16} /> Save Changes
+                </button>
+            </div>
         </div>
 
       </div>

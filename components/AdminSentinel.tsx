@@ -3,15 +3,19 @@ import React, { useState } from 'react';
 import { AdminTask, InboxEmail, Club } from '../types';
 import { generateAdminEmail, generateSmartReply, generateActionPlan, analyzeEmailSentiment } from '../services/geminiService';
 import { sendEmail } from '../services/emailIntegration';
-import { ShieldAlert, Mail, Clock, CheckCircle2, AlertTriangle, Send, Loader2, FileText, ChevronRight, Reply, Activity, Layers, HeartPulse } from 'lucide-react';
+import { saveTaskActionPlan, saveTaskEmailDraft, createTask, deleteTask } from '../services/taskService';
+import { isSupabaseConfigured } from '../services/supabaseClient';
+import TaskFormModal from './TaskFormModal';
+import { ShieldAlert, Mail, Clock, CheckCircle2, AlertTriangle, Send, Loader2, FileText, ChevronRight, Reply, Activity, Layers, HeartPulse, Save, Plus, Trash2, X } from 'lucide-react';
 
 interface AdminSentinelProps {
   club: Club;
   tasks: AdminTask[];
   emails: InboxEmail[];
+  onRefetchTasks?: () => Promise<void>;
 }
 
-const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) => {
+const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails, onRefetchTasks }) => {
   const [selectedTask, setSelectedTask] = useState<AdminTask | null>(null);
   const [taskDraft, setTaskDraft] = useState('');
   const [actionPlan, setActionPlan] = useState('');
@@ -24,6 +28,32 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnalyzingTask, setIsAnalyzingTask] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  
+  // CRUD State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+
+  const handleCreateTask = async (task: Omit<AdminTask, 'id'>) => {
+    await createTask(club.id, task);
+    if (onRefetchTasks) await onRefetchTasks();
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    
+    setDeletingTaskId(taskId);
+    try {
+      await deleteTask(taskId);
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(null);
+        setTaskDraft('');
+        setActionPlan('');
+      }
+      if (onRefetchTasks) await onRefetchTasks();
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
 
   // --- Task Handlers ---
 
@@ -45,7 +75,32 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
       
       const plan = await generateActionPlan(club, task);
       setActionPlan(plan);
+      
+      // Persist to database if configured
+      if (isSupabaseConfigured()) {
+        try {
+          await saveTaskActionPlan(task.id, plan);
+        } catch (err) {
+          console.error('Failed to save action plan:', err);
+        }
+      }
+      
       setIsAnalyzingTask(false);
+  }
+  
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  
+  const handleSaveEmailDraft = async () => {
+    if (!selectedTask || !taskDraft) return;
+    setIsSavingDraft(true);
+    try {
+      if (isSupabaseConfigured()) {
+        await saveTaskEmailDraft(selectedTask.id, taskDraft);
+      }
+    } catch (err) {
+      console.error('Failed to save email draft:', err);
+    }
+    setIsSavingDraft(false);
   }
 
   // --- Email Handlers ---
@@ -131,10 +186,32 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
                         <ShieldAlert className="text-orange-500" size={20} />
                         DEADLINE <span className="text-orange-500">SENTINEL</span>
                     </h2>
-                    <span className="text-[10px] font-mono text-slate-500 uppercase">{tasks.length} Active Protocols</span>
+                    <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-mono text-slate-500 uppercase">{tasks.length} Active Protocols</span>
+                        <button 
+                            onClick={() => setIsTaskModalOpen(true)}
+                            data-tour="add-task-btn"
+                            className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/50 text-orange-400 px-3 py-1.5 rounded-lg font-display font-bold uppercase text-[10px] hover:bg-orange-500/20 transition-all"
+                        >
+                            <Plus size={12} /> Add Task
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+                    {/* Empty State */}
+                    {tasks.length === 0 && (
+                        <div className="p-8 text-center border border-dashed border-white/10 rounded-xl">
+                            <ShieldAlert className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                            <p className="text-slate-400 font-mono text-sm mb-4">No tasks yet</p>
+                            <button 
+                                onClick={() => setIsTaskModalOpen(true)}
+                                className="inline-flex items-center gap-2 bg-orange-500 text-black px-5 py-2 rounded-lg font-display font-bold uppercase text-xs hover:shadow-[0_0_20px_rgba(249,115,22,0.35)] transition-all"
+                            >
+                                <Plus size={14} /> Create Your First Task
+                            </button>
+                        </div>
+                    )}
                     {tasks.map(task => (
                         <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/5 hover:border-orange-500/30 transition-all group">
                             <div className="flex justify-between items-start mb-2">
@@ -143,9 +220,19 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
                                 }`}>
                                     {task.priority} Priority
                                 </span>
-                                <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
-                                    <Clock size={12} /> {task.deadline}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
+                                        <Clock size={12} /> {task.deadline}
+                                    </span>
+                                    <button
+                                        onClick={() => handleDeleteTask(task.id)}
+                                        disabled={deletingTaskId === task.id}
+                                        className="p-1 text-red-400/40 hover:text-red-400 hover:bg-red-500/10 rounded transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                        title="Delete task"
+                                    >
+                                        {deletingTaskId === task.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                    </button>
+                                </div>
                             </div>
                             <h3 className="font-bold text-white mb-3 group-hover:text-orange-400 transition-colors">{task.title}</h3>
                             
@@ -180,7 +267,17 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
                     <div className="p-4 border-t border-orange-500/30 bg-orange-500/5 animate-slide-up max-h-64 overflow-y-auto">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-xs font-bold text-orange-400 uppercase">Draft: {selectedTask.type} Dept</span>
-                            <button onClick={() => setTaskDraft('')} className="text-slate-500 hover:text-white"><CheckCircle2 size={16} /></button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={handleSaveEmailDraft}
+                                    disabled={isSavingDraft}
+                                    className="text-neon-green hover:text-white flex items-center gap-1 text-[10px] font-bold uppercase"
+                                >
+                                    {isSavingDraft ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                    Save
+                                </button>
+                                <button onClick={() => setTaskDraft('')} className="text-slate-500 hover:text-white"><CheckCircle2 size={16} /></button>
+                            </div>
                         </div>
                         <textarea 
                             value={taskDraft}
@@ -317,11 +414,15 @@ const AdminSentinel: React.FC<AdminSentinelProps> = ({ club, tasks, emails }) =>
                  )}
             </div>
         </div>
+
+        {/* Task Form Modal */}
+        <TaskFormModal
+            isOpen={isTaskModalOpen}
+            onClose={() => setIsTaskModalOpen(false)}
+            onSave={handleCreateTask}
+        />
     </div>
   );
 };
-
-// Simple Icon import was missing in previous iteration
-import { X } from 'lucide-react';
 
 export default AdminSentinel;

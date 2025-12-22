@@ -244,4 +244,6 @@ const mapTaskFromDb = (row: any): AdminTask => ({
   priority: row.priority as 'High' | 'Medium' | 'Low',
   type: row.type as 'League' | 'Finance' | 'Facilities' | 'Media',
   status: row.status as 'Pending' | 'In Progress' | 'Completed',
+  action_plan: row.action_plan ?? undefined,
+  email_draft: row.email_draft ?? undefined,
 });

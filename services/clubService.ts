@@ -33,6 +33,7 @@ export const getClub = async (clubId: string): Promise<Club | null> => {
 
   return {
     id: data.id,
+    org_id: data.org_id,
     name: data.name,
     nickname: data.nickname,
     slug: data.slug,
@@ -67,6 +68,45 @@ export const getClubs = async (): Promise<Club[]> => {
       const players = await getPlayersForClub(club.id);
       return {
         id: club.id,
+        org_id: club.org_id,
+        name: club.name,
+        nickname: club.nickname,
+        slug: club.slug,
+        tone_context: club.tone_context,
+        primary_color: club.primary_color,
+        secondary_color: club.secondary_color,
+        players,
+      };
+    })
+  );
+
+  return clubsWithPlayers;
+};
+
+/**
+ * Get all clubs for an org (workspace)
+ */
+export const getClubsForOrg = async (orgId: string): Promise<Club[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.CLUBS)
+    .select('*')
+    .eq('org_id', orgId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching clubs for org:', error);
+    throw error;
+  }
+
+  const clubsWithPlayers = await Promise.all(
+    (data || []).map(async (club) => {
+      const players = await getPlayersForClub(club.id);
+      return {
+        id: club.id,
         name: club.name,
         nickname: club.nickname,
         slug: club.slug,
@@ -84,7 +124,10 @@ export const getClubs = async (): Promise<Club[]> => {
 /**
  * Create a new club
  */
-export const createClub = async (club: Omit<Club, 'id' | 'players'>): Promise<Club> => {
+export const createClub = async (
+  orgId: string,
+  club: Omit<Club, 'id' | 'players'>
+): Promise<Club> => {
   if (!supabase || !isSupabaseConfigured()) {
     throw new Error('Supabase not configured');
   }
@@ -92,6 +135,7 @@ export const createClub = async (club: Omit<Club, 'id' | 'players'>): Promise<Cl
   const { data, error } = await supabase
     .from(TABLES.CLUBS)
     .insert({
+      org_id: orgId,
       name: club.name,
       nickname: club.nickname,
       slug: club.slug,
@@ -109,6 +153,7 @@ export const createClub = async (club: Omit<Club, 'id' | 'players'>): Promise<Cl
 
   return {
     id: data.id,
+    org_id: data.org_id,
     name: data.name,
     nickname: data.nickname,
     slug: data.slug,
@@ -146,6 +191,7 @@ export const updateClub = async (
 
   return {
     id: data.id,
+    org_id: data.org_id,
     name: data.name,
     nickname: data.nickname,
     slug: data.slug,

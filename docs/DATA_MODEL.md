@@ -303,3 +303,7 @@ Database types map to TypeScript interfaces in `types.ts`:
 - TEXT[] → TypeScript string arrays
 - ENUM-like CHECK constraints → TypeScript union types
 
+
+
+
+

@@ -7,10 +7,17 @@ import AiAssistant from './components/AiAssistant';
 import MatchReportModal from './components/MatchReportModal';
 import SponsorNexus from './components/SponsorNexus';
 import AdminSentinel from './components/AdminSentinel';
+import InboxView from './components/InboxView';
 import CommsArray from './components/CommsArray';
 import ContentPipeline from './components/ContentPipeline';
+import SettingsView from './components/SettingsView';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
+import ImageGeneratorModal from './components/ImageGeneratorModal';
+import OnboardingManager from './components/OnboardingManager';
+import EducationView from './components/EducationView';
+import FixtureFormModal from './components/FixtureFormModal';
+import QuickStartChecklist from './components/QuickStartChecklist';
 import { handleError } from './utils/errorHandler';
 import { 
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
@@ -22,11 +29,15 @@ import { useSupabaseQuery } from './hooks/useSupabaseQuery';
 import { useRealtimeSubscription } from './hooks/useRealtimeSubscription';
 import { getClub } from './services/clubService';
 import { getFixtures } from './services/fixtureService';
-import { getContentItems, createContentItem } from './services/contentService';
+import { getContentItems, createContentItem, deleteContentItem } from './services/contentService';
 import { getSponsors } from './services/sponsorService';
 import { getTasks } from './services/taskService';
 import { getEmails } from './services/emailService';
-import { updateFixture } from './services/fixtureService';
+import { updateFixture, createFixture, deleteFixture } from './services/fixtureService';
+import AuthScreen from './components/AuthScreen';
+import WorkspaceGate from './components/WorkspaceGate';
+import { supabase, isSupabaseConfigured as isSupabaseConfiguredFn } from './services/supabaseClient';
+import type { Session } from '@supabase/supabase-js';
 import { 
   Sparkles, 
   MapPin, 
@@ -41,6 +52,8 @@ import {
   FileText,
   Wand2,
   PieChart,
+  Trash2,
+  Plus,
   CloudRain,
   Wind,
   Thermometer,
@@ -54,7 +67,8 @@ import {
   Megaphone,
   Palette,
   Quote,
-  Sliders
+  Sliders,
+  Image as ImageIcon
 } from 'lucide-react';
 
 // --- Sub-Components for Dashboard ---
@@ -174,13 +188,16 @@ const Dashboard: React.FC<{
   contentItems: ContentItem[],
   club: Club,
   onNavigate: (tab: string) => void,
-  onRunScout: () => Promise<void>
-}> = ({ fixtures, contentItems, club, onNavigate, onRunScout }) => {
+  onRunScout: () => Promise<void>,
+  hasInboxConnection?: boolean,
+  hasCompletedEducation?: boolean
+}> = ({ fixtures, contentItems, club, onNavigate, onRunScout, hasInboxConnection, hasCompletedEducation }) => {
   const upcoming = fixtures.filter(f => f.status === 'SCHEDULED');
   const [isInitiating, setIsInitiating] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isAnalyzingOpponent, setIsAnalyzingOpponent] = useState(false);
   const [opponentAnalysis, setOpponentAnalysis] = useState<string | null>(null);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
 
   const handleInitiateProtocol = async () => {
       setIsInitiating(true);
@@ -264,6 +281,13 @@ const Dashboard: React.FC<{
                         </div>
                     ))}
                 </div>
+                <button
+                    onClick={() => setShowImageGenerator(true)}
+                    className="w-full py-2.5 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple rounded-lg text-xs font-bold uppercase hover:bg-neon-purple/20 transition-all flex items-center justify-center gap-2"
+                >
+                    <ImageIcon size={14} />
+                    Generate Matchday Graphic
+                </button>
             </div>
         </div>
       </div>
@@ -358,28 +382,41 @@ const Dashboard: React.FC<{
             </div>
        </div>
 
-      {/* Content Feed Section */}
+      {/* Quick Start + Content Feed Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-neon-blue rounded-full"></span>
-                      Latest Content Generations
-                  </h3>
-                  <button onClick={() => onNavigate('content')} className="text-xs font-mono text-neon-blue hover:text-white transition-colors flex items-center gap-1 border border-neon-blue/30 px-3 py-1 rounded-full hover:bg-neon-blue/10">
-                      FULL ARCHIVE <ArrowRight size={12} />
-                  </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {contentItems.slice(0, 2).map(item => {
-                      const fixture = fixtures.find(f => f.id === item.fixture_id);
-                      return <ContentCard key={item.id} item={item} fixture={fixture} />;
-                  })}
-                   {contentItems.length === 0 && (
-                        <div className="col-span-2 text-center py-12 glass-panel rounded-xl border-dashed border-slate-700">
-                            <p className="text-slate-500 font-mono text-sm">NO DATA IN STREAM.</p>
-                        </div>
-                    )}
+          <div className="xl:col-span-2 space-y-6">
+              {/* Quick Start Checklist */}
+              <QuickStartChecklist
+                players={club.players}
+                fixtures={fixtures}
+                contentItems={contentItems}
+                hasInboxConnection={hasInboxConnection}
+                hasCompletedEducation={hasCompletedEducation}
+                onNavigate={onNavigate}
+              />
+              
+              {/* Content Feed */}
+              <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-neon-blue rounded-full"></span>
+                          Latest Content Generations
+                      </h3>
+                      <button onClick={() => onNavigate('content')} className="text-xs font-mono text-neon-blue hover:text-white transition-colors flex items-center gap-1 border border-neon-blue/30 px-3 py-1 rounded-full hover:bg-neon-blue/10">
+                          FULL ARCHIVE <ArrowRight size={12} />
+                      </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {contentItems.slice(0, 2).map(item => {
+                          const fixture = fixtures.find(f => f.id === item.fixture_id);
+                          return <ContentCard key={item.id} item={item} fixture={fixture} />;
+                      })}
+                       {contentItems.length === 0 && (
+                            <div className="col-span-2 text-center py-12 glass-panel rounded-xl border-dashed border-slate-700">
+                                <p className="text-slate-500 font-mono text-sm">NO DATA IN STREAM.</p>
+                            </div>
+                        )}
+                  </div>
               </div>
           </div>
           
@@ -463,6 +500,15 @@ const Dashboard: React.FC<{
               </div>
           </div>
       )}
+
+      {/* Image Generator Modal */}
+      {showImageGenerator && (
+          <ImageGeneratorModal
+              club={club}
+              fixtures={fixtures}
+              onClose={() => setShowImageGenerator(false)}
+          />
+      )}
     </div>
   );
 };
@@ -474,11 +520,15 @@ const FixturesView: React.FC<{
   contentItems: ContentItem[],
   onRefetchFixtures: () => Promise<void>,
   onGenerateReport: (fixtureId: string, resultHome: number, resultAway: number, notes: string, scorers: string[], stats: MatchStats, motm: string, vibe: string, quote: string) => void,
-  onGenerateHype: (fixture: Fixture, context: { matchType: string }) => Promise<void>
-}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype }) => {
+  onGenerateHype: (fixture: Fixture, context: { matchType: string }) => Promise<void>,
+  onCreateFixture: (fixture: Omit<Fixture, 'id'>) => Promise<void>,
+  onDeleteFixture: (fixtureId: string) => Promise<void>
+}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype, onCreateFixture, onDeleteFixture }) => {
     const [activeTab, setActiveTab] = useState<'upcoming' | 'archive'>('upcoming');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [selectedFixtureForReport, setSelectedFixtureForReport] = useState<Fixture | null>(null);
+    const [isFixtureModalOpen, setIsFixtureModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     
     // Log Result States
     const [scoreHome, setScoreHome] = useState('');
@@ -572,6 +622,17 @@ const FixturesView: React.FC<{
     const upcomingFixtures = fixtures.filter(f => f.status === 'SCHEDULED').sort((a,b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
     const archivedFixtures = fixtures.filter(f => f.status === 'COMPLETED').sort((a,b) => new Date(b.kickoff_time).getTime() - new Date(a.kickoff_time).getTime());
 
+    const handleDeleteFixture = async (fixtureId: string) => {
+        if (!confirm('Are you sure you want to delete this fixture?')) return;
+        setDeletingId(fixtureId);
+        try {
+            await onDeleteFixture(fixtureId);
+            await onRefetchFixtures();
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in relative h-full flex flex-col">
              <div className="flex justify-between items-center">
@@ -580,20 +641,31 @@ const FixturesView: React.FC<{
                     <p className="text-slate-400 font-mono text-xs mt-1">Manage scheduled engagements and post-match protocols.</p>
                 </div>
                 
-                {/* Tabs */}
-                <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
+                <div className="flex items-center gap-4">
+                    {/* Schedule Fixture Button */}
                     <button 
-                        onClick={() => setActiveTab('upcoming')}
-                        className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-neon-blue text-black shadow-[0_0_10px_#00f3ff]' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => setIsFixtureModalOpen(true)}
+                        data-tour="add-fixture-btn"
+                        className="flex items-center gap-2 bg-neon-green/10 border border-neon-green/50 text-neon-green px-5 py-3 rounded-xl font-display font-bold uppercase text-xs hover:bg-neon-green/20 transition-all shadow-[0_0_15px_rgba(0,255,136,0.2)] hover:shadow-[0_0_25px_rgba(0,255,136,0.4)]"
                     >
-                        <Calendar size={14} /> Upcoming Ops
+                        <Plus size={16} /> Schedule Fixture
                     </button>
-                    <button 
-                        onClick={() => setActiveTab('archive')}
-                        className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'archive' ? 'bg-neon-purple text-white shadow-[0_0_10px_#bc13fe]' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        <Archive size={14} /> Result Archive
-                    </button>
+                    
+                    {/* Tabs */}
+                    <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
+                        <button 
+                            onClick={() => setActiveTab('upcoming')}
+                            className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-neon-blue text-black shadow-[0_0_10px_#00f3ff]' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            <Calendar size={14} /> Upcoming Ops
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('archive')}
+                            className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'archive' ? 'bg-neon-purple text-white shadow-[0_0_10px_#bc13fe]' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            <Archive size={14} /> Result Archive
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -681,20 +753,30 @@ const FixturesView: React.FC<{
                                                 Close Ops Panel
                                             </button>
                                         ) : (
-                                            <div className="flex gap-2">
+                                            <div className="space-y-2">
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => handleHypeGeneration(fixture)}
+                                                        disabled={generatingHypeId === fixture.id}
+                                                        className="flex-1 py-2 bg-neon-blue/10 border border-neon-blue/50 text-neon-blue font-bold uppercase text-xs rounded hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                    >
+                                                        {generatingHypeId === fixture.id ? <Loader2 size={14} className="animate-spin" /> : <Megaphone size={14} />}
+                                                        Hype Pack
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setEditingId(fixture.id)}
+                                                        className="flex-1 py-2 bg-white/5 border border-white/10 text-white font-bold uppercase text-xs rounded hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Sliders size={14} /> Log Data
+                                                    </button>
+                                                </div>
                                                 <button 
-                                                    onClick={() => handleHypeGeneration(fixture)}
-                                                    disabled={generatingHypeId === fixture.id}
-                                                    className="flex-1 py-2 bg-neon-blue/10 border border-neon-blue/50 text-neon-blue font-bold uppercase text-xs rounded hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                    onClick={() => handleDeleteFixture(fixture.id)}
+                                                    disabled={deletingId === fixture.id}
+                                                    className="w-full py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1 disabled:opacity-50"
                                                 >
-                                                    {generatingHypeId === fixture.id ? <Loader2 size={14} className="animate-spin" /> : <Megaphone size={14} />}
-                                                    Hype Pack
-                                                </button>
-                                                <button 
-                                                    onClick={() => setEditingId(fixture.id)}
-                                                    className="flex-1 py-2 bg-white/5 border border-white/10 text-white font-bold uppercase text-xs rounded hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Sliders size={14} /> Log Data
+                                                    {deletingId === fixture.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                                                    Delete Fixture
                                                 </button>
                                             </div>
                                         )}
@@ -897,12 +979,20 @@ const FixturesView: React.FC<{
                     {/* Empty States */}
                     {activeTab === 'upcoming' && upcomingFixtures.length === 0 && (
                         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl">
-                            <p className="text-slate-500 font-mono">No upcoming operations scheduled.</p>
+                            <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                            <p className="text-slate-400 font-mono mb-4">No fixtures scheduled yet</p>
+                            <button 
+                                onClick={() => setIsFixtureModalOpen(true)}
+                                className="inline-flex items-center gap-2 bg-neon-blue text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(0,243,255,0.35)] transition-all"
+                            >
+                                <Plus size={16} /> Schedule Your First Match
+                            </button>
                         </div>
                     )}
                      {activeTab === 'archive' && archivedFixtures.length === 0 && (
                         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl">
-                            <p className="text-slate-500 font-mono">Archive empty.</p>
+                            <Archive className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                            <p className="text-slate-500 font-mono">No completed matches yet. Results will appear here after logging match outcomes.</p>
                         </div>
                     )}
 
@@ -919,18 +1009,31 @@ const FixturesView: React.FC<{
                     onClose={() => setSelectedFixtureForReport(null)}
                 />
             )}
+
+            {/* Fixture Form Modal */}
+            <FixtureFormModal
+                isOpen={isFixtureModalOpen}
+                onClose={() => setIsFixtureModalOpen(false)}
+                onSave={async (fixture) => {
+                    await onCreateFixture(fixture);
+                    await onRefetchFixtures();
+                }}
+            />
         </div>
     );
 };
 
 
-// --- Main App ---
-const App: React.FC = () => {
+// --- Main App (data + UI) ---
+const AppAuthed: React.FC<{
+  clubId: string;
+  supabaseConfigured: boolean;
+  onSwitchWorkspace?: () => void;
+}> = ({ clubId, supabaseConfigured, onSwitchWorkspace }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Default club ID - in production, this would come from auth
-  const CLUB_ID = MOCK_CLUB.id;
+  const CLUB_ID = clubId;
 
   // Fetch club data
   const { data: club, loading: clubLoading, error: clubError, refetch: refetchClub } = useSupabaseQuery(
@@ -987,11 +1090,10 @@ const App: React.FC = () => {
     [CLUB_ID]
   );
 
-  // Check if Supabase is configured
-  const isSupabaseConfigured = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
-  
   // Show loading state only if Supabase is configured AND data is loading
-  const isLoading = isSupabaseConfigured && (clubLoading || fixturesLoading || contentLoading || sponsorsLoading || tasksLoading || emailsLoading);
+  const isLoading =
+    supabaseConfigured &&
+    (clubLoading || fixturesLoading || contentLoading || sponsorsLoading || tasksLoading || emailsLoading);
 
   // Show error or fallback to mock data if Supabase not configured
   const currentClub = club || MOCK_CLUB;
@@ -1153,7 +1255,12 @@ const App: React.FC = () => {
   // Show loading state only if we're actually loading from Supabase
   if (isLoading && !club && !clubError) {
     return (
-      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+      <Layout
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onSwitchWorkspace={onSwitchWorkspace}
+        workspaceLabel={currentClub?.name}
+      >
         <div className="flex items-center justify-center h-full">
           <LoadingSpinner size={32} text="Loading system data..." />
         </div>
@@ -1163,7 +1270,12 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+      <Layout
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onSwitchWorkspace={onSwitchWorkspace}
+        workspaceLabel={currentClub?.name}
+      >
       {activeTab === 'dashboard' && currentClub && (
         <Dashboard 
             fixtures={fixtures} 
@@ -1181,6 +1293,12 @@ const App: React.FC = () => {
             onRefetchFixtures={refetchFixtures}
             onGenerateReport={handleMatchReportGeneration}
             onGenerateHype={runHypeProtocol}
+            onCreateFixture={async (fixture) => {
+                await createFixture(currentClub.id, fixture);
+            }}
+            onDeleteFixture={async (fixtureId) => {
+                await deleteFixture(fixtureId);
+            }}
         />
       )}
       {activeTab === 'squad' && currentClub && (
@@ -1198,20 +1316,203 @@ const App: React.FC = () => {
             isGenerating={isGenerating}
             onManualGenerate={runWeeklyScout}
             onUpdateContent={handleUpdateContent}
+            onDeleteContent={async (contentId) => {
+                await deleteContentItem(contentId);
+                await refetchContent();
+            }}
         />
       )}
       {activeTab === 'commercial' && currentClub && (
-        <SponsorNexus club={currentClub} sponsors={sponsors} />
+        <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
+      )}
+      {activeTab === 'inbox' && currentClub && (
+        <InboxView 
+          club={currentClub} 
+          orgId={currentClub.org_id || ''} 
+          emails={emails} 
+          setEmails={refetchEmails} 
+        />
       )}
       {activeTab === 'admin' && currentClub && (
-        <AdminSentinel club={currentClub} tasks={tasks} emails={emails} />
+        <AdminSentinel club={currentClub} tasks={tasks} emails={emails} onRefetchTasks={refetchTasks} />
       )}
       {activeTab === 'comms' && currentClub && (
         <CommsArray club={currentClub} />
       )}
+      {activeTab === 'settings' && currentClub && (
+        <SettingsView club={currentClub} />
+      )}
+      {activeTab === 'education' && currentClub && (
+        <EducationView 
+          orgId={currentClub.org_id || ''} 
+          onNavigate={setActiveTab} 
+        />
+      )}
       {currentClub && <AiAssistant club={currentClub} />}
+      
+      {/* Onboarding Manager - handles welcome modal + tour */}
+      {currentClub?.org_id && (
+        <OnboardingManager 
+          orgId={currentClub.org_id} 
+          onNavigate={setActiveTab} 
+        />
+      )}
       </Layout>
     </ErrorBoundary>
+  );
+};
+
+// --- App (auth + org/club selection gate) ---
+const App: React.FC = () => {
+  const supabaseConfigured = isSupabaseConfiguredFn();
+
+  // Demo mode (no Supabase)
+  if (!supabaseConfigured) {
+    return <AppAuthed clubId={MOCK_CLUB.id} supabaseConfigured={false} />;
+  }
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [oauthProcessing, setOauthProcessing] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // Persist workspace context in localStorage
+  const [ctx, setCtx] = useState<{ orgId: string; clubId: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('pitchside_workspace');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Save ctx to localStorage when it changes
+  useEffect(() => {
+    if (ctx) {
+      localStorage.setItem('pitchside_workspace', JSON.stringify(ctx));
+    }
+  }, [ctx]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let mounted = true;
+    let currentUserId: string | null = null;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setSession(data.session ?? null);
+      currentUserId = data.session?.user?.id ?? null;
+      setAuthLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_evt, nextSession) => {
+      const nextUserId = nextSession?.user?.id ?? null;
+      
+      // Only reset workspace if the USER actually changed (not just token refresh)
+      if (currentUserId && nextUserId && currentUserId !== nextUserId) {
+        setCtx(null);
+        localStorage.removeItem('pitchside_workspace');
+      }
+      
+      // If logged out, clear workspace
+      if (!nextSession) {
+        setCtx(null);
+        localStorage.removeItem('pitchside_workspace');
+      }
+      
+      currentUserId = nextUserId;
+      setSession(nextSession);
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Handle Gmail/Outlook OAuth redirect (code+state) after the user returns to the SPA
+  useEffect(() => {
+    const run = async () => {
+      if (!supabase || !session) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+      if (!code || !state) return;
+
+      // Heuristic: only attempt exchange when state looks like our signed payload (two segments)
+      if (!state.includes('.')) return;
+
+      setOauthProcessing(true);
+      setOauthError(null);
+      try {
+        const { data, error } = await supabase.functions.invoke('email-oauth-exchange', {
+          body: { code, state },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        // Clear query params
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        setOauthError(e instanceof Error ? e.message : 'Email OAuth exchange failed');
+      } finally {
+        setOauthProcessing(false);
+      }
+    };
+
+    run();
+  }, [session]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center">
+        <LoadingSpinner size={28} text="Booting auth systems..." />
+      </div>
+    );
+  }
+
+  if (oauthProcessing) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center">
+        <LoadingSpinner size={28} text="Connecting inbox provider..." />
+      </div>
+    );
+  }
+
+  if (oauthError) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center p-6">
+        <div className="glass-panel w-full max-w-xl rounded-2xl p-8 border border-red-500/20">
+          <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">
+            OAuth Error
+          </h2>
+          <p className="text-xs font-mono text-red-300 mt-3">{oauthError}</p>
+          <button
+            onClick={() => setOauthError(null)}
+            className="mt-6 px-5 py-3 rounded-lg bg-neon-blue text-black font-display font-bold uppercase tracking-widest"
+          >
+            Return
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
+
+  if (!ctx) {
+    return <WorkspaceGate onReady={(next) => setCtx(next)} />;
+  }
+
+  return (
+    <AppAuthed
+      clubId={ctx.clubId}
+      supabaseConfigured={true}
+      onSwitchWorkspace={() => setCtx(null)}
+    />
   );
 };
 

@@ -41,8 +41,10 @@ if (!isSupabaseConfigured()) {
 export const supabase: SupabaseClient | null = isSupabaseConfigured()
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: false, // We're not using auth for MVP
-        autoRefreshToken: false,
+        // Multi-tenant requires Supabase Auth + RLS, so we persist sessions.
+        // (If you want a pure demo mode, simply omit env vars and supabase will be null.)
+        persistSession: true,
+        autoRefreshToken: true,
       },
     })
   : null;
@@ -53,14 +55,21 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured()
  * Centralized reference for all table names to avoid typos
  */
 export const TABLES = {
+  ORGS: 'orgs',
+  ORG_MEMBERS: 'org_members',
   CLUBS: 'clubs',
   PLAYERS: 'players',
   FIXTURES: 'fixtures',
   CONTENT_ITEMS: 'content_items',
   SPONSORS: 'sponsors',
   ADMIN_TASKS: 'admin_tasks',
+  EMAIL_CONNECTIONS: 'email_connections',
   INBOX_EMAILS: 'inbox_emails',
   AI_CONVERSATIONS: 'ai_conversations',
   AI_MESSAGES: 'ai_messages',
+  ORG_AI_SETTINGS: 'org_ai_settings',
+  CLUB_AI_SETTINGS: 'club_ai_settings',
+  AI_USAGE_EVENTS: 'ai_usage_events',
+  USER_ONBOARDING_STATE: 'user_onboarding_state',
 } as const;
 

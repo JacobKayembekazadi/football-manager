@@ -1,0 +1,206 @@
+# PitchSide AI — Context for Gemini AI
+
+## Project Overview
+
+PitchSide AI is a comprehensive SaaS platform for football club media management, built with modern web technologies and AI-powered content generation. The application supports multi-tenant organizations with role-based access control and provides football clubs with AI-assisted content creation, email management, and administrative tools.
+
+## Key Technologies & Architecture
+
+### Tech Stack
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **AI**: Google Gemini 2.5 Pro via server-side Edge Functions
+- **Email Integration**: Gmail/Outlook OAuth with encrypted token storage
+- **Hosting**: Vercel (frontend), Supabase (backend)
+
+### Multi-Tenant Architecture
+- **Hierarchy**: Organizations → Clubs → Users
+- **Roles**: Owner, Admin, Editor, Viewer
+- **Security**: Row Level Security (RLS) with org_id scoping
+- **Isolation**: Complete data separation between organizations
+
+## Core Features
+
+### 1. AI-Powered Content Generation
+- **BYOK Support**: Bring Your Own Key (Club → Org → Platform fallback)
+- **Content Types**: Match previews, reports, social media posts, sponsor content
+- **Server-Side**: All AI calls happen in Edge Functions for security
+- **Usage Tracking**: Comprehensive logging of AI usage per org/club
+
+### 2. Email Management System
+- **OAuth Integration**: Gmail and Outlook connections
+- **Master Inbox**: Club-level shared email connections
+- **Personal Inbox**: User-level private connections
+- **Smart Features**: AI-generated reply suggestions, sentiment analysis
+- **Security**: Encrypted token storage, server-side operations
+
+### 3. Full CRUD Operations
+- **Fixtures**: Schedule matches, log results, generate reports
+- **Players**: Roster management, AI analysis, video generation
+- **Sponsors**: Partnership tracking, ROI reports, content generation
+- **Content**: Pipeline management with Draft → Approved → Published workflow
+- **Admin Tasks**: Task tracking, AI action plans, email drafts
+
+### 4. User Experience Features
+- **Onboarding**: Interactive welcome tour and setup guides
+- **Education**: Comprehensive learning modules
+- **Quick Start**: Dashboard checklist for new users
+- **Empty States**: Actionable CTAs when data is missing
+
+## File Structure & Organization
+
+```
+├── components/                    # React components
+│   ├── AuthScreen.tsx           # Login/Signup
+│   ├── Layout.tsx              # Navigation + sidebar
+│   ├── Dashboard.tsx           # Command center
+│   ├── FixturesView.tsx        # Match management
+│   ├── SquadView.tsx           # Player roster
+│   ├── ContentPipeline.tsx     # Content workflow
+│   ├── SponsorNexus.tsx        # Sponsor management
+│   ├── AdminSentinel.tsx       # Task management
+│   ├── InboxView.tsx           # Email interface
+│   └── OnboardingManager.tsx   # Welcome tour
+│
+├── services/                    # Data operations
+│   ├── supabaseClient.ts       # Client config
+│   ├── authService.ts          # Authentication
+│   ├── fixtureService.ts       # Match operations
+│   ├── contentService.ts       # Content CRUD
+│   ├── geminiService.ts        # AI operations
+│   └── onboardingService.ts    # User onboarding
+│
+├── supabase/functions/          # Edge Functions
+│   ├── ai-generate/            # Content generation
+│   ├── ai-settings/            # Key management
+│   ├── email-oauth-start/      # OAuth flow
+│   ├── email-oauth-exchange/   # Token exchange
+│   ├── email-sync/             # Email sync
+│   └── email-send/             # Send replies
+│
+├── types.ts                     # TypeScript definitions
+├── App.tsx                      # Main application
+├── database/schema.sql          # Complete database schema
+└── docs/                        # Comprehensive documentation
+```
+
+## Documentation Reference
+
+For detailed context and implementation details, refer to the `docs/` folder:
+
+### Essential Reading Order:
+1. **`docs/CONTEXT.md`** — Main entry point for understanding the codebase
+2. **`docs/ARCHITECTURE.md`** — System architecture and data flows
+3. **`docs/UPDATE.md`** — Current status and implementation history
+4. **`docs/USERGUIDE.md`** — User-facing features and workflows
+5. **`docs/USECASES.md`** — Functional requirements and use cases
+
+### Specialized Documentation:
+- **`docs/SECURITY.md`** — Security architecture and RLS policies
+- **`docs/RUNBOOK.md`** — Operations and deployment procedures
+- **`docs/INBOX_INTEGRATIONS.md`** — Email OAuth implementation details
+- **`docs/AI_OPERATIONS.md`** — AI configuration and BYOK setup
+
+## Key Patterns & Conventions
+
+### Service Layer Pattern
+```typescript
+export const getFixtures = async (orgId: string, clubId: string): Promise<Fixture[]> => {
+  if (!supabase || !isSupabaseConfigured()) return [];
+
+  const { data, error } = await supabase
+    .from('fixtures')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('club_id', clubId);
+
+  if (error) throw error;
+  return data?.map(mapFixtureFromDb) || [];
+};
+```
+
+### Multi-Tenant Queries
+- **Always include**: `org_id` in WHERE clauses
+- **RLS Policies**: `is_org_member(org_id)` function checks
+- **Error Handling**: Graceful fallback to mock data when Supabase not configured
+
+### AI Operations
+- **Server-Side Only**: All AI calls happen in Edge Functions
+- **BYOK Precedence**: Club BYOK → Org BYOK → Platform key
+- **Usage Logging**: Track costs and usage per org/club
+- **Security**: API keys never exposed to frontend
+
+### Component Patterns
+- **Props Interface**: Typed props for all components
+- **Loading States**: Proper loading indicators
+- **Error Handling**: User-friendly error messages
+- **Responsive Design**: Mobile-first with Tailwind CSS
+
+## Development & Testing
+
+### Environment Setup
+- **Local Development**: `npm run dev`
+- **Testing**: `npm test` (88 tests across 7 files)
+- **Build**: `npm run build`
+- **Deployment**: Vercel + Supabase
+
+### Testing Strategy
+- **Unit Tests**: Service functions and utilities
+- **Integration Tests**: End-to-end workflows
+- **RLS Tests**: Multi-tenant data isolation
+- **AI Tests**: Key precedence and edge cases
+
+### Database Operations
+- **Schema**: Complete in `database/schema.sql`
+- **Migrations**: Supabase CLI for schema changes
+- **RLS**: Strict policies prevent cross-org access
+- **Triggers**: Auto-population of org_id fields
+
+## Current Status
+
+### ✅ Completed Features (100% Complete)
+- Multi-tenant database with RLS
+- Authentication and workspace selection
+- AI-powered content generation with BYOK
+- Gmail/Outlook OAuth integration
+- Full CRUD operations for all entities
+- User onboarding and education system
+- Comprehensive testing suite
+- Production deployment ready
+
+### 🔄 Future Enhancements
+- Inngest integration for background jobs
+- Scheduled content generation
+- Automated email syncing
+- Deadline notification system
+
+## Key Implementation Notes
+
+### Security First
+- All sensitive operations happen server-side
+- Encrypted storage for OAuth tokens and AI keys
+- Strict RLS policies prevent data leakage
+- API keys never exposed to client
+
+### Performance Considerations
+- React 19 with concurrent features
+- Optimized database queries
+- Lazy loading and code splitting
+- Efficient re-renders with proper memoization
+
+### Scalability
+- Horizontal scaling with Supabase
+- Edge Functions for global performance
+- Connection pooling for database operations
+- Usage monitoring and rate limiting
+
+## Getting Started
+
+1. **Read Context**: Start with `docs/CONTEXT.md`
+2. **Setup Environment**: Follow `docs/RUNBOOK.md`
+3. **Run Tests**: Execute `npm test` to verify setup
+4. **Local Development**: Use `npm run dev`
+5. **Deployment**: Follow production deployment guide
+
+This project represents a production-ready SaaS application with enterprise-grade security, comprehensive testing, and scalable architecture. The codebase follows modern React patterns with TypeScript, server-side AI operations, and multi-tenant data isolation.
+

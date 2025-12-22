@@ -249,3 +249,7 @@ Export data using Supabase Dashboard → Database → Export
 - **React Docs**: https://react.dev
 - **Gemini API Docs**: https://ai.google.dev/docs
 
+
+
+
+

@@ -5,9 +5,9 @@ import PlayerCard from './PlayerCard';
 import TacticsBoard from './TacticsBoard';
 import RadarChart from './RadarChart';
 import PlayerFormModal from './PlayerFormModal';
-import { generatePlayerVideo, generatePlayerAnalysis } from '../services/geminiService';
+import { generatePlayerVideo, generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
 import { createPlayer, updatePlayer, deletePlayer } from '../services/playerService';
-import { Plus, Search, Filter, X, Film, Loader2, Play, Cpu, Activity, Zap, ArrowUpDown, ArrowUp, ArrowDown, Upload, User, Camera } from 'lucide-react';
+import { Plus, Search, Filter, X, Film, Loader2, Play, Cpu, Activity, Zap, ArrowUpDown, ArrowUp, ArrowDown, Upload, User, Camera, Image as ImageIcon, Download } from 'lucide-react';
 
 interface SquadViewProps {
   players: Player[];
@@ -17,7 +17,8 @@ interface SquadViewProps {
 
 const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
   const safePlayers = Array.isArray(players) ? players : [];
-  const clubId = club?.id || MOCK_CLUB.id;
+  const currentClub = club ?? MOCK_CLUB;
+  const clubId = currentClub.id;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null); // For View/Analysis
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null); // For Edit Form
@@ -32,6 +33,8 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [videoError, setVideoError] = useState('');
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  const [generatedCard, setGeneratedCard] = useState<ImageGenerationResult | null>(null);
 
   // Auto-generate analysis when player is selected if missing
   useEffect(() => {
@@ -40,7 +43,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
         
         const fetchAnalysis = async () => {
             try {
-                const text = await generatePlayerAnalysis(selectedPlayer);
+                const text = await generatePlayerAnalysis(currentClub, selectedPlayer);
                 
                 if (isMounted) {
                     // Update player in database
@@ -213,7 +216,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       setIsAnalyzing(true);
       
       try {
-          const text = await generatePlayerAnalysis(selectedPlayer);
+          const text = await generatePlayerAnalysis(currentClub, selectedPlayer);
           
           const updatedPlayer = { ...selectedPlayer, analysis: text };
           await updatePlayer(selectedPlayer.id, updatedPlayer);
@@ -224,6 +227,30 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       } finally {
           setIsAnalyzing(false);
       }
+  }
+
+  const handleGeneratePlayerCard = async () => {
+      if (!selectedPlayer) return;
+      setIsGeneratingCard(true);
+      setGeneratedCard(null);
+      
+      try {
+          const result = await generatePlayerSpotlight(currentClub, selectedPlayer);
+          setGeneratedCard(result);
+      } catch (error) {
+          console.error('Error generating player card:', error);
+          setVideoError('Failed to generate player card image.');
+      } finally {
+          setIsGeneratingCard(false);
+      }
+  }
+
+  const handleDownloadCard = () => {
+      if (!generatedCard || !selectedPlayer) return;
+      const link = document.createElement('a');
+      link.href = `data:${generatedCard.mimeType};base64,${generatedCard.imageBase64}`;
+      link.download = `${currentClub.slug}-${selectedPlayer.name.replace(/\s+/g, '-').toLowerCase()}-card.png`;
+      link.click();
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,6 +278,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
 
   const openAnalysisModal = (player: Player) => {
       setSelectedPlayer(player);
+      setGeneratedCard(null); // Reset generated card when selecting new player
       // Auto-fetch handled by useEffect
   };
 
@@ -368,9 +396,23 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                     />
                 ))}
             </div>
-            {sortedPlayers.length === 0 && (
-                <div className="glass-card p-12 rounded-2xl text-center border-dashed border-slate-700">
-                    <p className="text-slate-500 font-mono">No units found matching search query.</p>
+            {sortedPlayers.length === 0 && safePlayers.length === 0 && (
+                <div className="glass-card p-12 rounded-2xl text-center border border-dashed border-white/10">
+                    <User className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400 font-mono mb-4">No players in your squad yet</p>
+                    <button 
+                        onClick={handleAddPlayer}
+                        data-tour="add-player-btn"
+                        className="inline-flex items-center gap-2 bg-neon-blue text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(0,243,255,0.35)] transition-all"
+                    >
+                        <Plus size={16} /> Add Your First Player
+                    </button>
+                </div>
+            )}
+            {sortedPlayers.length === 0 && safePlayers.length > 0 && (
+                <div className="glass-card p-12 rounded-2xl text-center border border-dashed border-white/10">
+                    <Search className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <p className="text-slate-500 font-mono">No players match your current filter.</p>
                 </div>
             )}
         </div>
@@ -559,6 +601,69 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                         {isAnalyzing ? 'Updating...' : 'Refresh Analysis'}
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* AI Player Card Generation */}
+                        <div className="glass-card p-6 rounded-xl border border-neon-blue/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-20">
+                                <ImageIcon size={80} className="text-neon-blue" />
+                            </div>
+                            
+                            <div className="relative z-10">
+                                <h4 className="text-sm font-bold font-display text-white uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <span className="w-1.5 h-1.5 bg-neon-blue rounded-full animate-pulse"></span>
+                                    AI Player Card
+                                </h4>
+
+                                {generatedCard ? (
+                                    <div className="space-y-4">
+                                        <img 
+                                            src={`data:${generatedCard.mimeType};base64,${generatedCard.imageBase64}`}
+                                            alt={`${selectedPlayer.name} card`}
+                                            className="w-full rounded-lg border border-white/10 shadow-lg"
+                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleDownloadCard}
+                                                className="flex-1 px-4 py-2 bg-neon-blue text-black font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-2 hover:bg-cyan-300 transition-colors"
+                                            >
+                                                <Download size={14} />
+                                                Download
+                                            </button>
+                                            <button
+                                                onClick={handleGeneratePlayerCard}
+                                                disabled={isGeneratingCard}
+                                                className="flex-1 px-4 py-2 bg-white/10 text-white font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition-colors disabled:opacity-50"
+                                            >
+                                                Regenerate
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4">
+                                        <p className="text-slate-400 text-xs font-mono mb-4">
+                                            Generate an AI-powered stats card with player attributes visualization.
+                                        </p>
+                                        <button
+                                            onClick={handleGeneratePlayerCard}
+                                            disabled={isGeneratingCard}
+                                            className="px-6 py-3 bg-neon-blue/10 border border-neon-blue/50 text-neon-blue rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2 hover:bg-neon-blue hover:text-black transition-all disabled:opacity-50 mx-auto"
+                                        >
+                                            {isGeneratingCard ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ImageIcon size={14} />
+                                                    Generate Player Card
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

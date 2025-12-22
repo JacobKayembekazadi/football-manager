@@ -30,6 +30,28 @@ export const getEmails = async (clubId: string): Promise<InboxEmail[]> => {
 };
 
 /**
+ * Get all emails for a specific connection (Master or My inbox)
+ */
+export const getEmailsForConnection = async (connectionId: string): Promise<InboxEmail[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.INBOX_EMAILS)
+    .select('*')
+    .eq('connection_id', connectionId)
+    .order('received_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching emails for connection:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapEmailFromDb);
+};
+
+/**
  * Get unread emails for a club
  */
 export const getUnreadEmails = async (clubId: string): Promise<InboxEmail[]> => {

@@ -1,451 +1,553 @@
 # Architecture Documentation
 
-**Last Updated**: 2024-12-11  
+**Last Updated**: 2024-12-17  
+**Version**: 2.0.0  
 **Purpose**: Complete system architecture documentation  
 **For LLMs**: Use this to understand the overall system design and data flow
 
+---
+
 ## System Overview
 
-PitchSide AI is a full-stack web application for football club media management, powered by AI content generation. The system uses React for the frontend, Supabase (PostgreSQL) for data persistence, and Google Gemini AI for content generation.
+PitchSide AI is a **multi-tenant SaaS platform** for football club media management. The system supports:
+
+- **Organizations (workspaces)** that can contain multiple clubs
+- **Role-based access control** (owner, admin, editor, viewer)
+- **AI-powered content generation** with managed and BYOK key options
+- **Email integrations** (Gmail, Outlook) with private and shared inboxes
+
+---
 
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        User Browser                          │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              React Application (Vite)                │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │   │
-│  │  │  App.tsx │  │Components│  │  Hooks   │          │   │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘          │   │
-│  └───────┼─────────────┼──────────────┼─────────────────┘   │
-│          │             │              │                      │
-│          └─────────────┼──────────────┘                      │
-│                        │                                     │
-│          ┌─────────────▼─────────────┐                       │
-│          │    Service Layer          │                       │
-│          │  ┌─────────────────────┐  │                       │
-│          │  │  Data Services      │  │                       │
-│          │  │  (Supabase)        │  │                       │
-│          │  └─────────────────────┘  │                       │
-│          │  ┌─────────────────────┐  │                       │
-│          │  │  AI Service         │  │                       │
-│          │  │  (Gemini)           │  │                       │
-│          │  └─────────────────────┘  │                       │
-│          └─────────────┬─────────────┘                       │
-└─────────────────────────┼─────────────────────────────────────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Supabase   │  │ Google Gemini │  │ Email Service│
-│  (PostgreSQL)│  │      API      │  │  (Future)    │
-└──────────────┘  └──────────────┘  └──────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            User Browser                                  │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                    React Application (Vite)                         │ │
+│  │                                                                      │ │
+│  │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐       │ │
+│  │   │AuthScreen│   │Workspace │   │  Main    │   │ Settings │       │ │
+│  │   │          │   │  Gate    │   │  Views   │   │  View    │       │ │
+│  │   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘       │ │
+│  │        └──────────────┴──────────────┴──────────────┘              │ │
+│  │                              │                                      │ │
+│  │                    ┌─────────▼─────────┐                           │ │
+│  │                    │   Service Layer   │                           │ │
+│  │                    └─────────┬─────────┘                           │ │
+│  │                              │                                      │ │
+│  └──────────────────────────────┼──────────────────────────────────────┘ │
+└──────────────────────────────────┼──────────────────────────────────────────┘
+                                   │
+     ┌─────────────────────────────┼─────────────────────────────┐
+     │                             │                             │
+     ▼                             ▼                             ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│    Supabase      │     │  Edge Functions  │     │  External APIs   │
+│                  │     │                  │     │                  │
+│  ┌────────────┐  │     │  ┌────────────┐  │     │  ┌────────────┐  │
+│  │ PostgreSQL │  │     │  │ai-generate │  │     │  │Gemini API  │  │
+│  │ (with RLS) │  │     │  │ai-settings │  │     │  │            │  │
+│  ├────────────┤  │◄───►│  │email-oauth │  │◄───►│  ├────────────┤  │
+│  │   Auth     │  │     │  │email-sync  │  │     │  │Gmail API   │  │
+│  ├────────────┤  │     │  │email-send  │  │     │  │            │  │
+│  │ Real-time  │  │     │  └────────────┘  │     │  ├────────────┤  │
+│  └────────────┘  │     │                  │     │  │MS Graph    │  │
+│                  │     │                  │     │  └────────────┘  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
 ```
+
+---
 
 ## Technology Stack
 
 ### Frontend
-- **React 19.2.1** - UI framework
-- **TypeScript 5.8.2** - Type safety
-- **Vite 6.2.0** - Build tool and dev server
-- **Tailwind CSS** - Styling (via CDN)
-- **Lucide React** - Icons
-- **Framer Motion** - Animations (minimal)
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19.x | UI framework |
+| TypeScript | 5.x | Type safety |
+| Vite | 6.x | Build tool |
+| Tailwind CSS | 3.x | Styling |
+| Lucide React | - | Icons |
 
-### Backend
-- **Supabase** - Backend-as-a-Service
-  - PostgreSQL database
-  - Real-time subscriptions
-  - Row Level Security (RLS)
-  - Edge Functions (for email sending)
+### Backend (Supabase)
+| Component | Purpose |
+|-----------|---------|
+| PostgreSQL | Primary database |
+| Supabase Auth | Authentication |
+| Row Level Security | Multi-tenant isolation |
+| Real-time | Live data updates |
+| Edge Functions | Server-side processing |
+| Storage | File storage (future) |
 
 ### AI Integration
-- **Google Gemini 2.5 Flash** - Text generation
-- **Google Veo 3.1** - Video generation
-- **@google/genai SDK** - AI client
+| Service | Purpose |
+|---------|---------|
+| Google Gemini 2.5 | Text generation |
+| Google Veo | Video generation (optional) |
+
+### Email Integration
+| Provider | Protocol |
+|----------|----------|
+| Gmail | OAuth 2.0 + Gmail API |
+| Outlook | OAuth 2.0 + Microsoft Graph |
+
+---
+
+## Multi-Tenant Architecture
+
+### Data Hierarchy
+
+```
+Organization (org)
+├── org_members (user ↔ org ↔ role)
+├── org_ai_settings
+│
+├── Club 1
+│   ├── club_ai_settings
+│   ├── players
+│   ├── fixtures
+│   ├── content_items
+│   ├── sponsors
+│   ├── admin_tasks
+│   ├── inbox_emails
+│   └── email_connections (club-level)
+│
+└── Club 2
+    └── (same structure)
+```
+
+### Role System
+
+| Role | Access Level |
+|------|--------------|
+| `owner` | Full org management, billing, delete |
+| `admin` | Full feature access, settings, members |
+| `editor` | Create/edit content, players, fixtures |
+| `viewer` | Read-only access |
+
+### RLS Implementation
+
+```sql
+-- Every table has org_id
+-- RLS policy pattern:
+CREATE POLICY "org_members_only" ON table_name
+  FOR ALL
+  USING (is_org_member(org_id))
+  WITH CHECK (is_org_member(org_id));
+
+-- Helper function
+CREATE FUNCTION is_org_member(p_org_id UUID) RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM org_members
+    WHERE org_id = p_org_id AND user_id = auth.uid()
+  );
+$$ LANGUAGE sql STABLE;
+```
+
+---
 
 ## Data Flow
 
-### Content Generation Flow
+### Authentication Flow
 
 ```
-User Action
-    ↓
-Component (e.g., Dashboard)
-    ↓
-App.tsx Handler
-    ↓
-geminiService.generateContent()
-    ↓
-Google Gemini API
-    ↓
-Generated Content
-    ↓
-contentService.createContentItem()
-    ↓
-Supabase Database
-    ↓
-Real-time Update
-    ↓
-Component Re-render
+User
+  │
+  ├─► [AuthScreen]
+  │      │
+  │      ├─► Sign Up ─► supabase.auth.signUp()
+  │      │                  │
+  │      └─► Sign In ─► supabase.auth.signInWithPassword()
+  │                        │
+  │                        ▼
+  └───────────────────► [Session]
+                           │
+                           ▼
+                      [WorkspaceGate]
+                           │
+                      Select Org/Club
+                           │
+                           ▼
+                      [Main App]
 ```
 
-### Data Fetching Flow
+### AI Generation Flow
 
 ```
-Component Mount
-    ↓
-useSupabaseQuery Hook
-    ↓
-Service Function (e.g., getPlayers)
-    ↓
-Supabase Client
-    ↓
-PostgreSQL Database
-    ↓
-Data Returned
-    ↓
-Component State Updated
-    ↓
-UI Renders
+User Click
+    │
+    ▼
+Component (e.g., "Generate Report")
+    │
+    ▼
+geminiService.ts
+    │
+    ├─► supabase.functions.invoke('ai-generate')
+    │
+    ▼
+Edge Function (ai-generate)
+    │
+    ├─► Resolve API key (precedence: club → org → platform)
+    ├─► Call Gemini API
+    ├─► Log to ai_usage_events
+    │
+    ▼
+Return generated content
+    │
+    ▼
+Save to database (content_items)
+    │
+    ▼
+Real-time update
+    │
+    ▼
+Component re-render
 ```
 
-### Real-time Updates Flow
+### Email OAuth Flow
 
 ```
-Database Change
-    ↓
-Supabase Realtime
-    ↓
-Service Subscription Callback
-    ↓
-Component State Update
-    ↓
-UI Re-renders
+User: "Connect Gmail"
+    │
+    ▼
+emailConnectionService.startEmailOAuth()
+    │
+    ▼
+Edge Function (email-oauth-start)
+    │
+    ├─► Build OAuth URL with state
+    │
+    ▼
+Redirect to Google/Microsoft
+    │
+    ▼
+User grants permission
+    │
+    ▼
+Redirect to callback URL
+    │
+    ▼
+Edge Function (email-oauth-exchange)
+    │
+    ├─► Exchange code for tokens
+    ├─► Encrypt tokens
+    ├─► Save to email_connections + email_oauth_tokens
+    │
+    ▼
+Redirect back to app
+    │
+    ▼
+Connection appears in UI
 ```
 
-## Component Architecture
-
-### Layout Structure
+### Email Sync Flow
 
 ```
-Layout (Main Container)
-├── Sidebar Navigation
-├── Header (HUD Bar)
-└── Main Content Area
-    ├── Dashboard
-    ├── FixturesView
-    ├── SquadView
-    ├── ContentPipeline
-    ├── SponsorNexus
-    ├── AdminSentinel
-    ├── CommsArray
-    └── AiAssistant (Floating)
+User: "Sync Now"
+    │
+    ▼
+emailConnectionService.syncEmailConnection()
+    │
+    ▼
+Edge Function (email-sync)
+    │
+    ├─► Get connection from DB
+    ├─► Decrypt access token
+    ├─► Refresh token if expired
+    ├─► Fetch messages from provider
+    ├─► Normalize message format
+    ├─► Upsert to inbox_emails
+    ├─► Update last_synced_at
+    │
+    ▼
+Emails appear in InboxView
 ```
 
-### Component Hierarchy
-
-- **App.tsx** - Root component, manages routing and global state
-- **Layout.tsx** - Main layout with navigation
-- **Feature Components** - Individual feature views
-- **Modal Components** - Overlays for editing/viewing
-- **Card Components** - Reusable display components
-
-## Service Layer Architecture
-
-### Data Services
-
-All data operations go through service modules:
+### User Onboarding Flow
 
 ```
-services/
-├── supabaseClient.ts      # Database client initialization
-├── clubService.ts         # Club operations
-├── playerService.ts       # Player CRUD
-├── fixtureService.ts      # Match management
-├── contentService.ts      # Content management
-├── sponsorService.ts      # Sponsor operations
-├── taskService.ts         # Admin tasks
-├── emailService.ts        # Email inbox
-└── conversationService.ts # AI chat history
+User logs in + selects workspace
+    │
+    ▼
+OnboardingManager initializes
+    │
+    ├─► Check/create user_onboarding_state for org
+    │
+    ▼
+If welcome_completed = false:
+    │
+    ├─► Show Welcome Modal
+    │     ├─► "Start Tour" → Run react-joyride tour
+    │     └─► "Skip" → Mark welcome_completed = true
+    │
+    ▼
+Tour completes:
+    │
+    ├─► Mark tour_completed = true
+    │
+    ▼
+User visits Education page:
+    │
+    ├─► Show modules from educationModules.ts
+    ├─► Track completed_modules[] in user_onboarding_state
+    └─► Navigate to relevant tabs on "Jump to" actions
 ```
 
-**Pattern**: Each service provides:
-- `get*()` - Fetch single or multiple items
-- `create*()` - Create new item
-- `update*()` - Update existing item
-- `delete*()` - Delete item
-- `subscribeTo*()` - Real-time updates
+**Onboarding State Table (`user_onboarding_state`):**
+| Column | Type | Description |
+|--------|------|-------------|
+| org_id | uuid | Organization scope |
+| user_id | uuid | User (auth.users.id) |
+| welcome_completed | boolean | Welcome modal dismissed |
+| tour_completed | boolean | Tour finished/skipped |
+| completed_modules | text[] | IDs of completed education modules |
 
-### AI Service
+---
 
-`services/geminiService.ts` centralizes all AI operations:
-- Content generation (previews, reports, social posts)
-- Content editing/rewriting
-- Conversational AI
-- Player analysis
-- Opponent scouting
-- Sponsor communications
-- Admin assistance
+## Key Precedence Systems
 
-## Database Architecture
+### AI Key Resolution
 
-### Schema Design
-
-- **Normalized Structure**: Related data in separate tables
-- **Foreign Keys**: All tables reference `clubs.id`
-- **JSONB Fields**: Complex data (stats, generated content)
-- **UUID Primary Keys**: All tables use UUID
-- **Timestamps**: Auto-managed `created_at` and `updated_at`
-
-### Relationships
-
-- One-to-Many: Club → Players, Fixtures, Content, etc.
-- One-to-Many: Fixture → Content Items
-- One-to-Many: Conversation → Messages
-
-### Indexes
-
-Indexes on:
-- Foreign keys for join performance
-- Status fields for filtering
-- Timestamps for sorting
-- Frequently queried fields
-
-## State Management
-
-### Current Approach
-
-- **React Hooks**: `useState` for local component state
-- **Custom Hooks**: `useSupabaseQuery` for data fetching
-- **Service Layer**: All persistent data in Supabase
-- **Real-time**: Supabase subscriptions for live updates
-
-### Data Flow Pattern
-
-```
-Supabase Database
-    ↓
-Service Function
-    ↓
-useSupabaseQuery Hook
-    ↓
-Component State
-    ↓
-UI Rendering
+```typescript
+function resolveAIKey(orgId, clubId?):
+  // 1. Check club BYOK
+  if clubId and club_ai_settings[clubId].mode === 'byok':
+    return decrypt(club_ai_settings[clubId].byok_key)
+  
+  // 2. Check org BYOK
+  if org_ai_settings[orgId].mode === 'byok':
+    return decrypt(org_ai_settings[orgId].byok_key)
+  
+  // 3. Platform managed
+  return PLATFORM_GEMINI_API_KEY
 ```
 
-### State Types
+### Master Inbox Resolution
 
-1. **Persistent State**: Stored in Supabase (players, fixtures, content)
-2. **UI State**: Component-local (modals, filters, search)
-3. **Derived State**: Computed from other state (filtered lists)
+```typescript
+function getMasterInbox(orgId, clubId):
+  // 1. Check club master
+  clubMaster = email_connections
+    .where(org_id: orgId, club_id: clubId, is_master: true)
+    .first()
+  if clubMaster: return clubMaster
+  
+  // 2. Check org master
+  orgMaster = email_connections
+    .where(org_id: orgId, club_id: null, is_master: true)
+    .first()
+  return orgMaster
+```
 
-## AI Integration Architecture
+---
 
-### Prompt Engineering
+## Database Schema Overview
 
-All prompts follow this structure:
-1. **System Context**: Club identity, tone, squad
-2. **Task Instructions**: Specific generation task
-3. **Dynamic Context**: Match details, user input
-4. **Output Format**: Type-specific requirements
+### Core Tables
 
-### AI Service Functions
+```sql
+-- Tenancy
+orgs                    -- Organizations (workspaces)
+org_members             -- User ↔ Org ↔ Role mapping
 
-- **Content Generation**: `generateContent()` - Main content generator
-- **Content Editing**: `rewriteContent()` - AI-powered editing
-- **Conversational**: `chatWithAi()` - Chat assistant with history
-- **Analysis**: Player and opponent analysis
-- **Administrative**: Email drafts, action plans, sentiment analysis
+-- Domain Data
+clubs                   -- Football clubs (org-scoped)
+players                 -- Player roster (club-scoped)
+fixtures                -- Match schedule (club-scoped)
+content_items           -- Generated content (club-scoped)
+sponsors                -- Sponsor relationships (club-scoped)
+admin_tasks             -- Administrative tasks (club-scoped)
+inbox_emails            -- Synced emails (club-scoped)
 
-### Conversation History
+-- AI
+ai_conversations        -- Chat sessions
+ai_messages             -- Chat messages
+org_ai_settings         -- Org-level AI config
+club_ai_settings        -- Club-level AI config
+ai_usage_events         -- Usage tracking
 
-- Stored in `ai_conversations` and `ai_messages` tables
-- Loaded when AI assistant opens
-- Last 10 messages sent as context to AI
-- Auto-saved after each message
+-- Email
+email_connections       -- OAuth connections
+email_oauth_tokens      -- Encrypted tokens
+```
 
-## Security Architecture
+### Key Relationships
 
-### Current State (MVP)
+```
+orgs 1:N org_members N:1 users (auth.users)
+orgs 1:N clubs
+clubs 1:N [players, fixtures, content_items, sponsors, admin_tasks, inbox_emails]
+orgs 1:1 org_ai_settings
+clubs 1:1 club_ai_settings
+email_connections 1:1 email_oauth_tokens
+```
 
-- RLS enabled but policies allow all operations
-- API keys in client-side code (not production-ready)
-- No authentication system
+---
 
-### Production Requirements
+## Edge Functions
 
-- User authentication (Supabase Auth)
-- Role-based access control
-- RLS policies based on user roles
-- API keys in backend only
-- Rate limiting
-- Input validation and sanitization
+| Function | Purpose | Auth |
+|----------|---------|------|
+| `ai-generate` | AI content generation | User JWT |
+| `ai-settings` | Get/set AI configuration | User JWT |
+| `email-oauth-start` | Initiate OAuth flow | User JWT |
+| `email-oauth-exchange` | Exchange OAuth code | None (callback) |
+| `email-sync` | Fetch emails from provider | User JWT |
+| `email-send` | Send email via provider | User JWT |
 
-## Error Handling Architecture
+### Edge Function Pattern
 
-### Service Layer
+```typescript
+// supabase/functions/{name}/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-- Functions throw errors on failure
-- Errors logged to console
-- Return `null` for "not found" cases
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-### Component Layer
+serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
-- Try-catch blocks for async operations
-- User-friendly error messages
-- Loading states during operations
-- Fallback UI for errors
+  try {
+    // Get user from JWT
+    const authHeader = req.headers.get('Authorization');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { persistSession: false } }
+    );
+    
+    const { data: { user }, error } = await supabase.auth.getUser(
+      authHeader?.replace('Bearer ', '')
+    );
+    if (!user) throw new Error('Unauthorized');
 
-### Future Enhancements
+    // Process request
+    const body = await req.json();
+    
+    // ... business logic ...
 
-- Error boundaries for React errors
-- Centralized error handler
-- Error reporting service
-- Retry logic for failed operations
+    return new Response(
+      JSON.stringify({ success: true, data: result }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
+```
 
-## Performance Architecture
+---
 
-### Database Optimization
+## Security Model
 
-- Indexes on frequently queried fields
-- Efficient queries (select only needed fields)
-- Connection pooling (handled by Supabase)
+### Authentication
+- Supabase Auth (email + password)
+- JWT tokens for API authorization
+- Session management in client
 
-### Frontend Optimization
+### Authorization
+- RLS policies on all tables
+- Role-based access in UI
+- org_id filtering on every query
 
-- Code splitting (Vite handles automatically)
-- Lazy loading (potential for routes)
-- Memoization (where needed)
-- Optimistic updates (future enhancement)
+### Data Protection
+- OAuth tokens encrypted (AES-256-GCM)
+- BYOK API keys encrypted
+- HTTPS only
 
-### AI Optimization
+### See Also
+- [SECURITY.md](SECURITY.md) for detailed security documentation
 
-- Response caching (future)
-- Batch operations (where possible)
-- Streaming responses (for long content)
+---
 
 ## Deployment Architecture
 
-### Development
-
-- Local Vite dev server
-- Local Supabase connection
-- Hot module replacement
-
 ### Production
 
-- Static build (Vite)
-- CDN hosting (Vercel/Netlify)
-- Supabase cloud database
-- Edge functions for server-side operations
+```
+┌─────────────────┐     ┌─────────────────┐
+│  Vercel/Netlify │     │    Supabase     │
+│  (Static Host)  │     │   (Managed)     │
+│                 │     │                 │
+│  - React App    │◄───►│  - Database     │
+│  - CDN          │     │  - Auth         │
+│                 │     │  - Functions    │
+└─────────────────┘     │  - Real-time    │
+                        └─────────────────┘
+```
 
-## Extension Points
+### Environment Variables
 
-### Adding New Features
+**Client (.env.local)**
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
 
-1. **Database**: Add table in `schema.sql`
-2. **Types**: Add interface in `types.ts`
-3. **Service**: Create service file
-4. **Component**: Create React component
-5. **Route**: Add to `App.tsx`
-6. **Docs**: Update documentation
+**Edge Functions (Supabase Secrets)**
+```
+GEMINI_API_KEY=
+ENCRYPTION_KEY=
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+OUTLOOK_CLIENT_ID=
+OUTLOOK_CLIENT_SECRET=
+```
 
-### Adding New AI Capabilities
+---
 
-1. Add function to `geminiService.ts`
-2. Design prompt following patterns
-3. Document in `docs/AI_PROMPTS.md`
-4. Add to appropriate component
-5. Test with various inputs
+## Development Workflow
 
-### Adding Real-time Features
+### Local Development
 
-1. Use `useRealtimeSubscription` hook
-2. Call service's `subscribeTo*` function
-3. Update component state in callback
-4. Handle cleanup on unmount
+```bash
+# Start Vite dev server
+npm run dev
 
-## Data Persistence Strategy
+# Start local Supabase (optional)
+supabase start
 
-### Current Implementation
+# Run tests
+npm test
+```
 
-- All data in Supabase PostgreSQL
-- Real-time subscriptions for live updates
-- Automatic timestamp management
-- Cascade deletes for related data
+### Deployment
 
-### Future Enhancements
+```bash
+# Build for production
+npm run build
 
-- Offline support (local storage + sync)
-- Data export functionality
-- Backup and restore
-- Data migration tools
+# Deploy to Vercel/Netlify
+# (automatic via Git push)
 
-## Integration Points
+# Deploy Edge Functions
+supabase functions deploy
+```
 
-### Current Integrations
-
-- **Supabase**: Database and real-time
-- **Google Gemini**: AI content generation
-- **Google Veo**: Video generation
-
-### Future Integration Opportunities
-
-- **Social Media APIs**: Twitter, Instagram, Facebook
-- **Email Services**: SendGrid, Mailgun, Resend
-- **Analytics**: Google Analytics, custom analytics
-- **Calendar**: Google Calendar, Outlook
-- **File Storage**: Supabase Storage, AWS S3
-
-## Scalability Considerations
-
-### Database Scaling
-
-- Supabase handles scaling automatically
-- Add indexes as data grows
-- Consider read replicas for high traffic
-- Archive old data if needed
-
-### Application Scaling
-
-- Stateless frontend (scales horizontally)
-- CDN for static assets
-- Caching strategies
-- Load balancing (if needed)
-
-### AI Scaling
-
-- Rate limiting
-- Response caching
-- Batch processing
-- Cost monitoring
-
-## Monitoring and Observability
-
-### Current Monitoring
-
-- Supabase Dashboard (database metrics)
-- Browser console (client-side errors)
-- Network tab (API calls)
-
-### Future Monitoring
-
-- Error tracking (Sentry)
-- Performance monitoring
-- User analytics
-- AI usage tracking
-- Cost monitoring
+---
 
 ## Related Documentation
 
-- [CONTEXT.md](CONTEXT.md) - Quick reference guide
-- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Service function reference
-- [DATA_MODEL.md](DATA_MODEL.md) - Database schema details
-- [AI_PROMPTS.md](AI_PROMPTS.md) - AI prompt engineering
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Setup and deployment
-- [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) - Developer guide
+| Document | Purpose |
+|----------|---------|
+| [CONTEXT.md](CONTEXT.md) | Quick context for LLMs |
+| [DATA_MODEL.md](DATA_MODEL.md) | Detailed schema docs |
+| [SECURITY.md](SECURITY.md) | Security architecture |
+| [RUNBOOK.md](RUNBOOK.md) | Operations guide |
+| [AI_OPERATIONS.md](AI_OPERATIONS.md) | AI configuration |
+| [INBOX_INTEGRATIONS.md](INBOX_INTEGRATIONS.md) | Email OAuth |
 
+---
+
+*This document provides a comprehensive overview of the system architecture. For specific implementation details, refer to the related documentation files.*

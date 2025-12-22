@@ -8,6 +8,51 @@ export interface PlayerStats {
   physical: number;
 }
 
+// ============================================================================
+// Multi-tenant (Org / Membership)
+// ============================================================================
+
+export interface Org {
+  id: string;
+  name: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type OrgMemberRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+export interface OrgMember {
+  id: string;
+  org_id: string;
+  user_id: string;
+  role: OrgMemberRole;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================================================
+// Inbox Integrations (Gmail / Outlook)
+// ============================================================================
+
+export type EmailProvider = 'gmail' | 'outlook';
+export type EmailConnectionVisibility = 'private' | 'shared';
+
+export interface EmailConnection {
+  id: string;
+  org_id: string;
+  club_id?: string | null;
+  owner_user_id: string;
+  provider: EmailProvider;
+  email_address: string;
+  visibility: EmailConnectionVisibility;
+  is_master: boolean;
+  status?: 'active' | 'revoked' | 'error';
+  last_synced_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -23,6 +68,7 @@ export interface Player {
 
 export interface Club {
   id: string;
+  org_id?: string;
   name: string;
   nickname: string;
   slug: string;
@@ -95,10 +141,18 @@ export interface AdminTask {
   priority: 'High' | 'Medium' | 'Low';
   type: 'League' | 'Finance' | 'Facilities' | 'Media';
   status: 'Pending' | 'In Progress' | 'Completed';
+  action_plan?: string;
+  email_draft?: string;
 }
 
 export interface InboxEmail {
   id: string;
+  org_id?: string;
+  club_id?: string | null;
+  connection_id?: string;
+  provider?: 'gmail' | 'outlook';
+  external_id?: string;
+  thread_id?: string;
   from: string;
   from_email: string;
   subject: string;

@@ -16,6 +16,7 @@ vi.mock('../../services/supabaseClient', () => ({
   TABLES: {
     PLAYERS: 'players',
   },
+  isSupabaseConfigured: vi.fn(() => true),
 }));
 
 describe('playerService', () => {
@@ -155,4 +156,6 @@ describe('playerService', () => {
     });
   });
 });
+
+
 

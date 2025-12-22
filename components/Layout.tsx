@@ -14,7 +14,9 @@ import {
   Check,
   Briefcase,
   ShieldAlert,
-  Newspaper
+  Newspaper,
+  Inbox,
+  BookOpen
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 
@@ -22,6 +24,8 @@ interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onSwitchWorkspace?: () => void;
+  workspaceLabel?: string;
 }
 
 interface Notification {
@@ -32,7 +36,13 @@ interface Notification {
   type: 'info' | 'success' | 'alert';
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
+const Layout: React.FC<LayoutProps> = ({
+  children,
+  activeTab,
+  setActiveTab,
+  onSwitchWorkspace,
+  workspaceLabel,
+}) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -54,8 +64,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
     { id: 'squad', label: 'Squad Bio-Metrics', icon: Users },
     { id: 'content', label: 'Holo-Content', icon: FileCode },
     { id: 'commercial', label: 'Sponsor Nexus', icon: Briefcase },
+    { id: 'inbox', label: 'Intel Inbox', icon: Inbox },
     { id: 'admin', label: 'HQ Operations', icon: ShieldAlert },
     { id: 'comms', label: 'Fan Comms', icon: Newspaper },
+    { id: 'education', label: 'Education', icon: BookOpen },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -104,6 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             return (
               <button
                 key={item.id}
+                data-tour={`sidebar-${item.id}`}
                 onClick={() => {
                   setActiveTab(item.id);
                   setIsMobileMenuOpen(false);
@@ -208,6 +222,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                 <Radio size={14} className="text-red-500 animate-pulse" />
                 <span className="text-xs font-mono text-slate-300">SERVER_LATENCY: <span className="text-green-400">12ms</span></span>
              </div>
+
+             {onSwitchWorkspace && (
+                <button
+                  onClick={onSwitchWorkspace}
+                  data-tour="workspace-switch"
+                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-black/40 rounded-full border border-white/5 text-xs font-mono text-slate-300 hover:text-white hover:border-white/10 transition-colors"
+                  title="Switch club/workspace"
+                >
+                  <span className="w-1.5 h-1.5 bg-neon-blue rounded-full"></span>
+                  {workspaceLabel ? `CLUB: ${workspaceLabel}` : 'SWITCH_CLUB'}
+                </button>
+             )}
              
              {/* Notification Bell */}
              <div className="relative">

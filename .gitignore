@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+
+# SpecStory history files (may contain secrets)
+.specstory/

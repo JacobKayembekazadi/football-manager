@@ -4,18 +4,24 @@
  * Configures test environment and mocks.
  */
 
-import { afterEach, vi } from 'vitest';
+import { afterEach, vi, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
-// Mock environment variables
-import.meta.env.VITE_SUPABASE_URL = 'https://test.supabase.co';
-import.meta.env.VITE_SUPABASE_ANON_KEY = 'test-anon-key';
-import.meta.env.GEMINI_API_KEY = 'test-gemini-key';
+// Mock environment variables before any imports
+beforeAll(() => {
+  // @ts-ignore - Setting import.meta.env for tests
+  import.meta.env = {
+    ...import.meta.env,
+    VITE_SUPABASE_URL: 'https://test.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+  };
+});
 
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
 });
 
 // Mock window.matchMedia
@@ -33,3 +39,34 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Mock IntersectionObserver
+global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Mock crypto for encryption tests
+Object.defineProperty(global, 'crypto', {
+  value: {
+    getRandomValues: (arr: Uint8Array) => {
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = Math.floor(Math.random() * 256);
+      }
+      return arr;
+    },
+    subtle: {
+      encrypt: vi.fn(),
+      decrypt: vi.fn(),
+      deriveKey: vi.fn(),
+      importKey: vi.fn(),
+    },
+  },
+});

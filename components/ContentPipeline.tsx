@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { ContentItem, Fixture, Club } from '../types';
 import ContentCard from './ContentCard';
 import ContentEditorModal from './ContentEditorModal';
-import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock } from 'lucide-react';
+import ImageGeneratorModal from './ImageGeneratorModal';
+import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock, Image as ImageIcon, Plus } from 'lucide-react';
 
 interface ContentPipelineProps {
   contentItems: ContentItem[];
@@ -12,6 +13,7 @@ interface ContentPipelineProps {
   isGenerating: boolean;
   onManualGenerate: () => Promise<void>;
   onUpdateContent: (updatedItem: ContentItem) => void;
+  onDeleteContent?: (contentId: string) => Promise<void>;
 }
 
 const ContentPipeline: React.FC<ContentPipelineProps> = ({ 
@@ -20,11 +22,13 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
   club,
   isGenerating, 
   onManualGenerate,
-  onUpdateContent
+  onUpdateContent,
+  onDeleteContent
 }) => {
   const [viewMode, setViewMode] = useState<'GRID' | 'PIPELINE'>('PIPELINE');
   const [filterType, setFilterType] = useState<'ALL' | 'SOCIAL' | 'WEB' | 'GRAPHICS'>('ALL');
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
 
   // Filter Logic
   const filteredItems = contentItems.filter(item => {
@@ -66,14 +70,23 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 <StatsCard label="Live Assets" value={publishedItems.length} icon={Send} color="text-neon-blue" />
             </div>
 
-            <button 
-                onClick={onManualGenerate}
-                disabled={isGenerating}
-                className="flex items-center gap-2 bg-neon-pink/10 border border-neon-pink/50 text-neon-pink px-6 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-pink/20 transition-all shadow-[0_0_15px_rgba(255,0,85,0.2)] hover:shadow-[0_0_25px_rgba(255,0,85,0.4)] disabled:opacity-50 disabled:cursor-not-allowed ml-auto xl:ml-0"
-            >
-                {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                {isGenerating ? 'RUNNING SIMULATION...' : 'RUN WEEKLY SCOUT'}
-            </button>
+            <div className="flex gap-3 ml-auto xl:ml-0">
+                <button 
+                    onClick={() => setShowImageGenerator(true)}
+                    className="flex items-center gap-2 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-purple/20 transition-all shadow-[0_0_15px_rgba(188,19,254,0.2)] hover:shadow-[0_0_25px_rgba(188,19,254,0.4)]"
+                >
+                    <ImageIcon size={18} />
+                    AI Graphics
+                </button>
+                <button 
+                    onClick={onManualGenerate}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 bg-neon-pink/10 border border-neon-pink/50 text-neon-pink px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-pink/20 transition-all shadow-[0_0_15px_rgba(255,0,85,0.2)] hover:shadow-[0_0_25px_rgba(255,0,85,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                    {isGenerating ? 'RUNNING...' : 'WEEKLY SCOUT'}
+                </button>
+            </div>
         </div>
 
         {/* Toolbar */}
@@ -177,11 +190,19 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
             )}
 
             {filteredItems.length === 0 && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-slate-500 mb-4">
-                        <Zap size={32} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-slate-600 mb-4 border border-white/5">
+                        <Sparkles size={32} />
                     </div>
-                    <p className="text-slate-500 font-mono text-xs">No content signals detected in this channel.</p>
+                    <p className="text-slate-400 font-mono text-sm mb-4">No content yet</p>
+                    <button 
+                        onClick={onManualGenerate}
+                        disabled={isGenerating}
+                        className="inline-flex items-center gap-2 bg-neon-pink text-white px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(255,0,85,0.35)] transition-all disabled:opacity-50"
+                    >
+                        {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                        Generate Your First Content
+                    </button>
                 </div>
             )}
         </div>
@@ -193,6 +214,21 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 club={club}
                 onClose={() => setSelectedItem(null)}
                 onSave={onUpdateContent}
+                onDelete={async (contentId) => {
+                    if (onDeleteContent) {
+                        await onDeleteContent(contentId);
+                    }
+                    setSelectedItem(null);
+                }}
+            />
+        )}
+
+        {/* Image Generator Modal */}
+        {showImageGenerator && (
+            <ImageGeneratorModal
+                club={club}
+                fixtures={fixtures}
+                onClose={() => setShowImageGenerator(false)}
             />
         )}
     </div>

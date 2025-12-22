@@ -8,6 +8,7 @@ import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
 
 export interface Conversation {
   id: string;
+  org_id?: string;
   club_id: string;
   created_at: string;
   updated_at: string;
@@ -53,14 +54,14 @@ export const getOrCreateLatestConversation = async (
     return null;
   }
 
-  // Try to get the most recent conversation
+  // Try to get the most recent conversation (use maybeSingle to avoid 406 on empty)
   const { data: existing, error: fetchError } = await supabase
     .from(TABLES.AI_CONVERSATIONS)
     .select('*')
     .eq('club_id', clubId)
     .order('updated_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (existing && !fetchError) {
     return mapConversationFromDb(existing);
@@ -209,6 +210,7 @@ export const subscribeToMessages = (
  */
 const mapConversationFromDb = (row: any): Conversation => ({
   id: row.id,
+  org_id: row.org_id,
   club_id: row.club_id,
   created_at: row.created_at,
   updated_at: row.updated_at,

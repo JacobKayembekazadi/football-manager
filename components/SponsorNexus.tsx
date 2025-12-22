@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { Club, Sponsor } from '../types';
 import { generateSponsorReport, generateSponsorActivation, generateRenewalPitch } from '../services/geminiService';
-import { saveSponsorContent } from '../services/sponsorService';
-import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target } from 'lucide-react';
+import { saveSponsorContent, createSponsor, deleteSponsor } from '../services/sponsorService';
+import SponsorFormModal from './SponsorFormModal';
+import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2 } from 'lucide-react';
 
 interface SponsorNexusProps {
   club: Club;
   sponsors: Sponsor[];
+  onRefetchSponsors?: () => Promise<void>;
 }
 
 const RevenueChart = () => (
@@ -18,13 +20,38 @@ const RevenueChart = () => (
     </div>
 );
 
-const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors }) => {
+const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSponsors }) => {
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [activeTab, setActiveTab] = useState<'ROI' | 'CREATIVE' | 'NEGOTIATION'>('ROI');
   
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // CRUD State
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleCreateSponsor = async (sponsor: Omit<Sponsor, 'id'>) => {
+    await createSponsor(club.id, sponsor);
+    if (onRefetchSponsors) await onRefetchSponsors();
+  };
+
+  const handleDeleteSponsor = async (sponsorId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the sponsor
+    if (!confirm('Are you sure you want to delete this sponsor?')) return;
+    
+    setDeletingId(sponsorId);
+    try {
+      await deleteSponsor(sponsorId);
+      if (selectedSponsor?.id === sponsorId) {
+        setSelectedSponsor(null);
+      }
+      if (onRefetchSponsors) await onRefetchSponsors();
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleAction = async (action: 'REPORT' | 'ACTIVATION' | 'RENEWAL') => {
       if (!selectedSponsor) return;
@@ -67,9 +94,18 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors }) => {
     <div className="space-y-6 animate-fade-in h-full flex flex-col">
         {/* Header & Revenue HUD */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-                <h2 className="text-3xl font-display font-bold text-white glow-text">SPONSOR <span className="text-yellow-400">NEXUS</span></h2>
-                <p className="text-slate-400 font-mono text-xs mt-1">Commercial Partnerships & ROI Tracking.</p>
+            <div className="lg:col-span-2 flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-display font-bold text-white glow-text">SPONSOR <span className="text-yellow-400">NEXUS</span></h2>
+                    <p className="text-slate-400 font-mono text-xs mt-1">Commercial Partnerships & ROI Tracking.</p>
+                </div>
+                <button 
+                    onClick={() => setIsSponsorModalOpen(true)}
+                    data-tour="add-sponsor-btn"
+                    className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/50 text-yellow-400 px-5 py-3 rounded-xl font-display font-bold uppercase text-xs hover:bg-yellow-500/20 transition-all shadow-[0_0_15px_rgba(234,179,8,0.2)] hover:shadow-[0_0_25px_rgba(234,179,8,0.4)]"
+                >
+                    <Plus size={16} /> Add Sponsor
+                </button>
             </div>
             
             <div className="glass-card p-4 rounded-xl border border-yellow-400/20 relative overflow-hidden flex items-center justify-between">
@@ -89,6 +125,19 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
             {/* Sponsor List (The Portfolio) */}
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-2 custom-scrollbar content-start">
+                {/* Empty State */}
+                {sponsors.length === 0 && (
+                    <div className="col-span-2 p-12 text-center border border-dashed border-white/10 rounded-2xl">
+                        <Briefcase className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400 font-mono mb-4">No sponsors yet</p>
+                        <button 
+                            onClick={() => setIsSponsorModalOpen(true)}
+                            className="inline-flex items-center gap-2 bg-yellow-500 text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(234,179,8,0.35)] transition-all"
+                        >
+                            <Plus size={16} /> Add Your First Sponsor
+                        </button>
+                    </div>
+                )}
                 {sponsors.map(sponsor => {
                     const health = calculateHealth(sponsor);
                     return (
@@ -105,10 +154,18 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors }) => {
                                 <div className="w-12 h-12 rounded bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center font-display font-bold text-xl text-white">
                                     {sponsor.logo_initials}
                                 </div>
-                                <div className="text-right">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border block mb-1 ${getTierColor(sponsor.tier)}`}>
+                                <div className="text-right flex items-start gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border block ${getTierColor(sponsor.tier)}`}>
                                         {sponsor.tier}
                                     </span>
+                                    <button
+                                        onClick={(e) => handleDeleteSponsor(sponsor.id, e)}
+                                        disabled={deletingId === sponsor.id}
+                                        className="p-1 text-red-400/40 hover:text-red-400 hover:bg-red-500/10 rounded transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                        title="Delete sponsor"
+                                    >
+                                        {deletingId === sponsor.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                    </button>
                                 </div>
                             </div>
                             
@@ -250,6 +307,13 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors }) => {
                 )}
             </div>
         </div>
+
+        {/* Sponsor Form Modal */}
+        <SponsorFormModal
+            isOpen={isSponsorModalOpen}
+            onClose={() => setIsSponsorModalOpen(false)}
+            onSave={handleCreateSponsor}
+        />
     </div>
   );
 };
