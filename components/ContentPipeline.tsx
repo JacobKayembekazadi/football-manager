@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ContentItem, Fixture, Club } from '../types';
+import { ContentItem, Fixture, Club, ContentGenStatus } from '../types';
 import ContentCard from './ContentCard';
 import ContentEditorModal from './ContentEditorModal';
 import ImageGeneratorModal from './ImageGeneratorModal';
@@ -10,7 +10,7 @@ interface ContentPipelineProps {
   contentItems: ContentItem[];
   fixtures: Fixture[];
   club: Club;
-  isGenerating: boolean;
+  generateStatus: ContentGenStatus;
   onManualGenerate: () => Promise<void>;
   onUpdateContent: (updatedItem: ContentItem) => void;
   onDeleteContent?: (contentId: string) => Promise<void>;
@@ -20,11 +20,12 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
   contentItems, 
   fixtures, 
   club,
-  isGenerating, 
+  generateStatus, 
   onManualGenerate,
   onUpdateContent,
   onDeleteContent
 }) => {
+  const isGenerating = generateStatus === 'generating';
   const [viewMode, setViewMode] = useState<'GRID' | 'PIPELINE'>('PIPELINE');
   const [filterType, setFilterType] = useState<'ALL' | 'SOCIAL' | 'WEB' | 'GRAPHICS'>('ALL');
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);

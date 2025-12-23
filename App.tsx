@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import ContentCard from './components/ContentCard';
+import ContentEditorModal from './components/ContentEditorModal';
+import AutoPublisher from './components/AutoPublisher';
+import ViralScout from './components/ViralScout';
 import SquadView from './components/SquadView';
 import AiAssistant from './components/AiAssistant';
 import MatchReportModal from './components/MatchReportModal';
 import SponsorNexus from './components/SponsorNexus';
-import AdminSentinel from './components/AdminSentinel';
-import InboxView from './components/InboxView';
 import CommsArray from './components/CommsArray';
-import ContentPipeline from './components/ContentPipeline';
 import SettingsView from './components/SettingsView';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -21,18 +21,18 @@ import QuickStartChecklist from './components/QuickStartChecklist';
 import { handleError } from './utils/errorHandler';
 import { 
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
-  Sponsor, AdminTask, InboxEmail,
-  INITIAL_FIXTURES, INITIAL_CONTENT, INITIAL_SPONSORS, INITIAL_TASKS, INITIAL_EMAILS
+  Sponsor,
+  INITIAL_FIXTURES, INITIAL_CONTENT, INITIAL_SPONSORS,
+  ContentGenStatus
 } from './types';
 import { generateContent, generateOpponentReport, suggestScorers } from './services/geminiService';
+import { scheduleContentSequence } from './services/contentSequenceService';
 import { useSupabaseQuery } from './hooks/useSupabaseQuery';
 import { useRealtimeSubscription } from './hooks/useRealtimeSubscription';
 import { getClub } from './services/clubService';
 import { getFixtures } from './services/fixtureService';
 import { getContentItems, createContentItem, deleteContentItem } from './services/contentService';
 import { getSponsors } from './services/sponsorService';
-import { getTasks } from './services/taskService';
-import { getEmails } from './services/emailService';
 import { updateFixture, createFixture, deleteFixture } from './services/fixtureService';
 import AuthScreen from './components/AuthScreen';
 import WorkspaceGate from './components/WorkspaceGate';
@@ -189,9 +189,8 @@ const Dashboard: React.FC<{
   club: Club,
   onNavigate: (tab: string) => void,
   onRunScout: () => Promise<void>,
-  hasInboxConnection?: boolean,
   hasCompletedEducation?: boolean
-}> = ({ fixtures, contentItems, club, onNavigate, onRunScout, hasInboxConnection, hasCompletedEducation }) => {
+}> = ({ fixtures, contentItems, club, onNavigate, onRunScout, hasCompletedEducation }) => {
   const upcoming = fixtures.filter(f => f.status === 'SCHEDULED');
   const [isInitiating, setIsInitiating] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
@@ -320,23 +319,6 @@ const Dashboard: React.FC<{
          {/* Weather Widget */}
          <WeatherWidget />
 
-         {/* Admin/Ops Mini Widget (NEW) */}
-         <div className="glass-card p-5 rounded-2xl border-orange-500/20 cursor-pointer hover:border-orange-500/40 transition-colors" onClick={() => onNavigate('admin')}>
-             <div className="flex justify-between items-start mb-2">
-                 <span className="text-[10px] font-mono text-slate-400 uppercase">Ops Sentinel</span>
-                 <ShieldAlert size={16} className="text-orange-500" />
-             </div>
-             <div className="mt-4">
-                 <div className="flex justify-between items-center mb-1">
-                     <span className="text-2xl font-display font-bold text-white">3</span>
-                     <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 text-[10px] font-bold uppercase border border-orange-500/30">Urgent</span>
-                 </div>
-                 <p className="text-[10px] text-slate-500 font-mono">Pending admin tasks requiring action.</p>
-                 <div className="w-full bg-white/5 h-1 mt-3 rounded-full overflow-hidden">
-                     <div className="w-2/3 h-full bg-orange-500"></div>
-                 </div>
-             </div>
-         </div>
       </div>
 
        {/* Secondary Metrics / Sponsor Widget (NEW) */}
@@ -390,7 +372,6 @@ const Dashboard: React.FC<{
                 players={club.players}
                 fixtures={fixtures}
                 contentItems={contentItems}
-                hasInboxConnection={hasInboxConnection}
                 hasCompletedEducation={hasCompletedEducation}
                 onNavigate={onNavigate}
               />
@@ -402,8 +383,8 @@ const Dashboard: React.FC<{
                           <span className="w-1.5 h-1.5 bg-neon-blue rounded-full"></span>
                           Latest Content Generations
                       </h3>
-                      <button onClick={() => onNavigate('content')} className="text-xs font-mono text-neon-blue hover:text-white transition-colors flex items-center gap-1 border border-neon-blue/30 px-3 py-1 rounded-full hover:bg-neon-blue/10">
-                          FULL ARCHIVE <ArrowRight size={12} />
+                      <button onClick={() => onNavigate('fixtures')} className="text-xs font-mono text-neon-blue hover:text-white transition-colors flex items-center gap-1 border border-neon-blue/30 px-3 py-1 rounded-full hover:bg-neon-blue/10">
+                          VIEW ALL <ArrowRight size={12} />
                       </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,6 +399,9 @@ const Dashboard: React.FC<{
                         )}
                   </div>
               </div>
+
+              {/* Viral Scout Widget */}
+              <ViralScout club={club} />
           </div>
           
           {/* Live Feed Mockup (Terminal Style) */}
@@ -513,8 +497,8 @@ const Dashboard: React.FC<{
   );
 };
 
-// --- Fixtures Component (Glass Table) ---
-const FixturesView: React.FC<{
+// --- The Hype Engine Component ---
+const HypeEngine: React.FC<{
   fixtures: Fixture[],
   club: Club,
   contentItems: ContentItem[],
@@ -522,13 +506,19 @@ const FixturesView: React.FC<{
   onGenerateReport: (fixtureId: string, resultHome: number, resultAway: number, notes: string, scorers: string[], stats: MatchStats, motm: string, vibe: string, quote: string) => void,
   onGenerateHype: (fixture: Fixture, context: { matchType: string }) => Promise<void>,
   onCreateFixture: (fixture: Omit<Fixture, 'id'>) => Promise<void>,
-  onDeleteFixture: (fixtureId: string) => Promise<void>
-}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype, onCreateFixture, onDeleteFixture }) => {
+  onDeleteFixture: (fixtureId: string) => Promise<void>,
+  onUpdateContent: (updatedItem: ContentItem) => Promise<void>,
+  onDeleteContent: (contentId: string) => Promise<void>
+}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype, onCreateFixture, onDeleteFixture, onUpdateContent, onDeleteContent }) => {
     const [activeTab, setActiveTab] = useState<'upcoming' | 'archive'>('upcoming');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [selectedFixtureForReport, setSelectedFixtureForReport] = useState<Fixture | null>(null);
     const [isFixtureModalOpen, setIsFixtureModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [expandedContentFixture, setExpandedContentFixture] = useState<string | null>(null);
+    const [selectedContentItem, setSelectedContentItem] = useState<ContentItem | null>(null);
+    
+    const approvedItems = contentItems.filter(item => item.status === 'APPROVED');
     
     // Log Result States
     const [scoreHome, setScoreHome] = useState('');
@@ -637,8 +627,8 @@ const FixturesView: React.FC<{
         <div className="space-y-6 animate-fade-in relative h-full flex flex-col">
              <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-3xl font-display font-bold text-white glow-text">FIXTURE <span className="text-neon-blue">OPS DECK</span></h2>
-                    <p className="text-slate-400 font-mono text-xs mt-1">Manage scheduled engagements and post-match protocols.</p>
+                    <h2 className="text-3xl font-display font-bold text-white glow-text">THE <span className="text-neon-blue">HYPE ENGINE</span></h2>
+                    <p className="text-slate-400 font-mono text-xs mt-1">Automated content campaigns for every matchday.</p>
                 </div>
                 
                 <div className="flex items-center gap-4">
@@ -778,10 +768,53 @@ const FixturesView: React.FC<{
                                                     {deletingId === fixture.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
                                                     Delete Fixture
                                                 </button>
+                                                <button
+                                                    onClick={() => setExpandedContentFixture(expandedContentFixture === fixture.id ? null : fixture.id)}
+                                                    className="w-full py-1.5 text-neon-purple/60 hover:text-neon-purple hover:bg-neon-purple/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1"
+                                                >
+                                                    <FileText size={10} />
+                                                    {expandedContentFixture === fixture.id ? 'Hide' : 'View'} Content
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Content Items Section */}
+                                {expandedContentFixture === fixture.id && (
+                                    <div className="bg-black/40 border-t border-neon-purple/30 p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-mono text-neon-purple uppercase">Content Campaign</h4>
+                                            <span className="text-[10px] font-mono text-slate-500">
+                                                {contentItems.filter(c => c.fixture_id === fixture.id).length} assets
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {contentItems
+                                                .filter(c => c.fixture_id === fixture.id)
+                                                .map(item => (
+                                                    <div 
+                                                        key={item.id} 
+                                                        onClick={() => setSelectedContentItem(item)}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <ContentCard item={item} fixture={fixture} />
+                                                    </div>
+                                                ))}
+                                            {contentItems.filter(c => c.fixture_id === fixture.id).length === 0 && (
+                                                <div className="col-span-3 p-8 text-center border border-dashed border-white/10 rounded-xl">
+                                                    <p className="text-slate-500 font-mono text-sm mb-2">No content generated yet</p>
+                                                    <button
+                                                        onClick={() => handleHypeGeneration(fixture)}
+                                                        className="text-xs text-neon-blue hover:text-neon-blue/80 font-mono uppercase"
+                                                    >
+                                                        Generate Hype Pack →
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* EDITING PANEL (LOG RESULT) */}
                                 {editingId === fixture.id && (
@@ -1017,8 +1050,27 @@ const FixturesView: React.FC<{
                 onSave={async (fixture) => {
                     await onCreateFixture(fixture);
                     await onRefetchFixtures();
+                    // Auto-schedule content sequence after fixture is created
+                    // Note: This assumes fixture is created successfully - Inngest will handle background jobs
                 }}
             />
+
+            {/* Content Editor Modal */}
+            {selectedContentItem && (
+                <ContentEditorModal
+                    item={selectedContentItem}
+                    club={club}
+                    onClose={() => setSelectedContentItem(null)}
+                    onSave={async (updatedItem) => {
+                        await onUpdateContent(updatedItem);
+                        setSelectedContentItem(null);
+                    }}
+                    onDelete={async (contentId) => {
+                        await onDeleteContent(contentId);
+                        setSelectedContentItem(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
@@ -1031,7 +1083,7 @@ const AppAuthed: React.FC<{
   onSwitchWorkspace?: () => void;
 }> = ({ clubId, supabaseConfigured, onSwitchWorkspace }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateStatus, setGenerateStatus] = useState<ContentGenStatus>('idle');
   
   const CLUB_ID = clubId;
 
@@ -1062,19 +1114,6 @@ const AppAuthed: React.FC<{
   );
   const sponsors = sponsorsData ?? INITIAL_SPONSORS;
 
-  // Fetch tasks - use mock data as fallback
-  const { data: tasksData, loading: tasksLoading, refetch: refetchTasks } = useSupabaseQuery(
-    () => getTasks(CLUB_ID),
-    [CLUB_ID]
-  );
-  const tasks = tasksData ?? INITIAL_TASKS;
-
-  // Fetch emails - use mock data as fallback
-  const { data: emailsData, loading: emailsLoading, refetch: refetchEmails } = useSupabaseQuery(
-    () => getEmails(CLUB_ID),
-    [CLUB_ID]
-  );
-  const emails = emailsData ?? INITIAL_EMAILS;
 
   // Set up real-time subscriptions
   useRealtimeSubscription(
@@ -1093,7 +1132,7 @@ const AppAuthed: React.FC<{
   // Show loading state only if Supabase is configured AND data is loading
   const isLoading =
     supabaseConfigured &&
-    (clubLoading || fixturesLoading || contentLoading || sponsorsLoading || tasksLoading || emailsLoading);
+    (clubLoading || fixturesLoading || contentLoading || sponsorsLoading);
 
   // Show error or fallback to mock data if Supabase not configured
   const currentClub = club || MOCK_CLUB;
@@ -1113,7 +1152,7 @@ const AppAuthed: React.FC<{
   const runWeeklyScout = async () => {
     if (!currentClub) return;
     
-    setIsGenerating(true);
+    setGenerateStatus('generating');
     try {
       // Find upcoming games without previews
       const upcomingGames = fixtures.filter(f => f.status === 'SCHEDULED');
@@ -1150,11 +1189,13 @@ const AppAuthed: React.FC<{
 
       // Refetch content items to show new ones
       await refetchContent();
+      setGenerateStatus('success');
+      setTimeout(() => setGenerateStatus('idle'), 2000);
     } catch (error) {
       const errorMessage = handleError(error, 'runWeeklyScout');
       alert(errorMessage);
-    } finally {
-      setIsGenerating(false);
+      setGenerateStatus('error');
+      setTimeout(() => setGenerateStatus('idle'), 3000);
     }
   };
 
@@ -1162,41 +1203,13 @@ const AppAuthed: React.FC<{
       if (!currentClub) return;
 
       try {
-        // 1. Preview
-        const previewText = await generateContent(currentClub, fixture, 'PREVIEW', context);
-        await createContentItem(CLUB_ID, {
-          club_id: CLUB_ID,
-          fixture_id: fixture.id,
-          type: 'PREVIEW',
-          platform: 'Website',
-          body: previewText,
-          status: 'DRAFT',
-        });
-
-        // 2. Socials
-        const socialText = await generateContent(currentClub, fixture, 'SOCIAL', context);
-        await createContentItem(CLUB_ID, {
-          club_id: CLUB_ID,
-          fixture_id: fixture.id,
-          type: 'SOCIAL',
-          platform: 'Twitter',
-          body: socialText,
-          status: 'DRAFT',
-        });
-
-        // 3. Graphic Copy
-        const graphicText = await generateContent(currentClub, fixture, 'GRAPHIC_COPY', context);
-        await createContentItem(CLUB_ID, {
-          club_id: CLUB_ID,
-          fixture_id: fixture.id,
-          type: 'GRAPHIC_COPY',
-          platform: 'Instagram',
-          body: graphicText,
-          status: 'DRAFT',
-        });
-
-        // Refetch content items
-        await refetchContent();
+        // Schedule content sequence via Inngest (background jobs)
+        const { jobId } = await scheduleContentSequence(currentClub, fixture);
+        
+        // Refetch content items after a short delay to allow jobs to complete
+        setTimeout(() => {
+          refetchContent();
+        }, 2000);
       } catch (error) {
         const errorMessage = handleError(error, 'runHypeProtocol');
         alert(errorMessage);
@@ -1286,7 +1299,7 @@ const AppAuthed: React.FC<{
         />
       )}
       {activeTab === 'fixtures' && currentClub && (
-        <FixturesView 
+        <HypeEngine 
             fixtures={fixtures} 
             contentItems={contentItems}
             club={currentClub}
@@ -1299,6 +1312,13 @@ const AppAuthed: React.FC<{
             onDeleteFixture={async (fixtureId) => {
                 await deleteFixture(fixtureId);
             }}
+            onUpdateContent={async (updatedItem) => {
+                await handleUpdateContent(updatedItem);
+            }}
+            onDeleteContent={async (contentId) => {
+                await deleteContentItem(contentId);
+                await refetchContent();
+            }}
         />
       )}
       {activeTab === 'squad' && currentClub && (
@@ -1308,33 +1328,8 @@ const AppAuthed: React.FC<{
             club={currentClub}
           />
       )}
-      {activeTab === 'content' && currentClub && (
-        <ContentPipeline 
-            contentItems={contentItems} 
-            fixtures={fixtures}
-            club={currentClub}
-            isGenerating={isGenerating}
-            onManualGenerate={runWeeklyScout}
-            onUpdateContent={handleUpdateContent}
-            onDeleteContent={async (contentId) => {
-                await deleteContentItem(contentId);
-                await refetchContent();
-            }}
-        />
-      )}
       {activeTab === 'commercial' && currentClub && (
         <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
-      )}
-      {activeTab === 'inbox' && currentClub && (
-        <InboxView 
-          club={currentClub} 
-          orgId={currentClub.org_id || ''} 
-          emails={emails} 
-          setEmails={refetchEmails} 
-        />
-      )}
-      {activeTab === 'admin' && currentClub && (
-        <AdminSentinel club={currentClub} tasks={tasks} emails={emails} onRefetchTasks={refetchTasks} />
       )}
       {activeTab === 'comms' && currentClub && (
         <CommsArray club={currentClub} />
@@ -1373,8 +1368,6 @@ const App: React.FC = () => {
 
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [oauthProcessing, setOauthProcessing] = useState(false);
-  const [oauthError, setOauthError] = useState<string | null>(null);
 
   // Persist workspace context in localStorage
   const [ctx, setCtx] = useState<{ orgId: string; clubId: string } | null>(() => {
@@ -1430,39 +1423,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Handle Gmail/Outlook OAuth redirect (code+state) after the user returns to the SPA
-  useEffect(() => {
-    const run = async () => {
-      if (!supabase || !session) return;
-
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const state = params.get('state');
-      if (!code || !state) return;
-
-      // Heuristic: only attempt exchange when state looks like our signed payload (two segments)
-      if (!state.includes('.')) return;
-
-      setOauthProcessing(true);
-      setOauthError(null);
-      try {
-        const { data, error } = await supabase.functions.invoke('email-oauth-exchange', {
-          body: { code, state },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-
-        // Clear query params
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (e) {
-        setOauthError(e instanceof Error ? e.message : 'Email OAuth exchange failed');
-      } finally {
-        setOauthProcessing(false);
-      }
-    };
-
-    run();
-  }, [session]);
 
   if (authLoading) {
     return (
@@ -1472,32 +1432,6 @@ const App: React.FC = () => {
     );
   }
 
-  if (oauthProcessing) {
-    return (
-      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center">
-        <LoadingSpinner size={28} text="Connecting inbox provider..." />
-      </div>
-    );
-  }
-
-  if (oauthError) {
-    return (
-      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center p-6">
-        <div className="glass-panel w-full max-w-xl rounded-2xl p-8 border border-red-500/20">
-          <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">
-            OAuth Error
-          </h2>
-          <p className="text-xs font-mono text-red-300 mt-3">{oauthError}</p>
-          <button
-            onClick={() => setOauthError(null)}
-            className="mt-6 px-5 py-3 rounded-lg bg-neon-blue text-black font-display font-bold uppercase tracking-widest"
-          >
-            Return
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (!session) {
     return <AuthScreen />;

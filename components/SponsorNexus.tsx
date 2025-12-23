@@ -221,21 +221,123 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                         </div>
                         
                         <div className="flex-1 p-6 bg-black/20 overflow-y-auto custom-scrollbar relative">
-                             {/* Contextual Actions based on Tab */}
-                             {!generatedContent && !isGenerating && (
+                             {/* ROI Tab - Show Metrics and Input Form */}
+                             {activeTab === 'ROI' && (
+                                 <>
+                                     {/* ROI Metrics Display */}
+                                     {selectedSponsor.roi && (
+                                         <div className="mb-6 space-y-4">
+                                             <h4 className="text-xs font-mono text-slate-500 uppercase">ROI Metrics</h4>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                 <div className="bg-white/5 p-4 rounded border border-white/10">
+                                                     <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Impressions</div>
+                                                     <div className="text-xl font-display font-bold text-white">{selectedSponsor.roi.impressions?.toLocaleString() || '0'}</div>
+                                                 </div>
+                                                 <div className="bg-white/5 p-4 rounded border border-white/10">
+                                                     <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Engagement Rate</div>
+                                                     <div className="text-xl font-display font-bold text-yellow-400">{selectedSponsor.roi.engagement_rate?.toFixed(1) || '0'}%</div>
+                                                 </div>
+                                                 <div className="bg-white/5 p-4 rounded border border-white/10">
+                                                     <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Clicks</div>
+                                                     <div className="text-xl font-display font-bold text-white">{selectedSponsor.roi.clicks?.toLocaleString() || '0'}</div>
+                                                 </div>
+                                                 <div className="bg-white/5 p-4 rounded border border-white/10">
+                                                     <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Conversions</div>
+                                                     <div className="text-xl font-display font-bold text-white">{selectedSponsor.roi.conversions?.toLocaleString() || '0'}</div>
+                                                 </div>
+                                             </div>
+                                             {(selectedSponsor.roi.period_start || selectedSponsor.roi.period_end) && (
+                                                 <div className="text-[10px] font-mono text-slate-500">
+                                                     Period: {selectedSponsor.roi.period_start ? new Date(selectedSponsor.roi.period_start).toLocaleDateString() : 'N/A'} - {selectedSponsor.roi.period_end ? new Date(selectedSponsor.roi.period_end).toLocaleDateString() : 'N/A'}
+                                                 </div>
+                                             )}
+                                         </div>
+                                     )}
+                                     
+                                     {/* ROI Input Form */}
+                                     <div className="mb-6 space-y-3">
+                                         <h4 className="text-xs font-mono text-slate-500 uppercase">Update ROI Metrics</h4>
+                                         <div className="grid grid-cols-2 gap-3">
+                                             <input
+                                                 type="number"
+                                                 placeholder="Impressions"
+                                                 defaultValue={selectedSponsor.roi?.impressions}
+                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                             />
+                                             <input
+                                                 type="number"
+                                                 step="0.1"
+                                                 placeholder="Engagement Rate %"
+                                                 defaultValue={selectedSponsor.roi?.engagement_rate}
+                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                             />
+                                             <input
+                                                 type="number"
+                                                 placeholder="Clicks"
+                                                 defaultValue={selectedSponsor.roi?.clicks}
+                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                             />
+                                             <input
+                                                 type="number"
+                                                 placeholder="Conversions"
+                                                 defaultValue={selectedSponsor.roi?.conversions}
+                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                             />
+                                         </div>
+                                         <button className="w-full py-2 bg-yellow-400/10 border border-yellow-400/50 text-yellow-400 rounded text-xs font-bold uppercase hover:bg-yellow-400/20 transition-colors">
+                                             Save ROI Data
+                                         </button>
+                                     </div>
+
+                                     {/* Generate Report Buttons */}
+                                     {!generatedContent && !isGenerating && (
+                                         <div className="space-y-3">
+                                             <button 
+                                                onClick={async () => {
+                                                    if (!selectedSponsor) return;
+                                                    try {
+                                                        const pdfBlob = await generatePartnerValueReport(selectedSponsor, club);
+                                                        const url = URL.createObjectURL(pdfBlob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = `Partner-Value-Report-${selectedSponsor.name.replace(/\s+/g, '-')}.pdf`;
+                                                        document.body.appendChild(a);
+                                                        a.click();
+                                                        document.body.removeChild(a);
+                                                        URL.revokeObjectURL(url);
+                                                    } catch (error) {
+                                                        console.error('Error generating PDF:', error);
+                                                        alert('Failed to generate PDF. Please try again.');
+                                                    }
+                                                }}
+                                                className="w-full px-6 py-3 bg-yellow-400/10 hover:bg-yellow-400 hover:text-black border border-yellow-400/50 text-yellow-400 rounded font-bold uppercase transition-all text-xs flex items-center justify-center gap-2"
+                                             >
+                                                 <FileDown size={14} /> Generate Partner Value Report (PDF)
+                                             </button>
+                                             <button 
+                                                onClick={() => handleAction('REPORT')}
+                                                className="w-full px-6 py-3 bg-white/5 hover:bg-yellow-400 hover:text-black border border-white/10 hover:border-yellow-400 text-white rounded font-bold uppercase transition-all text-xs flex items-center justify-center gap-2"
+                                             >
+                                                 <Mail size={14} /> Generate Email Draft
+                                             </button>
+                                         </div>
+                                     )}
+                                 </>
+                             )}
+
+                             {/* Other Tabs */}
+                             {activeTab !== 'ROI' && !generatedContent && !isGenerating && (
                                  <div className="text-center py-8">
                                      <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600 border border-white/5">
-                                         {activeTab === 'ROI' && <Mail size={32} />}
                                          {activeTab === 'CREATIVE' && <Lightbulb size={32} />}
                                          {activeTab === 'NEGOTIATION' && <Handshake size={32} />}
                                      </div>
                                      <p className="text-sm text-slate-400 font-mono mb-6 max-w-[200px] mx-auto">
-                                         {activeTab === 'ROI' && "Generate a value report email to prove sponsorship ROI."}
                                          {activeTab === 'CREATIVE' && "Brainstorm 3 creative activation ideas for this brand."}
                                          {activeTab === 'NEGOTIATION' && "Draft a high-stakes renewal negotiation pitch."}
                                      </p>
                                      <button 
-                                        onClick={() => handleAction(activeTab === 'ROI' ? 'REPORT' : activeTab === 'CREATIVE' ? 'ACTIVATION' : 'RENEWAL')}
+                                        onClick={() => handleAction(activeTab === 'CREATIVE' ? 'ACTIVATION' : 'RENEWAL')}
                                         className="px-6 py-3 bg-white/5 hover:bg-yellow-400 hover:text-black border border-white/10 hover:border-yellow-400 text-white rounded font-bold uppercase transition-all text-xs flex items-center justify-center gap-2 mx-auto"
                                      >
                                          <Share2 size={14} /> Run Generator

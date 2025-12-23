@@ -1,7 +1,7 @@
 # Context Guide for LLMs
 
 **Last Updated**: 2024-12-17  
-**Version**: 2.0.0  
+**Version**: 3.0.0 (Commercial & Media Operating System Pivot)  
 **Purpose**: Main entry point for LLM context about PitchSide AI codebase  
 **For LLMs**: Read this file first to understand the system architecture and common patterns
 
@@ -9,14 +9,15 @@
 
 ## Quick Start
 
-1. **System Overview**: PitchSide AI is a **multi-tenant SaaS platform** for football club media management
-2. **Architecture**: React Frontend + Supabase Backend + Edge Functions + Google Gemini AI
+1. **System Overview**: PitchAI is a **Commercial & Media Operating System** for football clubs focused on Content Automation and Sponsor Revenue
+2. **Architecture**: React Frontend + Supabase Backend + Edge Functions + Google Gemini AI + Inngest + LangSmith
 3. **Multi-Tenancy**: Organizations → Clubs → Users with role-based access
 4. **Key Principles**: 
    - All data scoped by `org_id`
    - RLS enforces access control
-   - AI calls are server-side (Edge Functions)
-   - Email OAuth handled server-side
+   - AI calls are server-side (Edge Functions) with LangSmith observability
+   - Background jobs via Inngest for reliable content sequences
+   - Status unions for deterministic state management
 
 ## Key Files
 
@@ -34,10 +35,11 @@
 ## System Architecture
 
 ### Technology Stack
-- **Frontend**: React 19, TypeScript, Vite
+- **Frontend**: React 19, TypeScript, Vite, Biome (linting/formatting)
 - **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
-- **AI**: Google Gemini 2.5 (via Edge Functions)
-- **Styling**: Tailwind CSS
+- **AI**: Google Gemini 2.5 (via Edge Functions) with LangSmith observability
+- **Background Jobs**: Inngest for durable, reliable content sequence generation
+- **Styling**: Tailwind CSS, Framer Motion
 
 ### Data Flow
 ```
@@ -50,9 +52,9 @@ User → React Component → Service Layer → Supabase/Edge Function → Databa
 ```
 Organization (org)
   └── Club 1
-  │     └── Players, Fixtures, Content, Sponsors, Tasks, Emails
+  │     └── Players, Fixtures, Content, Sponsors
   └── Club 2
-        └── Players, Fixtures, Content, Sponsors, Tasks, Emails
+        └── Players, Fixtures, Content, Sponsors
 ```
 
 ### Role System
@@ -78,12 +80,11 @@ services/
 ├── playerService.ts      # Player roster
 ├── fixtureService.ts     # Match fixtures
 ├── contentService.ts     # Generated content
+├── contentSequenceService.ts # Content sequence scheduling (Inngest)
 ├── sponsorService.ts     # Sponsor management
-├── taskService.ts        # Admin tasks
-├── emailService.ts       # Email records
-├── emailConnectionService.ts # Email OAuth connections
+├── sponsorPdfService.ts  # PDF report generation
 ├── conversationService.ts # AI chat history
-├── geminiService.ts      # AI operations (calls Edge Function)
+├── geminiService.ts      # AI operations (calls Edge Function, LangSmith traced)
 └── onboardingService.ts  # User onboarding state per org
 ```
 
@@ -167,11 +168,11 @@ const response = await supabase.functions.invoke('ai-generate', {
 Club BYOK → Org BYOK → Platform Managed
 ```
 
-### Email Inbox Precedence
-```
-Master Inbox: Club Master → Org Master
-My Inbox: User's private connections
-```
+### VibeStack Patterns (Law Compliance)
+- **Law #1 (Idempotency)**: All Inngest functions are idempotent
+- **Law #2 (Eventual Consistency)**: Content sequences use Inngest for reliable background jobs
+- **Law #3 (Deterministic State)**: Status unions replace boolean spaghetti (`idle | generating | success | error`)
+- **Observability**: LangSmith traces all AI calls for debugging and cost tracking
 
 ---
 
@@ -187,14 +188,17 @@ My Inbox: User's private connections
 │   ├── AuthScreen.tsx        # Login/Signup
 │   ├── WorkspaceGate.tsx     # Org/Club selection
 │   ├── Layout.tsx            # Navigation + sidebar
-│   ├── InboxView.tsx         # Email inbox (Master/My tabs)
-│   ├── SettingsView.tsx      # AI + Email settings
+│   ├── HypeEngine.tsx        # The Hype Engine (formerly FixturesView) - content campaigns
+│   ├── SquadView.tsx         # Squad Intel (formerly Squad Bio-Metrics)
+│   ├── SponsorNexus.tsx      # Sponsor management with ROI tracking
+│   ├── AutoPublisher.tsx     # One-click copy & bulk download for approved content
+│   ├── ViralScout.tsx        # Weekly video script ideas widget
+│   ├── SettingsView.tsx      # AI settings
 │   ├── OnboardingManager.tsx # Welcome modal + tour
 │   ├── EducationView.tsx     # Education modules page
 │   ├── QuickStartChecklist.tsx # Dashboard progress checklist
 │   ├── FixtureFormModal.tsx  # Add/Edit fixtures
 │   ├── SponsorFormModal.tsx  # Add/Edit sponsors
-│   ├── TaskFormModal.tsx     # Add/Edit admin tasks
 │   └── *.tsx                 # Feature components
 │
 ├── content/                   # Static content
@@ -220,11 +224,12 @@ My Inbox: User's private connections
 │
 ├── supabase/functions/        # Edge Functions
 │   ├── ai-generate/
-│   ├── ai-settings/
-│   ├── email-oauth-start/
-│   ├── email-oauth-exchange/
-│   ├── email-sync/
-│   └── email-send/
+│   └── ai-settings/
+│
+├── inngest/                   # Background Jobs (VibeStack Law #2)
+│   ├── client.ts             # Inngest client initialization
+│   └── functions/
+│       └── generateContentSequence.ts # Content sequence generation
 │
 ├── .cursor/                   # Cursor rules
 │   └── rules.md
@@ -237,7 +242,6 @@ My Inbox: User's private connections
     ├── USERGUIDE.md          # End-user guide
     ├── SECURITY.md           # Security docs
     ├── RUNBOOK.md            # Operations guide
-    ├── INBOX_INTEGRATIONS.md # Email OAuth
     ├── AI_OPERATIONS.md      # AI configuration
     ├── API_DOCUMENTATION.md  # API reference
     ├── DATA_MODEL.md         # Database docs
@@ -300,7 +304,6 @@ My Inbox: User's private connections
 | [USERGUIDE.md](USERGUIDE.md) | End-user guide |
 | [SECURITY.md](SECURITY.md) | Security documentation |
 | [RUNBOOK.md](RUNBOOK.md) | Operations procedures |
-| [INBOX_INTEGRATIONS.md](INBOX_INTEGRATIONS.md) | Email OAuth |
 | [AI_OPERATIONS.md](AI_OPERATIONS.md) | AI configuration |
 | [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | Service reference |
 | [DATA_MODEL.md](DATA_MODEL.md) | Database schema |

@@ -6,14 +6,13 @@
  */
 
 import React from 'react';
-import { CheckCircle2, Circle, ChevronRight, Rocket, Users, Calendar, Sparkles, Mail, BookOpen } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronRight, Rocket, Users, Calendar, Sparkles, BookOpen } from 'lucide-react';
 import { Fixture, ContentItem, Player } from '../types';
 
 interface QuickStartChecklistProps {
   players: Player[];
   fixtures: Fixture[];
   contentItems: ContentItem[];
-  hasInboxConnection?: boolean;
   hasCompletedEducation?: boolean;
   onNavigate: (tab: string) => void;
 }
@@ -31,7 +30,6 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
   players,
   fixtures,
   contentItems,
-  hasInboxConnection = false,
   hasCompletedEducation = false,
   onNavigate,
 }) => {
@@ -58,15 +56,7 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
       description: 'Create your first AI content',
       completed: contentItems.length > 0,
       icon: Sparkles,
-      tab: 'content',
-    },
-    {
-      id: 'inbox',
-      label: 'Connect email inbox',
-      description: 'Sync Gmail or Outlook',
-      completed: hasInboxConnection,
-      icon: Mail,
-      tab: 'inbox',
+      tab: 'fixtures',
     },
     {
       id: 'education',

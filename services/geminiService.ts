@@ -1,5 +1,6 @@
-import { Fixture, Club, ContentType, Player, Sponsor, AdminTask, InboxEmail } from '../types';
+import { Fixture, Club, ContentType, Player, Sponsor } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { traceable } from 'langsmith/traceable';
 
 interface GenerationContext {
   matchType?: string;
@@ -32,19 +33,29 @@ Rules:
 - If a player is mentioned in the prompt, refer to them by name or nickname.
 `;
 
-async function invokeAi(clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> {
-  if (!supabase || !isSupabaseConfigured()) {
-    return 'AI unavailable (Supabase not configured).';
+const invokeAi = traceable(
+  async (clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> => {
+    if (!supabase || !isSupabaseConfigured()) {
+      return 'AI unavailable (Supabase not configured).';
+    }
+
+    const { data, error } = await supabase.functions.invoke('ai-generate', {
+      body: { clubId, prompt, model, action },
+    });
+
+    if (error) throw error;
+    if (!data?.text) return 'Failed to generate content.';
+    return data.text as string;
+  },
+  {
+    name: 'gemini_invoke',
+    run_type: 'llm',
+    metadata: {
+      provider: 'google',
+      model_family: 'gemini',
+    },
   }
-
-  const { data, error } = await supabase.functions.invoke('ai-generate', {
-    body: { clubId, prompt, model, action },
-  });
-
-  if (error) throw error;
-  if (!data?.text) return 'Failed to generate content.';
-  return data.text as string;
-}
+);
 
 export const generateContent = async (
   club: Club,
@@ -186,6 +197,7 @@ Player Bio-Metrics (0-99 scale):
 - Physical: ${player.stats.physical}
 
 Current Form Index: ${player.form}/10.
+${player.narrative_tags && player.narrative_tags.length > 0 ? `Narrative Tags: ${player.narrative_tags.join(', ')}` : ''}
 
 Output Format:
 [TACTICAL PROFILE]
@@ -298,77 +310,6 @@ Tone: Persuasive, exclusive, ambitious.
   return await invokeAi(club.id, prompt, 'renewal_pitch');
 };
 
-export const generateSmartReply = async (email: InboxEmail): Promise<string[]> => {
-  const prompt = `
-Role: Club Secretary.
-Task: Read the following email and provide 3 distinct, short response options.
-
-Incoming Email:
-From: ${email.from}
-Subject: ${email.subject}
-Body: ${email.body}
-
-Output: A JSON array of 3 strings.
-1. Positive/Confirming response.
-2. Holding/Delaying response.
-3. Polite Decline/Negative response.
-`;
-
-  // No club context here; if not available, return a fallback.
-  if (!email.club_id) return ['Draft response unavailable (missing club context).'];
-  const text = await invokeAi(email.club_id, prompt, 'smart_reply');
-  try {
-    return JSON.parse(text);
-  } catch {
-    return ['Response generation failed.'];
-  }
-};
-
-export const generateAdminEmail = async (club: Club, task: AdminTask): Promise<string> => {
-  const prompt = `
-Role: Club Admin.
-Task: Draft a formal email regarding the task: "${task.title}".
-Type: ${task.type}
-Context: The deadline is ${task.deadline}.
-
-If it's a League task, address it to the League Secretary.
-If it's Finance, address it to the Treasurer/Partner.
-
-Keep it formal and brief.
-`;
-  return await invokeAi(club.id, prompt, 'admin_email');
-};
-
-export const generateActionPlan = async (club: Club, task: AdminTask): Promise<string> => {
-  const prompt = `
-Role: Operations Manager for ${club.name}.
-Task: Break down the admin task "${task.title}" into 3 concise, actionable sub-steps.
-Context: Deadline is ${task.deadline}. Priority: ${task.priority}.
-
-Output Format: HTML bullet points (<ul><li>...</li></ul>) without markdown code blocks.
-Tone: Efficient, imperative.
-`;
-  return await invokeAi(club.id, prompt, 'action_plan');
-};
-
-export const analyzeEmailSentiment = async (email: InboxEmail): Promise<{ score: number; mood: string }> => {
-  const prompt = `
-Role: Sentiment Analyst.
-Task: Analyze the tone of this email.
-Subject: ${email.subject}
-Body: ${email.body}
-
-Output JSON: { "score": number (0-100), "mood": string }
-`;
-
-  if (!email.club_id) return { score: 50, mood: 'Neutral' };
-  const text = await invokeAi(email.club_id, prompt, 'email_sentiment');
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { score: 50, mood: 'Neutral' };
-  }
-};
 
 export const generateNewsArticle = async (club: Club, title: string, details: string): Promise<{ article: string; social: string }> => {
   const prompt = `
@@ -416,30 +357,41 @@ export type ImageGenerationType =
   | 'celebration'
   | 'custom';
 
-async function invokeImageAi(
-  clubId: string, 
-  prompt: string, 
-  action: string,
-  referenceImageBase64?: string,
-  referenceMimeType?: string
-): Promise<ImageGenerationResult> {
-  if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Image generation unavailable (Supabase not configured).');
+const invokeImageAi = traceable(
+  async (
+    clubId: string,
+    prompt: string,
+    action: string,
+    referenceImageBase64?: string,
+    referenceMimeType?: string
+  ): Promise<ImageGenerationResult> => {
+    if (!supabase || !isSupabaseConfigured()) {
+      throw new Error('Image generation unavailable (Supabase not configured).');
+    }
+
+    const { data, error } = await supabase.functions.invoke('ai-generate-image', {
+      body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
+    });
+
+    if (error) throw error;
+    if (!data?.imageBase64) throw new Error('Failed to generate image.');
+    
+    return {
+      imageBase64: data.imageBase64,
+      mimeType: data.mimeType || 'image/png',
+      description: data.description,
+    };
+  },
+  {
+    name: 'gemini_image_invoke',
+    run_type: 'llm',
+    metadata: {
+      provider: 'google',
+      model_family: 'gemini',
+      output_type: 'image',
+    },
   }
-
-  const { data, error } = await supabase.functions.invoke('ai-generate-image', {
-    body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
-  });
-
-  if (error) throw error;
-  if (!data?.imageBase64) throw new Error('Failed to generate image.');
-  
-  return {
-    imageBase64: data.imageBase64,
-    mimeType: data.mimeType || 'image/png',
-    description: data.description,
-  };
-}
+);
 
 export const generateMatchdayGraphic = async (
   club: Club,

@@ -90,6 +90,20 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onOpenHighlight, onEdit
           <StatBar label="SHO" value={player.stats.shooting} color="#ff0055" />
       </div>
 
+      {/* Narrative Tags */}
+      {player.narrative_tags && player.narrative_tags.length > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1.5 relative z-10">
+          {player.narrative_tags.map((tag, idx) => (
+            <span
+              key={idx}
+              className="px-2 py-0.5 bg-neon-purple/10 border border-neon-purple/30 text-neon-purple rounded text-[9px] font-mono uppercase"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="p-4 border-t border-white/5 bg-black/20 flex items-center justify-between relative z-10">
         <button 

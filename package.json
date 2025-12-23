@@ -9,18 +9,26 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@google/genai": "^1.31.0",
     "@supabase/supabase-js": "^2.39.3",
     "framer-motion": "^11.18.1",
+    "inngest": "^3.48.1",
+    "jspdf": "^3.0.4",
+    "jszip": "^3.10.1",
+    "langsmith": "^0.4.2",
     "lucide-react": "^0.556.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-joyride": "^2.9.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.14.0",

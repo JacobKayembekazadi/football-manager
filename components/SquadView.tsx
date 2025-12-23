@@ -287,8 +287,8 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       {/* Header Controls */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
          <div>
-            <h2 className="text-3xl font-display font-bold text-white glow-text">SQUAD <span className="text-neon-blue">BIO-METRICS</span></h2>
-            <p className="text-slate-400 font-mono text-xs mt-1">Real-time player data and tactical deployment.</p>
+            <h2 className="text-3xl font-display font-bold text-white glow-text">SQUAD <span className="text-neon-blue">INTEL</span></h2>
+            <p className="text-slate-400 font-mono text-xs mt-1">Player intelligence for brand building.</p>
          </div>
          
          <div className="flex items-center gap-3 w-full md:w-auto">

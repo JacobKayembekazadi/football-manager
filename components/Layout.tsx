@@ -13,9 +13,7 @@ import {
   Bell,
   Check,
   Briefcase,
-  ShieldAlert,
   Newspaper,
-  Inbox,
   BookOpen
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
@@ -60,12 +58,9 @@ const Layout: React.FC<LayoutProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: 'Command Center', icon: LayoutGrid },
-    { id: 'fixtures', label: 'Match Schedule', icon: CalendarDays },
-    { id: 'squad', label: 'Squad Bio-Metrics', icon: Users },
-    { id: 'content', label: 'Holo-Content', icon: FileCode },
+    { id: 'fixtures', label: 'The Hype Engine', icon: CalendarDays },
+    { id: 'squad', label: 'Squad Intel', icon: Users },
     { id: 'commercial', label: 'Sponsor Nexus', icon: Briefcase },
-    { id: 'inbox', label: 'Intel Inbox', icon: Inbox },
-    { id: 'admin', label: 'HQ Operations', icon: ShieldAlert },
     { id: 'comms', label: 'Fan Comms', icon: Newspaper },
     { id: 'education', label: 'Education', icon: BookOpen },
     { id: 'settings', label: 'Settings', icon: Settings },

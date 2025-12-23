@@ -22,8 +22,10 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
         dribbling: 70,
         defending: 70,
         physical: 70
-    }
+    },
+    narrative_tags: []
   });
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (player) {
@@ -58,7 +60,8 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
         stats: formData.stats as PlayerStats,
         highlight_uri: player?.highlight_uri,
         analysis: player?.analysis,
-        is_captain: formData.is_captain
+        is_captain: formData.is_captain,
+        narrative_tags: formData.narrative_tags || []
     };
 
     onSave(finalPlayer);
@@ -155,13 +158,69 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                 </div>
             </div>
 
+            {/* Narrative Tags */}
+            <div className="space-y-4">
+                <h4 className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">Narrative Tags (for brand building)</h4>
+                <div className="space-y-3">
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={tagInput}
+                            onChange={e => setTagInput(e.target.value)}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (tagInput.trim() && !formData.narrative_tags?.includes(tagInput.trim())) {
+                                        handleChange('narrative_tags', [...(formData.narrative_tags || []), tagInput.trim()]);
+                                        setTagInput('');
+                                    }
+                                }
+                            }}
+                            placeholder="Add tags like: Veteran, Fan Favorite, Top Scorer..."
+                            className="flex-1 bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-neon-purple outline-none transition-colors placeholder:text-slate-600"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (tagInput.trim() && !formData.narrative_tags?.includes(tagInput.trim())) {
+                                    handleChange('narrative_tags', [...(formData.narrative_tags || []), tagInput.trim()]);
+                                    setTagInput('');
+                                }
+                            }}
+                            className="px-4 py-2 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple rounded hover:bg-neon-purple/20 transition-colors font-mono text-xs uppercase"
+                        >
+                            Add
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {formData.narrative_tags?.map((tag, idx) => (
+                            <span
+                                key={idx}
+                                className="inline-flex items-center gap-2 px-3 py-1 bg-neon-purple/10 border border-neon-purple/30 text-neon-purple rounded-full text-xs font-mono uppercase"
+                            >
+                                {tag}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleChange('narrative_tags', formData.narrative_tags?.filter((_, i) => i !== idx) || []);
+                                    }}
+                                    className="hover:text-white transition-colors"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
         </form>
 
         <div className="p-6 border-t border-white/10 bg-black/50 flex justify-end gap-4">
             <button onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
                 Cancel
             </button>
-            <button onClick={handleSubmit} className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
+            <button type="submit" className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
                 <Save size={16} /> Save Unit
             </button>
         </div>

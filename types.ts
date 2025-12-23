@@ -31,28 +31,6 @@ export interface OrgMember {
   updated_at?: string;
 }
 
-// ============================================================================
-// Inbox Integrations (Gmail / Outlook)
-// ============================================================================
-
-export type EmailProvider = 'gmail' | 'outlook';
-export type EmailConnectionVisibility = 'private' | 'shared';
-
-export interface EmailConnection {
-  id: string;
-  org_id: string;
-  club_id?: string | null;
-  owner_user_id: string;
-  provider: EmailProvider;
-  email_address: string;
-  visibility: EmailConnectionVisibility;
-  is_master: boolean;
-  status?: 'active' | 'revoked' | 'error';
-  last_synced_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
 export interface Player {
   id: string;
   name: string;
@@ -64,6 +42,7 @@ export interface Player {
   form: number; // 0-10
   highlight_uri?: string; // URL for the generated video
   analysis?: string; // AI generated form summary
+  narrative_tags?: string[]; // Marketing/branding tags (e.g., "Veteran", "Fan Favorite", "Top Scorer")
 }
 
 export interface Club {
@@ -109,6 +88,14 @@ export interface Fixture {
 export type ContentType = 'PREVIEW' | 'REPORT' | 'SOCIAL' | 'CAPTION' | 'NEWSLETTER' | 'EMAIL' | 'ARTICLE' | 'GRAPHIC_COPY';
 export type ContentStatus = 'DRAFT' | 'APPROVED' | 'PUBLISHED';
 
+// ============================================================================
+// VibeStack Status Unions (Law #3 Compliance - Deterministic State)
+// ============================================================================
+
+export type ContentGenStatus = 'idle' | 'generating' | 'success' | 'error';
+export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type AsyncOperationStatus = 'idle' | 'loading' | 'success' | 'error';
+
 export interface ContentItem {
   id: string;
   club_id: string;
@@ -123,6 +110,15 @@ export interface ContentItem {
 
 // --- NEW ENTITIES FOR OPS ---
 
+export interface SponsorROI {
+  impressions?: number;
+  engagement_rate?: number;
+  clicks?: number;
+  conversions?: number;
+  period_start?: string;
+  period_end?: string;
+}
+
 export interface Sponsor {
   id: string;
   name: string;
@@ -132,35 +128,7 @@ export interface Sponsor {
   contract_end: string;
   status: 'Active' | 'Expiring' | 'Negotiating';
   logo_initials: string;
-}
-
-export interface AdminTask {
-  id: string;
-  title: string;
-  deadline: string;
-  priority: 'High' | 'Medium' | 'Low';
-  type: 'League' | 'Finance' | 'Facilities' | 'Media';
-  status: 'Pending' | 'In Progress' | 'Completed';
-  action_plan?: string;
-  email_draft?: string;
-}
-
-export interface InboxEmail {
-  id: string;
-  org_id?: string;
-  club_id?: string | null;
-  connection_id?: string;
-  provider?: 'gmail' | 'outlook';
-  external_id?: string;
-  thread_id?: string;
-  from: string;
-  from_email: string;
-  subject: string;
-  preview: string;
-  body: string;
-  received_at: string;
-  category: 'League' | 'Sponsor' | 'Fan' | 'Media';
-  is_read: boolean;
+  roi?: SponsorROI;
 }
 
 // ============================================================================
@@ -825,8 +793,9 @@ export const INITIAL_SPONSORS: Sponsor[] = [
   },
 ];
 
-// --- ADMIN TASKS (Ops Queue) ---
-export const INITIAL_TASKS: AdminTask[] = [
+// --- ADMIN TASKS (Ops Queue) - DEPRECATED ---
+// Removed as part of pivot to Commercial & Media Operating System
+// export const INITIAL_TASKS: AdminTask[] = [
   // HIGH PRIORITY
   { 
     id: 't-1', 
@@ -912,9 +881,11 @@ export const INITIAL_TASKS: AdminTask[] = [
     status: 'Completed' 
   },
 ];
+*/
 
-// --- INBOX EMAILS ---
-export const INITIAL_EMAILS: InboxEmail[] = [
+// --- INBOX EMAILS - DEPRECATED ---
+// Removed as part of pivot to Commercial & Media Operating System
+// export const INITIAL_EMAILS: InboxEmail[] = [
   // UNREAD
   { 
     id: 'e-1', 
@@ -1007,3 +978,4 @@ export const INITIAL_EMAILS: InboxEmail[] = [
     is_read: true 
   },
 ];
+*/
