@@ -351,41 +351,31 @@ export type ImageGenerationType =
   | 'celebration'
   | 'custom';
 
-const invokeImageAi = traceable(
-  async (
-    clubId: string,
-    prompt: string,
-    action: string,
-    referenceImageBase64?: string,
-    referenceMimeType?: string
-  ): Promise<ImageGenerationResult> => {
-    if (!supabase || !isSupabaseConfigured()) {
-      throw new Error('Image generation unavailable (Supabase not configured).');
-    }
-
-    const { data, error } = await supabase.functions.invoke('ai-generate-image', {
-      body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
-    });
-
-    if (error) throw error;
-    if (!data?.imageBase64) throw new Error('Failed to generate image.');
-    
-    return {
-      imageBase64: data.imageBase64,
-      mimeType: data.mimeType || 'image/png',
-      description: data.description,
-    };
-  },
-  {
-    name: 'gemini_image_invoke',
-    run_type: 'llm',
-    metadata: {
-      provider: 'google',
-      model_family: 'gemini',
-      output_type: 'image',
-    },
+// LangSmith tracing happens server-side in Edge Function
+const invokeImageAi = async (
+  clubId: string,
+  prompt: string,
+  action: string,
+  referenceImageBase64?: string,
+  referenceMimeType?: string
+): Promise<ImageGenerationResult> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Image generation unavailable (Supabase not configured).');
   }
-);
+
+  const { data, error } = await supabase.functions.invoke('ai-generate-image', {
+    body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
+  });
+
+  if (error) throw error;
+  if (!data?.imageBase64) throw new Error('Failed to generate image.');
+  
+  return {
+    imageBase64: data.imageBase64,
+    mimeType: data.mimeType || 'image/png',
+    description: data.description,
+  };
+};
 
 export const generateMatchdayGraphic = async (
   club: Club,
