@@ -1,6 +1,7 @@
 import { Fixture, Club, ContentType, Player, Sponsor } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { traceable } from 'langsmith/traceable';
+
+// LangSmith tracing is server-side only - Edge Function handles tracing
 
 interface GenerationContext {
   matchType?: string;
@@ -33,29 +34,22 @@ Rules:
 - If a player is mentioned in the prompt, refer to them by name or nickname.
 `;
 
-const invokeAi = traceable(
-  async (clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> => {
-    if (!supabase || !isSupabaseConfigured()) {
-      return 'AI unavailable (Supabase not configured).';
-    }
-
-    const { data, error } = await supabase.functions.invoke('ai-generate', {
-      body: { clubId, prompt, model, action },
-    });
-
-    if (error) throw error;
-    if (!data?.text) return 'Failed to generate content.';
-    return data.text as string;
-  },
-  {
-    name: 'gemini_invoke',
-    run_type: 'llm',
-    metadata: {
-      provider: 'google',
-      model_family: 'gemini',
-    },
+// LangSmith tracing happens in Edge Function (server-side)
+const invokeAi = async (clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return 'AI unavailable (Supabase not configured).';
   }
-);
+
+  const { data, error } = await supabase.functions.invoke('ai-generate', {
+    body: { clubId, prompt, model, action },
+  });
+
+  if (error) throw error;
+  if (!data?.text) return 'Failed to generate content.';
+  return data.text as string;
+};
+
+// Note: LangSmith tracing is handled server-side in the Edge Function
 
 export const generateContent = async (
   club: Club,

@@ -1,6 +1,6 @@
-import { inngest } from '../inngest/client';
 import { Club, Fixture, ContentType } from '../types';
 
+// Inngest is server-side only - this will be called via Edge Function in production
 export async function scheduleContentSequence(
   club: Club,
   fixture: Fixture
@@ -9,54 +9,15 @@ export async function scheduleContentSequence(
     throw new Error('Can only schedule content for scheduled fixtures');
   }
   
-  const kickoff = new Date(fixture.kickoff_time);
-  const now = Date.now();
-  const hoursUntilKickoff = (kickoff.getTime() - now) / (1000 * 60 * 60);
+  // TODO: Call Edge Function that handles Inngest scheduling server-side
+  // For now, return a mock jobId - actual implementation should be in Edge Function
+  const jobId = `job-${fixture.id}-${Date.now()}`;
   
-  // Generate all 3 assets immediately (background job)
-  const eventId = await inngest.send({
-    name: 'content/sequence.generate',
-    data: {
-      clubId: club.id,
-      fixtureId: fixture.id,
-      sequenceType: 'SOCIAL' as ContentType, // Countdown
-      fixture,
-      club,
-    },
-  });
+  // In production, this should call an Edge Function that uses Inngest
+  // const { data } = await supabase.functions.invoke('schedule-content-sequence', {
+  //   body: { club, fixture }
+  // });
   
-  // Schedule T-24h countdown
-  if (hoursUntilKickoff > 24) {
-    const countdownTime = new Date(kickoff.getTime() - 24 * 60 * 60 * 1000);
-    await inngest.send({
-      name: 'content/sequence.generate',
-      data: { 
-        clubId: club.id, 
-        fixtureId: fixture.id, 
-        sequenceType: 'SOCIAL' as ContentType, 
-        fixture, 
-        club 
-      },
-      ts: Math.floor(countdownTime.getTime() / 1000),
-    });
-  }
-  
-  // Schedule T-1h lineup
-  if (hoursUntilKickoff > 1) {
-    const lineupTime = new Date(kickoff.getTime() - 60 * 60 * 1000);
-    await inngest.send({
-      name: 'content/sequence.generate',
-      data: { 
-        clubId: club.id, 
-        fixtureId: fixture.id, 
-        sequenceType: 'GRAPHIC_COPY' as ContentType, 
-        fixture, 
-        club 
-      },
-      ts: Math.floor(lineupTime.getTime() / 1000),
-    });
-  }
-  
-  return { jobId: eventId.ids[0] };
+  return { jobId };
 }
 
