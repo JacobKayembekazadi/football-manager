@@ -81,3 +81,5 @@ const ViralScout: React.FC<ViralScoutProps> = ({ club, onGenerateIdeas }) => {
 
 export default ViralScout;
 
+
+

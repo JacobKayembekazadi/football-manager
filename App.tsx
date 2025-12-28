@@ -18,6 +18,7 @@ import OnboardingManager from './components/OnboardingManager';
 import EducationView from './components/EducationView';
 import FixtureFormModal from './components/FixtureFormModal';
 import QuickStartChecklist from './components/QuickStartChecklist';
+import DemoDataBanner from './components/DemoDataBanner';
 import { handleError } from './utils/errorHandler';
 import { 
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
@@ -34,6 +35,8 @@ import { getFixtures } from './services/fixtureService';
 import { getContentItems, createContentItem, deleteContentItem } from './services/contentService';
 import { getSponsors } from './services/sponsorService';
 import { updateFixture, createFixture, deleteFixture } from './services/fixtureService';
+import { hasRealData, hasDemoData } from './services/dataPresenceService';
+import { seedDemoData } from './services/mockDataService';
 import AuthScreen from './components/AuthScreen';
 import WorkspaceGate from './components/WorkspaceGate';
 import { supabase, isSupabaseConfigured as isSupabaseConfiguredFn } from './services/supabaseClient';
@@ -1084,6 +1087,8 @@ const AppAuthed: React.FC<{
 }> = ({ clubId, supabaseConfigured, onSwitchWorkspace }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [generateStatus, setGenerateStatus] = useState<ContentGenStatus>('idle');
+  const [isDemoDataActive, setIsDemoDataActive] = useState(false);
+  const [isCheckingData, setIsCheckingData] = useState(true);
   
   const CLUB_ID = clubId;
 
@@ -1093,26 +1098,65 @@ const AppAuthed: React.FC<{
     [CLUB_ID]
   );
 
-  // Fetch fixtures - use mock data as fallback
+  // Fetch fixtures - use real data when available, mock as fallback
   const { data: fixturesData, loading: fixturesLoading, refetch: refetchFixtures } = useSupabaseQuery(
     () => getFixtures(CLUB_ID),
     [CLUB_ID]
   );
-  const fixtures = fixturesData ?? INITIAL_FIXTURES;
 
-  // Fetch content items - use mock data as fallback
+  // Fetch content items
   const { data: contentData, loading: contentLoading, refetch: refetchContent } = useSupabaseQuery(
     () => getContentItems(CLUB_ID),
     [CLUB_ID]
   );
-  const contentItems = contentData ?? INITIAL_CONTENT;
 
-  // Fetch sponsors - use mock data as fallback
+  // Fetch sponsors
   const { data: sponsorsData, loading: sponsorsLoading, refetch: refetchSponsors } = useSupabaseQuery(
     () => getSponsors(CLUB_ID),
     [CLUB_ID]
   );
-  const sponsors = sponsorsData ?? INITIAL_SPONSORS;
+
+  // Determine which data to use: real data if available, otherwise mock (only if Supabase not configured)
+  // When Supabase is configured, use real data (which may include seeded demo data)
+  // When Supabase is not configured, use static mock data
+  const fixtures = supabaseConfigured 
+    ? (fixturesData || [])  // Use real data (may be empty or contain seeded demo data)
+    : INITIAL_FIXTURES;     // Only use mock when Supabase not configured
+  
+  const contentItems = supabaseConfigured
+    ? (contentData || [])
+    : INITIAL_CONTENT;
+  
+  const sponsors = supabaseConfigured
+    ? (sponsorsData || [])
+    : INITIAL_SPONSORS;
+
+  // Check if demo data is active and seed if needed
+  useEffect(() => {
+    const checkAndSeedDemoData = async () => {
+      if (!supabaseConfigured || !club) {
+        setIsCheckingData(false);
+        setIsDemoDataActive(!supabaseConfigured); // Demo mode if no Supabase
+        return;
+      }
+
+      try {
+        const hasData = await hasRealData(CLUB_ID);
+        const isDemo = await hasDemoData(CLUB_ID);
+        
+        setIsDemoDataActive(isDemo || (!hasData && club.name === MOCK_CLUB.name));
+        setIsCheckingData(false);
+      } catch (error) {
+        console.error('Error checking data presence:', error);
+        setIsCheckingData(false);
+        setIsDemoDataActive(false);
+      }
+    };
+
+    if (club && !clubLoading) {
+      checkAndSeedDemoData();
+    }
+  }, [club, CLUB_ID, supabaseConfigured, clubLoading]);
 
 
   // Set up real-time subscriptions
@@ -1136,6 +1180,17 @@ const AppAuthed: React.FC<{
 
   // Show error or fallback to mock data if Supabase not configured
   const currentClub = club || MOCK_CLUB;
+
+  // Handler for when demo data is cleared
+  const handleDemoDataCleared = async () => {
+    await Promise.all([
+      refetchClub(),
+      refetchFixtures(),
+      refetchContent(),
+      refetchSponsors(),
+    ]);
+    setIsDemoDataActive(false);
+  };
 
   const handleUpdatePlayers = async (newPlayers: any[]) => {
       // This will be handled by playerService in SquadView
@@ -1289,6 +1344,14 @@ const AppAuthed: React.FC<{
         onSwitchWorkspace={onSwitchWorkspace}
         workspaceLabel={currentClub?.name}
       >
+      {/* Demo Data Banner */}
+      {isDemoDataActive && supabaseConfigured && !isCheckingData && (
+        <DemoDataBanner 
+          clubId={CLUB_ID} 
+          onDataCleared={handleDemoDataCleared}
+        />
+      )}
+      
       {activeTab === 'dashboard' && currentClub && (
         <Dashboard 
             fixtures={fixtures} 
@@ -1422,6 +1485,28 @@ const App: React.FC = () => {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  // Auto-seed demo data for new users when workspace is selected
+  useEffect(() => {
+    const seedIfNeeded = async () => {
+      if (!session || !ctx) return;
+
+      try {
+        const hasData = await hasRealData(ctx.clubId);
+        if (!hasData) {
+          // User has no data, seed demo data
+          await seedDemoData(ctx.orgId);
+        }
+      } catch (error) {
+        console.error('Error auto-seeding demo data:', error);
+        // Don't block the app if seeding fails
+      }
+    };
+
+    if (session && ctx && !authLoading) {
+      seedIfNeeded();
+    }
+  }, [session, ctx, authLoading]);
 
 
   if (authLoading) {
