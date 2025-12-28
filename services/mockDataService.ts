@@ -50,7 +50,7 @@ export const seedDemoData = async (orgId: string): Promise<{ clubId: string; isN
       const newClub = await createClub(orgId, {
         name: MOCK_CLUB.name,
         nickname: MOCK_CLUB.nickname,
-        slug: MOCK_CLUB.slug,
+        slug: `${MOCK_CLUB.slug}-${orgId.slice(0, 8)}`,
         tone_context: MOCK_CLUB.tone_context,
         primary_color: MOCK_CLUB.primary_color,
         secondary_color: MOCK_CLUB.secondary_color,

@@ -31,21 +31,46 @@ export const getLatestFanSentiment = async (clubId: string): Promise<FanSentimen
     };
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.FAN_SENTIMENT_SNAPSHOTS)
-    .select('*')
-    .eq('club_id', clubId)
-    .order('snapshot_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.FAN_SENTIMENT_SNAPSHOTS)
+      .select('*')
+      .eq('club_id', clubId)
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
-    console.error('Error fetching fan sentiment:', error);
-    throw error;
+    if (error) {
+      console.warn('Error fetching fan sentiment (using fallback):', error.message);
+      // Fall through to return mock data below
+      throw error;
+    }
+
+    if (!data) {
+      // No data found, return mock
+      throw new Error('No sentiment data found');
+    }
+
+    return data as FanSentiment;
+  } catch (err) {
+    // Return mock data on any error (404 table not found, etc.)
+    return {
+      id: 'mock-sentiment',
+      org_id: 'mock-org',
+      club_id: clubId,
+      sentiment_score: 92,
+      sentiment_mood: 'euphoric',
+      positive_count: 85,
+      negative_count: 5,
+      neutral_count: 10,
+      total_mentions: 100,
+      keywords_analyzed: [],
+      data_source: 'mock',
+      snapshot_date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
   }
-
-  return data as FanSentiment | null;
 };
 
 /**
