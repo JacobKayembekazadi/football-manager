@@ -403,6 +403,39 @@ try {
 - Check `is_org_member()` function returns true
 - Ensure `org_id` is included in query
 
+### "Git push failed" / "Changes not on GitHub"
+- **Diagnosis**:
+  1. Run `git status` - Should show "nothing to commit" if everything pushed
+  2. Run `git log origin/master..HEAD --oneline` - Shows unpushed commits (empty = all pushed)
+  3. Check last commit: `git log --oneline -1` - Verify commit exists
+- **Common causes**:
+  - Network interruption during push
+  - GitHub authentication expired
+  - Branch name mismatch (master vs main)
+  - Remote URL issues
+- **Solution steps**:
+  ```bash
+  # 1. Stage changes
+  git add -A
+  
+  # 2. Commit (if not already committed)
+  git commit -m "Your commit message"
+  
+  # 3. Verify remote
+  git remote -v  # Should show GitHub URL
+  
+  # 4. Push with verbose output
+  git push origin master --verbose
+  
+  # 5. Verify success
+  git log origin/master..HEAD --oneline  # Should be empty
+  ```
+- **If still failing**:
+  - Re-authenticate with GitHub (Personal Access Token or SSH)
+  - Check GitHub repository exists and permissions
+  - Verify branch name matches remote (may need `git push origin HEAD:master`)
+  - Check for merge conflicts: `git pull origin master` first
+
 ---
 
 ## 📚 Documentation Reference
@@ -416,6 +449,7 @@ try {
 | `docs/USECASES.md` | Requirements | Adding features |
 | `docs/SECURITY.md` | Security patterns | Adding auth/RLS |
 | `docs/API_DOCUMENTATION.md` | Service reference | Using services |
+| `docs/GIT_TROUBLESHOOTING.md` | Git push issues | When git doesn't push |
 | `.cursor/rules.md` | Cursor rules | IDE-specific |
 
 ---

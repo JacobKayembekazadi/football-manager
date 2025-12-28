@@ -430,6 +430,27 @@ supabase functions deploy new-function
 - Check `org_id` is included in query
 - Verify RLS policies in `database/schema.sql`
 
+### "Git push didn't work" / "Changes not pushed to GitHub"
+- **Verify commit was created**: `git log --oneline -1`
+- **Check if commits are unpushed**: `git log origin/master..HEAD --oneline`
+  - If this shows commits, they're NOT pushed yet
+  - If empty, commits are already pushed
+- **Check git status**: `git status` should show "nothing to commit" after successful push
+- **Common issues**:
+  - Network/authentication failure (even if command appears to succeed)
+  - Remote branch name mismatch (`master` vs `main`)
+  - Credentials expired or invalid
+- **Manual push steps**:
+  1. `git add -A` - Stage all changes
+  2. `git commit -m "message"` - Commit changes
+  3. `git push origin master` - Push to remote
+  4. Verify: `git log origin/master..HEAD --oneline` (should be empty)
+- **If push fails**:
+  - Check internet connection
+  - Verify GitHub credentials: `git remote -v`
+  - Try: `git push origin master --verbose` for detailed output
+  - May need to re-authenticate with GitHub
+
 ---
 
 ## 📚 Documentation Reference
@@ -444,6 +465,7 @@ supabase functions deploy new-function
 | `docs/SECURITY.md` | Security patterns | Adding auth/RLS |
 | `.cursor/rules.md` | Cursor IDE rules | IDE-specific |
 | `.claude` | Claude AI context | Claude-specific |
+| `docs/GIT_TROUBLESHOOTING.md` | Git issues and solutions | When git push fails |
 
 ---
 
