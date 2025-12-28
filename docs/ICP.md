@@ -556,3 +556,4 @@ PitchSide AI is a **Commercial & Media Operating System** for football clubs and
 
 **This ICP document should be reviewed and updated quarterly as market conditions and product evolve.**
 
+

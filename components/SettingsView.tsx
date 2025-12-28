@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import type { Club } from '../types';
-import { BarChart3, Image as ImageIcon, MessageSquare, TrendingUp, Activity, Zap } from 'lucide-react';
+import { BarChart3, Image as ImageIcon, MessageSquare, TrendingUp, Activity, Zap, Database, Trash2, RefreshCw } from 'lucide-react';
+import { seedDemoData, clearDemoData } from '../services/mockDataService';
+import { hasDemoData } from '../services/dataPresenceService';
 
 interface SettingsViewProps {
   club: Club;
@@ -23,6 +25,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
 
   const [clubMode, setClubMode] = useState<ClubMode>('inherit');
   const [clubByokKey, setClubByokKey] = useState('');
+
+  // Demo Data State
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isDemoClub, setIsDemoClub] = useState(false);
 
   // AI Usage Stats
   const [usageStats, setUsageStats] = useState<{
@@ -64,6 +71,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
           .maybeSingle();
         if (clubErr) throw clubErr;
         if (clubSettings?.mode) setClubMode(clubSettings.mode as ClubMode);
+
+        // Check if current club is demo club
+        const demoStatus = await hasDemoData(clubId);
+        setIsDemoClub(demoStatus);
 
         // Load AI usage stats
         const { data: usageEvents, error: usageErr } = await supabase
@@ -148,6 +159,46 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
       setSuccess('Club AI settings saved.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save club settings');
+    }
+  };
+
+  const handleSeedData = async () => {
+    if (!orgId) return;
+    setIsSeeding(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const result = await seedDemoData(orgId);
+      
+      if (result.clubId !== clubId) {
+        setSuccess(`Demo data generated in 'Neon City FC'. Please switch clubs to view it.`);
+      } else {
+        setSuccess('Demo data generated successfully! Refresh to see changes.');
+        setIsDemoClub(true);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate demo data');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    if (!confirm('Are you sure you want to clear all demo data? This cannot be undone.')) return;
+    
+    setIsClearing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await clearDemoData(clubId, false);
+      setSuccess('Demo data cleared successfully.');
+      setIsDemoClub(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to clear demo data');
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -372,6 +423,50 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
         >
           Save Club AI Settings
         </button>
+      </div>
+
+      <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+            <Database size={18} className="text-cyan-400" />
+            Demo Data
+          </h3>
+          {isDemoClub && (
+            <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-500/30 rounded text-[10px] text-cyan-400 font-mono uppercase">
+              Demo Mode Active
+            </div>
+          )}
+        </div>
+        
+        <p className="text-[11px] text-slate-400 font-mono leading-relaxed">
+          Generate sample data to explore PitchSide AI's features. This will populate your organization with "Neon City FC" demo data.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <button
+            onClick={handleSeedData}
+            disabled={isSeeding}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-cyan-900/20 hover:bg-cyan-900/40 border border-cyan-500/30 rounded-lg text-cyan-300 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isSeeding ? 'animate-spin' : ''} />
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {isSeeding ? 'Generating...' : 'Generate Demo Data'}
+            </span>
+          </button>
+
+          {isDemoClub && (
+            <button
+              onClick={handleClearData}
+              disabled={isClearing}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 rounded-lg text-red-300 transition-colors disabled:opacity-50"
+            >
+              <Trash2 size={16} className={isClearing ? 'animate-bounce' : ''} />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                {isClearing ? 'Clearing...' : 'Clear Demo Data'}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

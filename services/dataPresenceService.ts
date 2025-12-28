@@ -100,3 +100,4 @@ export const hasDemoData = async (clubId: string): Promise<boolean> => {
   }
 };
 
+

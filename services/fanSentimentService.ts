@@ -101,3 +101,4 @@ export const getSentimentHistory = async (
 
   return (data || []) as FanSentiment[];
 };
+

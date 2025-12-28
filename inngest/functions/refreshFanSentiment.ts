@@ -50,3 +50,4 @@ export const refreshFanSentiment = inngest.createFunction(
     // return { processed: clubs.length, succeeded: results.filter(r => r.status === 'fulfilled').length };
   }
 );
+
