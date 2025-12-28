@@ -76,6 +76,7 @@ export const createPlayer = async (
       form: player.form,
       highlight_uri: player.highlight_uri,
       analysis: player.analysis,
+      narrative_tags: player.narrative_tags,
     })
     .select()
     .single();
@@ -111,6 +112,7 @@ export const updatePlayer = async (
       form: updates.form,
       highlight_uri: updates.highlight_uri,
       analysis: updates.analysis,
+      narrative_tags: updates.narrative_tags,
     })
     .eq('id', playerId)
     .select()
@@ -190,4 +192,5 @@ const mapPlayerFromDb = (row: any): Player => ({
   form: row.form,
   highlight_uri: row.highlight_uri,
   analysis: row.analysis,
+  narrative_tags: row.narrative_tags,
 });

@@ -43,11 +43,7 @@ export const seedDemoData = async (orgId: string): Promise<{ clubId: string; isN
     let isNew = false;
 
     if (demoClub) {
-      // Check if it already has data
-      const hasData = await hasRealData(demoClub.id);
-      if (hasData) {
-        return { clubId: demoClub.id, isNew: false };
-      }
+      // Use existing demo club
       clubId = demoClub.id;
     } else {
       // Create new demo club
