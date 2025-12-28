@@ -1206,6 +1206,30 @@ const AppAuthed: React.FC<{
         const hasData = await hasRealData(CLUB_ID);
         const isDemo = await hasDemoData(CLUB_ID);
         
+        // Auto-seed demo data if user has no data at all
+        if (!hasData && !isDemo && club.org_id) {
+          console.log('No data found, auto-seeding demo data...');
+          try {
+            const { clubId: seededClubId, isNew } = await seedDemoData(club.org_id);
+            if (isNew) {
+              console.log('Demo data seeded successfully, refetching...');
+              // Refetch all data after seeding
+              await Promise.all([
+                refetchClub(),
+                refetchFixtures(),
+                refetchContent(),
+                refetchSponsors(),
+              ]);
+              setIsDemoDataActive(true);
+              setIsCheckingData(false);
+              return;
+            }
+          } catch (seedError) {
+            console.error('Error seeding demo data:', seedError);
+            // Continue with empty state if seeding fails
+          }
+        }
+        
         setIsDemoDataActive(isDemo || (!hasData && club.name === MOCK_CLUB.name));
         setIsCheckingData(false);
       } catch (error) {

@@ -1,9 +1,30 @@
 # PitchAI — Implementation Status & Resume Guide
 
-> **Last Updated:** January 2025  
-> **Session Status:** Bug Fixes & Documentation Update  
-> **Version:** 3.0.1  
+> **Last Updated:** December 2025  
+> **Session Status:** Database Seeding Fixes  
+> **Version:** 3.0.3  
 > **Next Session:** Production deployment + live testing
+
+---
+
+## 📋 Latest Updates (v3.0.3)
+
+### Database Seeding Fixes ✅
+- ✅ **Onboarding Service**: Changed `insert` to `upsert` to prevent 409 duplicate key errors when user already has onboarding state
+- ✅ **Conversation Service**: Added graceful error handling for 403 RLS violations - returns null instead of throwing
+- ✅ **Mock Data Service**: Improved seeding logic to prevent duplicate key conflicts
+- ✅ **Migration**: New `20241228000000_fix_missing_tables.sql` creates missing tables for fresh deployments
+- ✅ **Documentation**: Updated CONTEXT.md, DEVELOPMENT_GUIDE.md with troubleshooting guides
+
+### Files Created
+- `supabase/migrations/20241228000000_fix_missing_tables.sql` - Migration for missing tables
+
+### Files Modified
+- `services/onboardingService.ts` - Use upsert instead of insert
+- `services/conversationService.ts` - Graceful RLS error handling
+- `docs/CONTEXT.md` - Version bump + changelog
+- `docs/UPDATE.md` - This changelog entry
+- `docs/DEVELOPMENT_GUIDE.md` - Troubleshooting section
 
 ---
 

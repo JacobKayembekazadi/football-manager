@@ -69,15 +69,19 @@ export const initOnboardingState = async (orgId: string): Promise<OnboardingStat
     return existing;
   }
 
-  // Create new state
+  // Use upsert to prevent duplicate key errors (409)
   const { data, error } = await supabase
     .from(TABLES.USER_ONBOARDING_STATE)
-    .insert({
+    .upsert({
       org_id: orgId,
       user_id: user.id,
       welcome_completed: false,
       tour_completed: false,
       completed_modules: [],
+      last_seen_at: new Date().toISOString(),
+    }, {
+      onConflict: 'org_id,user_id',
+      ignoreDuplicates: false
     })
     .select()
     .single();

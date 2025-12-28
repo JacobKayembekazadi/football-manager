@@ -280,6 +280,27 @@ When making changes, update:
 - Check RLS policies
 - Review error message in Supabase logs
 
+### Database Setup Issues
+
+**409 Duplicate Key Error**:
+- Cause: Inserting record that already exists (unique constraint violation)
+- Fix: Use `upsert()` with `onConflict` clause instead of `insert()`
+- Example:
+  ```typescript
+  await supabase
+    .from('table')
+    .upsert({ ...data }, { onConflict: 'unique_column', ignoreDuplicates: false })
+  ```
+
+**403 RLS Violation**:
+- Cause: User doesn't have permission to insert/select due to Row Level Security
+- Fix: Check RLS policies in database or use service role for seeding
+- For development: Temporarily disable RLS with `ALTER TABLE tablename DISABLE ROW LEVEL SECURITY;`
+
+**404 Table Not Found**:
+- Cause: Table doesn't exist in database
+- Fix: Run latest migration or apply `database/schema.sql`
+
 ### "AI generation slow"
 
 - Check API quota

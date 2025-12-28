@@ -1,7 +1,7 @@
 # Context Guide for LLMs
 
 **Last Updated**: January 2025  
-**Version**: 3.0.2 (Fan Sentiment Tracking)  
+**Version**: 3.0.3 (Database Seeding Fixes)  
 **Purpose**: Main entry point for LLM context about PitchSide AI codebase  
 **For LLMs**: Read this file first to understand the system architecture and common patterns
 
@@ -281,6 +281,21 @@ Club BYOK → Org BYOK → Platform Managed
 1. Update policies in `database/schema.sql`
 2. Test with different user roles
 3. Update `docs/SECURITY.md`
+
+---
+
+## Recent Changes (v3.0.3)
+
+### Database Seeding Fixes ✅
+- ✅ **Onboarding Service**: Changed `insert` to `upsert` to prevent 409 duplicate key errors
+- ✅ **Conversation Service**: Added graceful error handling for 403 RLS violations
+- ✅ **Migration**: New migration `20241228000000_fix_missing_tables.sql` adds missing tables
+- ✅ **Documentation**: Updated all docs with troubleshooting guides
+
+### Files Modified
+- `services/onboardingService.ts` - Use upsert instead of insert
+- `services/conversationService.ts` - Return null on RLS error instead of throwing
+- `supabase/migrations/20241228000000_fix_missing_tables.sql` - New migration
 
 ---
 

@@ -89,7 +89,8 @@ export const createConversation = async (clubId: string): Promise<Conversation |
 
   if (error) {
     console.error('Error creating conversation:', error);
-    throw error;
+    // Return null instead of throwing - allows graceful degradation when RLS blocks insert
+    return null;
   }
 
   return mapConversationFromDb(data);
@@ -180,7 +181,7 @@ export const subscribeToMessages = (
   callback: (messages: Message[]) => void
 ) => {
   if (!supabase || !isSupabaseConfigured()) {
-    return () => {};
+    return () => { };
   }
 
   const channel = supabase
