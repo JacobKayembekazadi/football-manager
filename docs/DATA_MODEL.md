@@ -21,6 +21,7 @@ clubs (1)
   ├── sponsors (many)
   ├── admin_tasks (many)
   ├── inbox_emails (many)
+  ├── fan_sentiment_snapshots (many)
   └── ai_conversations (many)
         └── ai_messages (many)
 
@@ -185,6 +186,36 @@ Sponsor relationships and contracts.
 **Constraints**:
 - `tier` must be: 'Platinum', 'Gold', or 'Silver'
 - `status` must be: 'Active', 'Expiring', or 'Negotiating'
+
+### fan_sentiment_snapshots
+
+Daily fan sentiment analysis snapshots from Twitter.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| org_id | UUID | Foreign key to orgs |
+| club_id | UUID | Foreign key to clubs |
+| sentiment_score | INTEGER | Sentiment score (0-100) |
+| sentiment_mood | TEXT | Mood: 'euphoric', 'happy', 'neutral', 'worried', or 'angry' |
+| positive_count | INTEGER | Number of positive mentions |
+| negative_count | INTEGER | Number of negative mentions |
+| neutral_count | INTEGER | Number of neutral mentions |
+| total_mentions | INTEGER | Total mentions analyzed |
+| keywords_analyzed | TEXT[] | Keywords found in tweets |
+| data_source | TEXT | Source (default: 'twitter') |
+| snapshot_date | DATE | Date of snapshot (unique per club) |
+| created_at | TIMESTAMPTZ | Auto-set |
+| updated_at | TIMESTAMPTZ | Auto-updated |
+
+**Constraints**:
+- `sentiment_score` must be between 0 and 100
+- `sentiment_mood` must be: 'euphoric', 'happy', 'neutral', 'worried', or 'angry'
+- `(club_id, snapshot_date)` must be unique (one snapshot per club per day)
+
+**RLS Policies**:
+- Members can view sentiment for their org
+- Service role can insert/update (Edge Functions)
 
 ### admin_tasks
 

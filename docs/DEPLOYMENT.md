@@ -45,6 +45,13 @@ GEMINI_API_KEY=your_gemini_api_key
 2. Create a new API key
 3. Copy to `GEMINI_API_KEY`
 
+**Getting Apify Token (for Fan Sentiment)**:
+1. Go to https://apify.com
+2. Sign up for an account
+3. Go to Settings → Integrations → API tokens
+4. Create a new token
+5. Copy to `APIFY_TOKEN` (set in Supabase Edge Functions secrets)
+
 ### 3. Database Setup
 
 1. Open Supabase Dashboard → SQL Editor
@@ -110,12 +117,15 @@ Set these in your hosting platform:
 2. Login: `supabase login`
 3. Link project: `supabase link --project-ref your-project-ref`
 4. Deploy: `supabase functions deploy send-email`
+5. Deploy fan sentiment: `supabase functions deploy fan-sentiment`
 
 ### Environment Variables for Edge Functions
 
 Set in Supabase Dashboard → Edge Functions → Settings:
 - `RESEND_API_KEY` (or your email service API key)
 - `SUPABASE_SERVICE_ROLE_KEY` (for database access)
+- `APIFY_TOKEN` (required for fan sentiment tracking - Twitter scraping)
+- `GEMINI_API_KEY` (for AI operations, including sentiment analysis)
 
 ## Database Migrations
 

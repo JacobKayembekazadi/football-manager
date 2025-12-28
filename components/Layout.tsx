@@ -14,9 +14,11 @@ import {
   Check,
   Briefcase,
   Newspaper,
-  BookOpen
+  BookOpen,
+  LogOut
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
+import { signOut } from '../services/authService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +26,7 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
   onSwitchWorkspace?: () => void;
   workspaceLabel?: string;
+  onLogout?: () => void;
 }
 
 interface Notification {
@@ -40,6 +43,7 @@ const Layout: React.FC<LayoutProps> = ({
   setActiveTab,
   onSwitchWorkspace,
   workspaceLabel,
+  onLogout,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -229,6 +233,19 @@ const Layout: React.FC<LayoutProps> = ({
                   {workspaceLabel ? `CLUB: ${workspaceLabel}` : 'SWITCH_CLUB'}
                 </button>
              )}
+             
+             {/* Logout Button */}
+             <button
+               onClick={async () => {
+                 await signOut();
+                 if (onLogout) onLogout();
+               }}
+               className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-400 hover:text-white hover:border-red-500/50 hover:bg-red-500/20 transition-colors rounded-full"
+               title="Sign out"
+             >
+               <LogOut size={14} />
+               LOGOUT
+             </button>
              
              {/* Notification Bell */}
              <div className="relative">

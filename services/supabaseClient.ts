@@ -71,5 +71,6 @@ export const TABLES = {
   CLUB_AI_SETTINGS: 'club_ai_settings',
   AI_USAGE_EVENTS: 'ai_usage_events',
   USER_ONBOARDING_STATE: 'user_onboarding_state',
+  FAN_SENTIMENT_SNAPSHOTS: 'fan_sentiment_snapshots',
 } as const;
 

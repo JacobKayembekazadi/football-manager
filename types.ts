@@ -96,6 +96,29 @@ export type ContentGenStatus = 'idle' | 'generating' | 'success' | 'error';
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type AsyncOperationStatus = 'idle' | 'loading' | 'success' | 'error';
 
+// ============================================================================
+// Fan Sentiment
+// ============================================================================
+
+export type SentimentMood = 'euphoric' | 'happy' | 'neutral' | 'worried' | 'angry';
+
+export interface FanSentiment {
+  id: string;
+  org_id: string;
+  club_id: string;
+  sentiment_score: number; // 0-100
+  sentiment_mood: SentimentMood;
+  positive_count: number;
+  negative_count: number;
+  neutral_count: number;
+  total_mentions: number;
+  keywords_analyzed?: string[];
+  data_source: string;
+  snapshot_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ContentItem {
   id: string;
   club_id: string;

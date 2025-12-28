@@ -131,7 +131,12 @@ The Dashboard is your **Command Center** showing:
 
 ### 2.1 Status Cards
 
-- **Fan Sentiment:** Current supporter mood gauge
+- **Fan Sentiment:** Real-time supporter mood gauge from Twitter analysis
+  - Shows sentiment score (0-100%) and mood (Euphoric, Happy, Neutral, Worried, Angry)
+  - Click refresh icon to manually update sentiment data
+  - Automatically refreshes daily at 9 AM UTC
+  - Data collected from Twitter via Apify integration
+  - Uses hybrid analysis: keyword filtering (70%) + AI deep analysis (30%)
 - **Win Probability:** AI-calculated next match odds
 - **Weather:** Match day weather forecast
 - **Ops Sentinel:** Urgent admin task count

@@ -773,3 +773,45 @@ FOR UPDATE USING (
     AND org_members.user_id = auth.uid()
   )
 );
+
+-- ============================================================================
+-- Fan Sentiment Snapshots (Twitter sentiment analysis)
+-- ============================================================================
+
+CREATE TABLE fan_sentiment_snapshots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  sentiment_score INTEGER NOT NULL CHECK (sentiment_score >= 0 AND sentiment_score <= 100),
+  sentiment_mood TEXT NOT NULL CHECK (sentiment_mood IN ('euphoric', 'happy', 'neutral', 'worried', 'angry')),
+  positive_count INTEGER DEFAULT 0,
+  negative_count INTEGER DEFAULT 0,
+  neutral_count INTEGER DEFAULT 0,
+  total_mentions INTEGER DEFAULT 0,
+  keywords_analyzed TEXT[],
+  data_source TEXT DEFAULT 'twitter',
+  snapshot_date DATE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(club_id, snapshot_date)
+);
+
+CREATE INDEX idx_fan_sentiment_club_date ON fan_sentiment_snapshots(club_id, snapshot_date DESC);
+CREATE INDEX idx_fan_sentiment_org ON fan_sentiment_snapshots(org_id);
+
+CREATE TRIGGER update_fan_sentiment_snapshots_updated_at
+BEFORE UPDATE ON fan_sentiment_snapshots
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE fan_sentiment_snapshots ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Users can view sentiment for their org
+CREATE POLICY "fan_sentiment_snapshots_select_member" ON fan_sentiment_snapshots
+FOR SELECT USING (is_org_member(org_id));
+
+-- RLS: Service role can insert/update (Edge Functions use service role)
+CREATE POLICY "fan_sentiment_snapshots_insert_service" ON fan_sentiment_snapshots
+FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "fan_sentiment_snapshots_update_service" ON fan_sentiment_snapshots
+FOR UPDATE USING (true) WITH CHECK (true);

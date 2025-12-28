@@ -1,7 +1,7 @@
 # Context Guide for LLMs
 
-**Last Updated**: 2024-12-17  
-**Version**: 3.0.0 (Commercial & Media Operating System Pivot)  
+**Last Updated**: January 2025  
+**Version**: 3.0.2 (Fan Sentiment Tracking)  
 **Purpose**: Main entry point for LLM context about PitchSide AI codebase  
 **For LLMs**: Read this file first to understand the system architecture and common patterns
 
@@ -85,7 +85,8 @@ services/
 ├── sponsorPdfService.ts  # PDF report generation
 ├── conversationService.ts # AI chat history
 ├── geminiService.ts      # AI operations (calls Edge Function, LangSmith traced)
-└── onboardingService.ts  # User onboarding state per org
+├── onboardingService.ts  # User onboarding state per org
+└── fanSentimentService.ts # Fan sentiment analysis from Twitter
 ```
 
 ### Service Pattern
@@ -188,11 +189,15 @@ Club BYOK → Org BYOK → Platform Managed
 │   ├── AuthScreen.tsx        # Login/Signup
 │   ├── WorkspaceGate.tsx     # Org/Club selection
 │   ├── Layout.tsx            # Navigation + sidebar
+│   ├── Layout.tsx            # Navigation + sidebar (includes logout button)
+│   ├── Dashboard.tsx         # Command Center (includes Generate Matchday Graphics)
 │   ├── HypeEngine.tsx        # The Hype Engine (formerly FixturesView) - content campaigns
 │   ├── SquadView.tsx         # Squad Intel (formerly Squad Bio-Metrics)
 │   ├── SponsorNexus.tsx      # Sponsor management with ROI tracking
 │   ├── AutoPublisher.tsx     # One-click copy & bulk download for approved content
 │   ├── ViralScout.tsx        # Weekly video script ideas widget
+│   ├── ImageGeneratorModal.tsx # AI image generation modal
+│   ├── DemoDataBanner.tsx    # Demo data indicator + clear option
 │   ├── SettingsView.tsx      # AI settings
 │   ├── OnboardingManager.tsx # Welcome modal + tour
 │   ├── EducationView.tsx     # Education modules page
@@ -207,6 +212,8 @@ Club BYOK → Org BYOK → Platform Managed
 ├── services/                  # Service layer
 │   ├── supabaseClient.ts
 │   ├── authService.ts
+│   ├── dataPresenceService.ts # Check for real/demo data
+│   ├── mockDataService.ts     # Seed/clear demo data
 │   ├── orgService.ts
 │   ├── *Service.ts
 │   └── geminiService.ts
@@ -224,12 +231,14 @@ Club BYOK → Org BYOK → Platform Managed
 │
 ├── supabase/functions/        # Edge Functions
 │   ├── ai-generate/
-│   └── ai-settings/
+│   ├── ai-settings/
+│   └── fan-sentiment/        # Twitter sentiment analysis via Apify
 │
 ├── inngest/                   # Background Jobs (VibeStack Law #2)
 │   ├── client.ts             # Inngest client initialization
 │   └── functions/
-│       └── generateContentSequence.ts # Content sequence generation
+│       ├── generateContentSequence.ts # Content sequence generation
+│       └── refreshFanSentiment.ts    # Daily sentiment refresh scheduler
 │
 ├── .cursor/                   # Cursor rules
 │   └── rules.md
@@ -275,6 +284,29 @@ Club BYOK → Org BYOK → Platform Managed
 
 ---
 
+## Recent Changes (v3.0.2)
+
+### Fan Sentiment Tracking
+- ✅ **Real-time Sentiment Analysis**: Twitter data collection via Apify
+- ✅ **Hybrid Analysis**: Keyword filtering (70%) + Gemini AI (30%) for accurate sentiment
+- ✅ **Database**: Added `fan_sentiment_snapshots` table with RLS
+- ✅ **Edge Function**: `fan-sentiment` for Apify integration and sentiment calculation
+- ✅ **Service**: `fanSentimentService.ts` with fetch, refresh, and history methods
+- ✅ **UI**: Dashboard displays dynamic sentiment with refresh button
+- ✅ **Scheduling**: Inngest job for daily refreshes at 9 AM UTC
+
+## Recent Changes (v3.0.1)
+
+### Bug Fixes
+- ✅ **Logout Button**: Added to Layout header (top-right) - users can now properly sign out
+- ✅ **Generate Matchday Graphics Button**: Verified functionality in Dashboard Command Center
+- ✅ **Mock Data System**: Auto-seeding for new users with one-click clear option
+
+### New Features
+- ✅ **DemoDataBanner**: Component to inform users about demo data and provide clear option
+- ✅ **dataPresenceService**: Service to check for real vs demo data
+- ✅ **mockDataService**: Service to seed and clear demo data
+
 ## Notes for LLMs
 
 ### Do
@@ -284,6 +316,7 @@ Club BYOK → Org BYOK → Platform Managed
 - ✅ Include `org_id` in all queries
 - ✅ Handle loading and error states
 - ✅ Update documentation with changes
+- ✅ Use status unions instead of boolean flags
 
 ### Don't
 - ❌ Access Supabase directly from components
@@ -291,6 +324,7 @@ Club BYOK → Org BYOK → Platform Managed
 - ❌ Skip RLS policies
 - ❌ Hardcode org/club IDs
 - ❌ Use `any` without good reason
+- ❌ Use boolean flags for state (use status unions)
 
 ---
 

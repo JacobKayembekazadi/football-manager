@@ -1,206 +1,487 @@
 # PitchSide AI — Context for Gemini AI
 
-## Project Overview
+**Last Updated**: January 2025  
+**Version**: 3.0.2  
+**Purpose**: Comprehensive context engineering for Gemini AI assistants
 
-PitchSide AI is a comprehensive SaaS platform for football club media management, built with modern web technologies and AI-powered content generation. The application supports multi-tenant organizations with role-based access control and provides football clubs with AI-assisted content creation, email management, and administrative tools.
+---
 
-## Key Technologies & Architecture
+## 🎯 Context Engineering Strategy
 
-### Tech Stack
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS
+This file provides **structured, hierarchical context** optimized for Gemini's understanding. Gemini excels at code generation and understanding technical patterns. This document is designed for that cognitive model.
+
+### Reading Strategy
+1. **System Overview** - Big picture understanding
+2. **Architecture Patterns** - Core design decisions
+3. **Code Patterns** - How to write code in this codebase
+4. **Recent Changes** - What's been updated
+5. **Common Tasks** - Quick reference for common operations
+
+---
+
+## 📊 System Overview
+
+**PitchSide AI** is a **Commercial & Media Operating System** for football clubs, specifically focused on:
+
+1. **Content Automation**: Automated matchday content campaigns via Inngest background jobs
+2. **Sponsor Revenue**: ROI tracking and partner value PDF report generation
+
+### Technology Stack
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
-- **AI**: Google Gemini 2.5 Pro via server-side Edge Functions
-- **Email Integration**: Gmail/Outlook OAuth with encrypted token storage
-- **Hosting**: Vercel (frontend), Supabase (backend)
+- **AI**: Google Gemini 2.5 Pro (server-side via Edge Functions)
+- **Observability**: LangSmith for AI call tracing
+- **Background Jobs**: Inngest for durable content sequence generation
+- **Linting**: Biome for code quality
+- **State Management**: Status unions (not boolean flags)
 
-### Multi-Tenant Architecture
-- **Hierarchy**: Organizations → Clubs → Users
-- **Roles**: Owner, Admin, Editor, Viewer
-- **Security**: Row Level Security (RLS) with org_id scoping
-- **Isolation**: Complete data separation between organizations
+### Deployment
+- **Frontend**: Vercel
+- **Backend**: Supabase Cloud
+- **Production URL**: https://football-manager-j2ahuxffd.vercel.app
 
-## Core Features
+---
 
-### 1. AI-Powered Content Generation
-- **BYOK Support**: Bring Your Own Key (Club → Org → Platform fallback)
-- **Content Types**: Match previews, reports, social media posts, sponsor content
-- **Server-Side**: All AI calls happen in Edge Functions for security
-- **Usage Tracking**: Comprehensive logging of AI usage per org/club
+## 🏗️ Architecture Principles
 
-### 2. Email Management System
-- **OAuth Integration**: Gmail and Outlook connections
-- **Master Inbox**: Club-level shared email connections
-- **Personal Inbox**: User-level private connections
-- **Smart Features**: AI-generated reply suggestions, sentiment analysis
-- **Security**: Encrypted token storage, server-side operations
-
-### 3. Full CRUD Operations
-- **Fixtures**: Schedule matches, log results, generate reports
-- **Players**: Roster management, AI analysis, video generation
-- **Sponsors**: Partnership tracking, ROI reports, content generation
-- **Content**: Pipeline management with Draft → Approved → Published workflow
-- **Admin Tasks**: Task tracking, AI action plans, email drafts
-
-### 4. User Experience Features
-- **Onboarding**: Interactive welcome tour and setup guides
-- **Education**: Comprehensive learning modules
-- **Quick Start**: Dashboard checklist for new users
-- **Empty States**: Actionable CTAs when data is missing
-
-## File Structure & Organization
-
+### 1. Multi-Tenancy Hierarchy
 ```
-├── components/                    # React components
-│   ├── AuthScreen.tsx           # Login/Signup
-│   ├── Layout.tsx              # Navigation + sidebar
-│   ├── Dashboard.tsx           # Command center
-│   ├── FixturesView.tsx        # Match management
-│   ├── SquadView.tsx           # Player roster
-│   ├── ContentPipeline.tsx     # Content workflow
-│   ├── SponsorNexus.tsx        # Sponsor management
-│   ├── AdminSentinel.tsx       # Task management
-│   ├── InboxView.tsx           # Email interface
-│   └── OnboardingManager.tsx   # Welcome tour
-│
-├── services/                    # Data operations
-│   ├── supabaseClient.ts       # Client config
-│   ├── authService.ts          # Authentication
-│   ├── fixtureService.ts       # Match operations
-│   ├── contentService.ts       # Content CRUD
-│   ├── geminiService.ts        # AI operations
-│   └── onboardingService.ts    # User onboarding
-│
-├── supabase/functions/          # Edge Functions
-│   ├── ai-generate/            # Content generation
-│   ├── ai-settings/            # Key management
-│   ├── email-oauth-start/      # OAuth flow
-│   ├── email-oauth-exchange/   # Token exchange
-│   ├── email-sync/             # Email sync
-│   └── email-send/             # Send replies
-│
-├── types.ts                     # TypeScript definitions
-├── App.tsx                      # Main application
-├── database/schema.sql          # Complete database schema
-└── docs/                        # Comprehensive documentation
+Organization (org)
+  └── Club 1
+  │     ├── Players
+  │     ├── Fixtures (matches)
+  │     ├── Content Items (social media posts, articles)
+  │     └── Sponsors (with ROI tracking)
+  └── Club 2
+        └── (same structure)
 ```
 
-## Documentation Reference
+**Critical Rules:**
+- Every database query MUST include `org_id` filter
+- RLS policies enforce `is_org_member(org_id)` checks
+- Never assume single-tenant context
+- Data isolation is absolute
 
-For detailed context and implementation details, refer to the `docs/` folder:
-
-### Essential Reading Order:
-1. **`docs/CONTEXT.md`** — Main entry point for understanding the codebase
-2. **`docs/ARCHITECTURE.md`** — System architecture and data flows
-3. **`docs/UPDATE.md`** — Current status and implementation history
-4. **`docs/USERGUIDE.md`** — User-facing features and workflows
-5. **`docs/USECASES.md`** — Functional requirements and use cases
-
-### Specialized Documentation:
-- **`docs/SECURITY.md`** — Security architecture and RLS policies
-- **`docs/RUNBOOK.md`** — Operations and deployment procedures
-- **`docs/INBOX_INTEGRATIONS.md`** — Email OAuth implementation details
-- **`docs/AI_OPERATIONS.md`** — AI configuration and BYOK setup
-
-## Key Patterns & Conventions
-
-### Service Layer Pattern
+### 2. Service Layer Pattern (Required)
 ```typescript
-export const getFixtures = async (orgId: string, clubId: string): Promise<Fixture[]> => {
-  if (!supabase || !isSupabaseConfigured()) return [];
+// ✅ CORRECT: Always use service layer
+import { getPlayers } from './services/playerService';
+const players = await getPlayers(clubId);
 
-  const { data, error } = await supabase
-    .from('fixtures')
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('club_id', clubId);
+// ❌ WRONG: Never access Supabase directly from components
+const { data } = await supabase.from('players').select('*');
+```
 
-  if (error) throw error;
-  return data?.map(mapFixtureFromDb) || [];
+**Why Service Layer?**
+- Centralized error handling
+- Automatic org_id handling
+- Mock mode support (graceful fallback)
+- Single source of truth
+- Easy to test
+
+### 3. VibeStack Compliance (Three Laws)
+
+**Law #1: Idempotency**
+- All Inngest functions must be idempotent
+- Safe to retry without side effects
+- Use deterministic job IDs
+
+**Law #2: Eventual Consistency**
+- Use Inngest for background jobs
+- Never block UI for long operations
+- Status unions track state: `'idle' | 'pending' | 'running' | 'success' | 'error'`
+
+**Law #3: Deterministic State**
+- Replace boolean flags with status unions
+- Example: `isLoading && isError` → `status: 'generating' | 'error'`
+- Prevents impossible states
+
+### 4. AI Operations (Server-Side Only)
+```typescript
+// ✅ CORRECT: AI via Edge Function
+const result = await generateContent(club, fixture, context);
+
+// ❌ WRONG: Never call Gemini API directly from client
+const response = await fetch('https://generativelanguage.googleapis.com/...');
+```
+
+**AI Architecture:**
+- All AI calls → Edge Function `ai-generate`
+- LangSmith traces all calls
+- BYOK precedence: Club → Org → Platform
+- Usage logged to `ai_usage_events` table
+
+### 5. Mock Mode Support
+```typescript
+// Services check Supabase configuration first
+export const getItems = async (clubId: string) => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return INITIAL_ITEMS; // Mock data fallback
+  }
+  // Real database query
 };
 ```
 
-### Multi-Tenant Queries
-- **Always include**: `org_id` in WHERE clauses
-- **RLS Policies**: `is_org_member(org_id)` function checks
-- **Error Handling**: Graceful fallback to mock data when Supabase not configured
+**Benefits:**
+- App works for demos without Supabase
+- Easy testing
+- Graceful degradation
 
-### AI Operations
-- **Server-Side Only**: All AI calls happen in Edge Functions
-- **BYOK Precedence**: Club BYOK → Org BYOK → Platform key
-- **Usage Logging**: Track costs and usage per org/club
-- **Security**: API keys never exposed to frontend
+---
 
-### Component Patterns
-- **Props Interface**: Typed props for all components
-- **Loading States**: Proper loading indicators
-- **Error Handling**: User-friendly error messages
-- **Responsive Design**: Mobile-first with Tailwind CSS
+## 📁 File Structure & Key Files
 
-## Development & Testing
+### Entry Points
+- **`App.tsx`**: Main application, routing, state management
+- **`types.ts`**: ALL TypeScript interfaces (single source of truth)
+- **`docs/CONTEXT.md`**: Main documentation entry point
 
-### Environment Setup
-- **Local Development**: `npm run dev`
-- **Testing**: `npm test` (88 tests across 7 files)
-- **Build**: `npm run build`
-- **Deployment**: Vercel + Supabase
+### Components (React)
+- **`components/Layout.tsx`**: Navigation + sidebar (includes logout button in header)
+- **`components/AuthScreen.tsx`**: Login/Signup forms
+- **`components/WorkspaceGate.tsx`**: Organization/Club selection (auto-seeds demo data for new users)
+- **`components/Dashboard.tsx`**: Command Center (includes "Generate Matchday Graphics" button)
+- **`components/HypeEngine.tsx`**: Content campaigns (formerly FixturesView)
+- **`components/SquadView.tsx`**: Squad Intel (formerly Squad Bio-Metrics)
+- **`components/SponsorNexus.tsx`**: Sponsor management with ROI tracking
+- **`components/AutoPublisher.tsx`**: Bulk content publishing (copy + ZIP download)
+- **`components/ViralScout.tsx`**: Weekly video script ideas widget
+- **`components/ImageGeneratorModal.tsx`**: AI image generation modal
+- **`components/DemoDataBanner.tsx`**: Demo data indicator + clear button
 
-### Testing Strategy
-- **Unit Tests**: Service functions and utilities
-- **Integration Tests**: End-to-end workflows
-- **RLS Tests**: Multi-tenant data isolation
-- **AI Tests**: Key precedence and edge cases
+### Services (Data Layer)
+- **`services/supabaseClient.ts`**: Client initialization + `isSupabaseConfigured()`
+- **`services/authService.ts`**: `signIn()`, `signUp()`, `signOut()`
+- **`services/dataPresenceService.ts`**: Check if user has real or demo data
+- **`services/mockDataService.ts`**: Seed/clear demo data
+- **`services/geminiService.ts`**: AI operations (calls Edge Function)
+- **`services/contentSequenceService.ts`**: Inngest job scheduling
+- **`services/*Service.ts`**: One service per entity (players, fixtures, content, sponsors, etc.)
 
-### Database Operations
-- **Schema**: Complete in `database/schema.sql`
-- **Migrations**: Supabase CLI for schema changes
-- **RLS**: Strict policies prevent cross-org access
-- **Triggers**: Auto-population of org_id fields
+### Hooks (React)
+- **`hooks/useSupabaseQuery.ts`**: Data fetching with caching
+- **`hooks/useRealtimeSubscription.ts`**: Real-time updates via Supabase subscriptions
 
-## Current Status
+### Utilities
+- **`utils/errorHandler.ts`**: Centralized error handling
 
-### ✅ Completed Features (100% Complete)
-- Multi-tenant database with RLS
-- Authentication and workspace selection
-- AI-powered content generation with BYOK
-- Gmail/Outlook OAuth integration
-- Full CRUD operations for all entities
-- User onboarding and education system
-- Comprehensive testing suite
-- Production deployment ready
+### Database
+- **`database/schema.sql`**: Complete PostgreSQL schema with RLS policies
 
-### 🔄 Future Enhancements
-- Inngest integration for background jobs
-- Scheduled content generation
-- Automated email syncing
-- Deadline notification system
+### Edge Functions (Deno)
+- **`supabase/functions/ai-generate/`**: AI generation endpoint
+- **`supabase/functions/ai-settings/`**: AI key management
 
-## Key Implementation Notes
+### Background Jobs
+- **`inngest/client.ts`**: Inngest client initialization
+- **`inngest/functions/generateContentSequence.ts`**: Content sequence generation jobs
 
-### Security First
-- All sensitive operations happen server-side
-- Encrypted storage for OAuth tokens and AI keys
-- Strict RLS policies prevent data leakage
-- API keys never exposed to client
+---
 
-### Performance Considerations
-- React 19 with concurrent features
-- Optimized database queries
-- Lazy loading and code splitting
-- Efficient re-renders with proper memoization
+## 🔑 Key Code Patterns
 
-### Scalability
-- Horizontal scaling with Supabase
-- Edge Functions for global performance
-- Connection pooling for database operations
-- Usage monitoring and rate limiting
+### Status Unions (VibeStack Law #3)
+```typescript
+// ❌ BAD: Boolean spaghetti
+const [isLoading, setIsLoading] = useState(false);
+const [isError, setIsError] = useState(false);
+const [isSuccess, setIsSuccess] = useState(false);
 
-## Getting Started
+// ✅ GOOD: Status union
+type ContentGenStatus = 'idle' | 'generating' | 'success' | 'error';
+const [status, setStatus] = useState<ContentGenStatus>('idle');
 
-1. **Read Context**: Start with `docs/CONTEXT.md`
-2. **Setup Environment**: Follow `docs/RUNBOOK.md`
-3. **Run Tests**: Execute `npm test` to verify setup
-4. **Local Development**: Use `npm run dev`
-5. **Deployment**: Follow production deployment guide
+// Benefits:
+// - Only one state at a time (type-safe)
+// - No impossible states
+// - Clear state transitions
+```
 
-This project represents a production-ready SaaS application with enterprise-grade security, comprehensive testing, and scalable architecture. The codebase follows modern React patterns with TypeScript, server-side AI operations, and multi-tenant data isolation.
+### Service Layer Pattern
+```typescript
+// services/playerService.ts
+export const getPlayers = async (clubId: string): Promise<Player[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return INITIAL_PLAYERS; // Mock fallback
+  }
 
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('club_id', clubId)
+    .order('name');
+
+  if (error) throw error;
+  return data?.map(mapPlayerFromDb) || [];
+};
+```
+
+### Data Fetching with Hooks
+```typescript
+// In component
+const { data, loading, error, refetch } = useSupabaseQuery(
+  () => getFixtures(clubId),
+  [clubId]
+);
+
+// Use with fallback
+const fixtures = data ?? INITIAL_FIXTURES;
+```
+
+### Error Handling
+```typescript
+try {
+  await someOperation();
+} catch (error) {
+  const message = handleError(error, 'operationContext');
+  // handleError logs to console and returns user-friendly message
+  alert(message);
+}
+```
+
+### AI Generation (via Service)
+```typescript
+// ✅ CORRECT: Use geminiService
+import { generateContent } from '../services/geminiService';
+const result = await generateContent(club, fixture, { matchType: 'league' });
+
+// ❌ WRONG: Direct API call
+const response = await fetch('https://generativelanguage.googleapis.com/...');
+```
+
+---
+
+## 🆕 Recent Changes (v3.0.2)
+
+### Fan Sentiment Tracking
+- ✅ **Real-time Sentiment Analysis**: Twitter data collection via Apify integration (no Twitter API needed)
+- ✅ **Hybrid Analysis**: Keyword filtering (70%) + Gemini AI deep analysis (30%) for accurate sentiment calculation
+- ✅ **Database**: Added `fan_sentiment_snapshots` table with RLS policies (one snapshot per club per day)
+- ✅ **Edge Function**: `supabase/functions/fan-sentiment/index.ts` - Apify integration and sentiment calculation
+- ✅ **Service**: `services/fanSentimentService.ts` - `getLatestFanSentiment()`, `refreshFanSentiment()`, `getSentimentHistory()`
+- ✅ **UI**: Dashboard displays dynamic sentiment with refresh button (replaces hardcoded 92% euphoric)
+- ✅ **Scheduling**: Inngest job `refreshFanSentiment.ts` for daily refreshes at 9 AM UTC
+- ✅ **Environment**: Requires `APIFY_TOKEN` in Supabase Edge Function secrets
+
+**Key Implementation Details**:
+- Uses Apify `apify/twitter-scraper` actor to scrape Twitter mentions
+- Searches for club name + hashtags, fetches last 24-48 hours (up to 150 tweets)
+- Keyword analysis: Positive keywords (happy, amazing, victory, etc.) vs Negative (angry, sad, defeat, etc.)
+- Gemini analyzes sample of 20-30 tweets for context, sarcasm, nuanced sentiment
+- Weighted score: 70% keyword results + 30% Gemini analysis → 0-100 score
+- Mood mapping: euphoric (80-100), happy (60-79), neutral (40-59), worried (20-39), angry (0-19)
+
+## 🆕 Recent Changes (v3.0.1)
+
+### Bug Fixes
+1. **Logout Button** (`components/Layout.tsx`)
+   - Added logout button to header (top-right, red styling)
+   - Calls `signOut()` from `authService.ts`
+   - Properly clears session and redirects to login screen
+
+2. **Generate Matchday Graphics Button** (`App.tsx` - Dashboard component)
+   - Verified button click handler sets `showImageGenerator` state
+   - ImageGeneratorModal renders correctly with proper z-index
+   - Modal opens when button clicked
+
+3. **Mock Data System**
+   - **New**: `services/dataPresenceService.ts` - Checks for real/demo data
+   - **New**: `services/mockDataService.ts` - Seeds/clears demo data
+   - **New**: `components/DemoDataBanner.tsx` - UI for demo data management
+   - Auto-seeds demo data when user creates first organization with no clubs
+   - One-click clear functionality for users to start fresh
+
+---
+
+## 🔧 Common Tasks
+
+### Adding a New Feature
+
+**Step 1: Define Types** (`types.ts`)
+```typescript
+export interface NewFeature {
+  id: string;
+  org_id: string;
+  club_id: string;
+  name: string;
+  // ... other fields
+}
+```
+
+**Step 2: Create Service** (`services/newFeatureService.ts`)
+```typescript
+export const getNewFeatures = async (clubId: string): Promise<NewFeature[]> => {
+  if (!supabase || !isSupabaseConfigured()) return [];
+  
+  const { data, error } = await supabase
+    .from('new_features')
+    .select('*')
+    .eq('club_id', clubId);
+  
+  if (error) throw error;
+  return data || [];
+};
+```
+
+**Step 3: Build Component** (`components/NewFeatureView.tsx`)
+```typescript
+const NewFeatureView: React.FC<Props> = ({ clubId }) => {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const { data, loading, error } = useSupabaseQuery(
+    () => getNewFeatures(clubId),
+    [clubId]
+  );
+
+  // Component implementation
+};
+```
+
+**Step 4: Wire to App** (`App.tsx`)
+- Add route/tab
+- Add to navigation in `Layout.tsx`
+- Fetch data using `useSupabaseQuery`
+
+**Step 5: Update Database** (`database/schema.sql`)
+- Add table if needed
+- Add RLS policies
+- Add triggers for org_id auto-propagation
+
+**Step 6: Update Documentation**
+- Add to `docs/CONTEXT.md`
+- Update `docs/USERGUIDE.md`
+- Update `docs/UPDATE.md`
+
+### Adding an Edge Function
+
+**Step 1: Create Function** (`supabase/functions/new-function/index.ts`)
+```typescript
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+
+serve(async (req) => {
+  // CORS headers
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Implementation
+    return new Response(JSON.stringify({ result }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+});
+```
+
+**Step 2: Update Service** to call Edge Function
+```typescript
+const { data, error } = await supabase.functions.invoke('new-function', {
+  body: { orgId, clubId, ...params }
+});
+```
+
+**Step 3: Deploy**
+```bash
+supabase functions deploy new-function
+```
+
+---
+
+## 🐛 Troubleshooting Guide
+
+### "Logout button not working"
+- ✅ **FIXED in v3.0.1**: Logout button added to Layout header
+- Button location: Top-right of header, next to notification bell
+- Calls `signOut()` from `authService.ts`
+- Auth state listener in `App.tsx` detects logout and redirects
+
+### "Generate Matchday Graphics button not working"
+- ✅ **FIXED in v3.0.1**: Verified button functionality
+- Button location: Command Center Dashboard → Next Match widget
+- Sets `showImageGenerator` state to `true`
+- ImageGeneratorModal renders with `fixed` positioning and `z-50`
+
+### "No data showing for new users"
+- **SOLUTION**: Demo data auto-seeding
+- When user creates first organization with no clubs:
+  1. System creates default "Neon City FC" club
+  2. Seeds demo players, fixtures, content, sponsors
+  3. Shows DemoDataBanner component
+- User can clear demo data via banner button
+
+### "Can't clear demo data"
+- **SOLUTION**: Use DemoDataBanner
+- Component appears when demo data detected
+- Click "Clear Demo Data" button
+- Deletes all demo players, fixtures, content, sponsors
+
+### "AI calls failing"
+- Check Supabase Edge Function logs
+- Verify API key precedence (Club BYOK → Org BYOK → Platform)
+- Check LangSmith traces for errors
+- Verify `ai-generate` Edge Function is deployed
+
+### "RLS policy error"
+- Verify user is member of organization (`is_org_member()`)
+- Check `org_id` is included in query
+- Verify RLS policies in `database/schema.sql`
+
+---
+
+## 📚 Documentation Reference
+
+| Document | Purpose | Read When |
+|----------|---------|-----------|
+| `docs/CONTEXT.md` | Main entry point | **Start here** |
+| `docs/ARCHITECTURE.md` | System design | Understanding data flow |
+| `docs/UPDATE.md` | Changelog | Recent changes |
+| `docs/USERGUIDE.md` | User features | Building UI |
+| `docs/USECASES.md` | Requirements | Adding features |
+| `docs/SECURITY.md` | Security patterns | Adding auth/RLS |
+| `.cursor/rules.md` | Cursor IDE rules | IDE-specific |
+| `.claude` | Claude AI context | Claude-specific |
+
+---
+
+## 💡 Gemini-Specific Tips
+
+### For Code Generation
+- Always check `types.ts` first for interfaces
+- Use service layer (never access Supabase directly)
+- Include `org_id` in all database operations
+- Use status unions (not boolean flags)
+- Handle mock mode gracefully
+- Follow VibeStack patterns
+
+### For Debugging
+- Check browser console for client errors
+- Check Supabase Edge Function logs for server errors
+- Use LangSmith traces for AI call debugging
+- Verify RLS policies in Supabase dashboard
+
+### For Understanding
+- Start with `docs/CONTEXT.md`
+- Use semantic search to find related code
+- Read service files to understand data operations
+- Check component props interfaces for data structures
+
+---
+
+## 🎯 Key Principles
+
+1. **Multi-tenancy is absolute**: Always include `org_id`
+2. **Service layer only**: Never bypass services
+3. **Status unions**: No boolean spaghetti
+4. **Server-side AI**: Never call Gemini from client
+5. **Mock mode support**: App works without Supabase
+6. **Documentation**: Update docs with changes
+7. **Error handling**: Always handle errors gracefully
+8. **VibeStack compliance**: Follow the three laws
+
+---
+
+**This file is optimized for Gemini AI. When generating code or understanding the codebase, refer to these patterns and principles.**

@@ -109,6 +109,93 @@ deleteConversation(conversationId: string): Promise<void>
 subscribeToMessages(conversationId: string, callback: (messages: Message[]) => void): () => void
 ```
 
+### Fan Sentiment Service (`services/fanSentimentService.ts`)
+
+```typescript
+getLatestFanSentiment(clubId: string): Promise<FanSentiment | null>
+refreshFanSentiment(clubId: string, clubName: string, orgId: string): Promise<FanSentiment>
+getSentimentHistory(clubId: string, days?: number): Promise<FanSentiment[]>
+```
+
+**Fan Sentiment Interface**:
+```typescript
+interface FanSentiment {
+  id: string;
+  org_id: string;
+  club_id: string;
+  sentiment_score: number; // 0-100
+  sentiment_mood: 'euphoric' | 'happy' | 'neutral' | 'worried' | 'angry';
+  positive_count: number;
+  negative_count: number;
+  neutral_count: number;
+  total_mentions: number;
+  keywords_analyzed?: string[];
+  data_source: string; // 'twitter' | 'mock'
+  snapshot_date: string;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+**Notes**:
+- `getLatestFanSentiment`: Returns the most recent sentiment snapshot for a club, or mock data if Supabase not configured
+- `refreshFanSentiment`: Triggers Edge Function to collect new Twitter data and analyze sentiment
+- `getSentimentHistory`: Returns historical sentiment snapshots for the last N days (default: 30)
+
+## Edge Functions
+
+### Fan Sentiment Edge Function (`fan-sentiment`)
+
+**Endpoint**: `/functions/v1/fan-sentiment`
+
+**Method**: `POST`
+
+**Headers**:
+```
+Authorization: Bearer <user_jwt_token>
+Content-Type: application/json
+```
+
+**Request Body**:
+```json
+{
+  "clubId": "uuid",
+  "clubName": "Neon City FC",
+  "orgId": "uuid"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "uuid",
+  "org_id": "uuid",
+  "club_id": "uuid",
+  "sentiment_score": 92,
+  "sentiment_mood": "euphoric",
+  "positive_count": 85,
+  "negative_count": 5,
+  "neutral_count": 10,
+  "total_mentions": 100,
+  "keywords_analyzed": ["happy", "amazing", "victory"],
+  "data_source": "twitter",
+  "snapshot_date": "2025-01-15",
+  "created_at": "2025-01-15T09:00:00Z",
+  "updated_at": "2025-01-15T09:00:00Z"
+}
+```
+
+**Process**:
+1. Uses Apify to scrape Twitter mentions of the club
+2. Performs keyword-based sentiment analysis (positive/negative/neutral)
+3. Samples tweets for Gemini AI deep analysis
+4. Calculates weighted score (70% keyword + 30% Gemini)
+5. Stores snapshot in database (upsert by club_id + snapshot_date)
+
+**Required Environment Variables**:
+- `APIFY_TOKEN`: Apify API token for Twitter scraping
+- `GEMINI_API_KEY`: For deep sentiment analysis (or resolved via BYOK)
+
 ## AI Service Functions (`services/geminiService.ts`)
 
 ### Content Generation

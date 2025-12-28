@@ -37,6 +37,8 @@ import { getSponsors } from './services/sponsorService';
 import { updateFixture, createFixture, deleteFixture } from './services/fixtureService';
 import { hasRealData, hasDemoData } from './services/dataPresenceService';
 import { seedDemoData } from './services/mockDataService';
+import { getLatestFanSentiment, refreshFanSentiment } from './services/fanSentimentService';
+import type { FanSentiment } from './types';
 import AuthScreen from './components/AuthScreen';
 import WorkspaceGate from './components/WorkspaceGate';
 import { supabase, isSupabaseConfigured as isSupabaseConfiguredFn } from './services/supabaseClient';
@@ -200,6 +202,8 @@ const Dashboard: React.FC<{
   const [isAnalyzingOpponent, setIsAnalyzingOpponent] = useState(false);
   const [opponentAnalysis, setOpponentAnalysis] = useState<string | null>(null);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [fanSentiment, setFanSentiment] = useState<FanSentiment | null>(null);
+  const [isRefreshingSentiment, setIsRefreshingSentiment] = useState(false);
 
   const handleInitiateProtocol = async () => {
       setIsInitiating(true);
@@ -219,6 +223,46 @@ const Dashboard: React.FC<{
           setIsAnalyzingOpponent(false);
       }
   };
+
+  // Fetch fan sentiment on mount
+  useEffect(() => {
+    const fetchSentiment = async () => {
+      if (!club?.id) return;
+      try {
+        const sentiment = await getLatestFanSentiment(club.id);
+        setFanSentiment(sentiment);
+      } catch (error) {
+        console.error('Error fetching fan sentiment:', error);
+        // Fallback to mock data handled by service
+      }
+    };
+    fetchSentiment();
+  }, [club?.id]);
+
+  const handleRefreshSentiment = async () => {
+    if (!club?.id || !club?.name || !club?.org_id || isRefreshingSentiment) return;
+    
+    setIsRefreshingSentiment(true);
+    try {
+      const refreshed = await refreshFanSentiment(club.id, club.name, club.org_id || '');
+      setFanSentiment(refreshed);
+    } catch (error) {
+      console.error('Error refreshing fan sentiment:', error);
+      handleError(error, 'Failed to refresh fan sentiment');
+    } finally {
+      setIsRefreshingSentiment(false);
+    }
+  };
+
+  // Calculate display values
+  const sentimentScore = fanSentiment?.sentiment_score ?? 92;
+  const sentimentMood = fanSentiment?.sentiment_mood?.toUpperCase() ?? 'EUPHORIC';
+  const moodColor = 
+    sentimentScore >= 80 ? 'text-green-400' :
+    sentimentScore >= 60 ? 'text-blue-400' :
+    sentimentScore >= 40 ? 'text-yellow-400' :
+    sentimentScore >= 20 ? 'text-orange-400' :
+    'text-red-400';
   
   return (
     <div className="space-y-6 pb-8">
@@ -300,20 +344,38 @@ const Dashboard: React.FC<{
          <div className="glass-card p-5 rounded-2xl border-neon-blue/20">
              <div className="flex justify-between items-start mb-4">
                  <span className="text-[10px] font-mono text-slate-400 uppercase">Fan Sentiment</span>
-                 <TrendingUp size={16} className="text-neon-green" />
+                 <div className="flex items-center gap-2">
+                   <button
+                     onClick={handleRefreshSentiment}
+                     disabled={isRefreshingSentiment}
+                     className="text-slate-400 hover:text-neon-blue transition-colors disabled:opacity-50"
+                     title="Refresh sentiment"
+                   >
+                     {isRefreshingSentiment ? (
+                       <Loader2 size={14} className="animate-spin" />
+                     ) : (
+                       <TrendingUp size={16} className="text-neon-green" />
+                     )}
+                   </button>
+                 </div>
              </div>
              <div className="relative h-28 flex items-center justify-center">
                  {/* CSS Gauge Simulation */}
                  <div className="w-24 h-12 border-t-[10px] border-l-[10px] border-r-[10px] border-neon-blue rounded-t-full border-b-0 absolute top-4 opacity-20"></div>
-                 <div className="w-24 h-12 border-t-[10px] border-l-[10px] border-r-[10px] border-neon-green rounded-t-full border-b-0 absolute top-4" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)', transform: 'rotate(-45deg)', transformOrigin: 'bottom center'}}></div>
+                 <div className="w-24 h-12 border-t-[10px] border-l-[10px] border-r-[10px] border-neon-green rounded-t-full border-b-0 absolute top-4" style={{clipPath: `polygon(0 0, ${sentimentScore}% 0, ${sentimentScore}% 100%, 0 100%)`, transform: 'rotate(-45deg)', transformOrigin: 'bottom center'}}></div>
                  <div className="absolute bottom-4 flex flex-col items-center">
-                    <span className="text-4xl font-display font-bold text-white">92%</span>
-                    <span className="text-[9px] text-green-400 font-mono tracking-widest uppercase">Euphoric</span>
+                    <span className="text-4xl font-display font-bold text-white">{sentimentScore}%</span>
+                    <span className={`text-[9px] ${moodColor} font-mono tracking-widest uppercase`}>{sentimentMood}</span>
                  </div>
              </div>
              <div className="w-full bg-white/5 rounded-full h-1 mt-1">
-                 <div className="h-full w-[92%] bg-gradient-to-r from-neon-blue to-neon-green rounded-full"></div>
+                 <div className={`h-full bg-gradient-to-r from-neon-blue to-neon-green rounded-full transition-all duration-500`} style={{ width: `${sentimentScore}%` }}></div>
              </div>
+             {fanSentiment && (
+               <div className="mt-2 text-[9px] text-slate-500 font-mono">
+                 {fanSentiment.total_mentions} mentions • {fanSentiment.data_source}
+               </div>
+             )}
          </div>
 
          {/* Win Probability Widget */}
@@ -1328,6 +1390,10 @@ const AppAuthed: React.FC<{
         setActiveTab={setActiveTab}
         onSwitchWorkspace={onSwitchWorkspace}
         workspaceLabel={currentClub?.name}
+        onLogout={() => {
+          // Logout will be handled by the signOut function in Layout
+          // The auth state listener will clear the session
+        }}
       >
         <div className="flex items-center justify-center h-full">
           <LoadingSpinner size={32} text="Loading system data..." />
@@ -1343,6 +1409,10 @@ const AppAuthed: React.FC<{
         setActiveTab={setActiveTab}
         onSwitchWorkspace={onSwitchWorkspace}
         workspaceLabel={currentClub?.name}
+        onLogout={() => {
+          // Logout will be handled by the signOut function in Layout
+          // The auth state listener will clear the session
+        }}
       >
       {/* Demo Data Banner */}
       {isDemoDataActive && supabaseConfigured && !isCheckingData && (
