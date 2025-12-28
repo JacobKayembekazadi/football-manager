@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Global baseline styles (Vite build) */
 
 html, body, #root {
