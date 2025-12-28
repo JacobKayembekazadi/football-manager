@@ -41,8 +41,7 @@ export const getLatestFanSentiment = async (clubId: string): Promise<FanSentimen
       .maybeSingle();
 
     if (error) {
-      console.warn('Error fetching fan sentiment (using fallback):', error.message);
-      // Fall through to return mock data below
+      // Silently throw to trigger fallback in catch block
       throw error;
     }
 
@@ -98,8 +97,7 @@ export const refreshFanSentiment = async (
 
     return data as FanSentiment;
   } catch (err) {
-    console.warn('Returning mock sentiment due to refresh error');
-    // Return mock data
+    // Silently return mock data on error
     return {
       id: 'mock-sentiment-refresh',
       org_id: orgId,
