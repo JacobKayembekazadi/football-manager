@@ -1,7 +1,7 @@
 # Context Guide for LLMs
 
-**Last Updated**: January 2025  
-**Version**: 3.0.3 (Database Seeding Fixes)  
+**Last Updated**: January 2026  
+**Version**: 3.1.0 (D14 Simple Mode Navigation Redesign)  
 **Purpose**: Main entry point for LLM context about PitchSide AI codebase  
 **For LLMs**: Read this file first to understand the system architecture and common patterns
 

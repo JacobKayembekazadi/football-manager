@@ -9,28 +9,44 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f0f9ff',
-          500: '#0ea5e9', // Sky Blue
-          600: '#0284c7',
-          900: '#0c4a6e',
-          950: '#082f49', 
+          50: '#f0fdf4',
+          500: '#22c55e', // FM-style green (primary CTA)
+          600: '#16a34a',
+          900: '#14532d',
+          950: '#052e16',
         },
-        neon: {
-          blue: '#00f3ff',
-          purple: '#bc13fe',
-          green: '#0aff0a',
-          pink: '#ff0055'
+        // FM-style accent colors (calm, professional)
+        accent: {
+          green: '#22c55e',   // Primary CTA (Continue button)
+          amber: '#f59e0b',   // Warnings, attention
+          purple: '#9333ea',  // FM signature accent
+          red: '#dc2626',     // Muted red for alerts
+          blue: '#3b82f6',    // Info, links
         },
+        // Subtle glass effects
         glass: {
-          100: 'rgba(255, 255, 255, 0.05)',
-          200: 'rgba(255, 255, 255, 0.1)',
-          300: 'rgba(255, 255, 255, 0.15)',
+          100: 'rgba(255, 255, 255, 0.03)',
+          200: 'rgba(255, 255, 255, 0.06)',
+          300: 'rgba(255, 255, 255, 0.1)',
           border: 'rgba(255, 255, 255, 0.08)',
         },
+        // Dark theme (deep navy/charcoal, not pure black)
         dark: {
-          bg: '#050505',
-          surface: '#0a0a0a',
-          card: '#121212',
+          bg: '#0f172a',      // Deep navy
+          surface: '#1e293b', // Slate
+          card: '#334155',    // Lighter slate for cards
+        },
+        // Legacy neon mappings (for transition - will be removed)
+        neon: {
+          blue: '#3b82f6',    // Now calm blue
+          purple: '#9333ea',  // FM purple
+          green: '#22c55e',   // FM green
+          pink: '#ec4899'     // Calm pink
+        },
+        // New pitch colors
+        pitch: {
+          400: '#22c55e',
+          500: '#16a34a',
         }
       },
       fontFamily: {
@@ -50,8 +66,8 @@ export default {
       },
       keyframes: {
         glow: {
-          '0%': { boxShadow: '0 0 5px #00f3ff, 0 0 10px #00f3ff' },
-          '100%': { boxShadow: '0 0 20px #00f3ff, 0 0 30px #00f3ff' },
+          '0%': { boxShadow: '0 0 5px #22c55e, 0 0 10px #22c55e' },
+          '100%': { boxShadow: '0 0 15px #22c55e, 0 0 20px #22c55e' },
         },
         scanline: {
           '0%': { transform: 'translateY(-100%)' },

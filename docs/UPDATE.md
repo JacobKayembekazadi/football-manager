@@ -1,9 +1,60 @@
 # PitchAI — Implementation Status & Resume Guide
 
-> **Last Updated:** December 2025  
-> **Session Status:** Database Seeding Fixes  
-> **Version:** 3.0.3  
-> **Next Session:** Production deployment + live testing
+> **Last Updated:** January 2026  
+> **Session Status:** D14 Simple Mode Navigation Redesign  
+> **Version:** 3.1.0  
+> **Next Session:** Complete neon→calm color cleanup, Supabase seeding
+
+---
+
+## 📋 Latest Updates (v3.1.0) - D14 Simple Mode Navigation Redesign
+
+### Overview
+FM Mobile-inspired UI optimization to make navigation more accessible while preserving all functionality.
+
+### Navigation Changes ✅
+| Before | After |
+|--------|-------|
+| Command Center | **Home** |
+| The Hype Engine | **Match Hub** |
+| Squad Intel | **Squad** |
+| Fan Comms | **Content** (merged hub) |
+| Sponsor Nexus | **Commercial** |
+| Settings + Education | **Admin** |
+
+### Content Hub ✅
+- Created unified Content view with sub-tabs: **Posts | Assets | Schedule**
+- Schedule tab shows fixtures with content slots (Pre-Match, Matchday, Post-Match)
+- Status badges showing content completion per fixture
+
+### Mobile Navigation ✅
+- Added `BottomNav.tsx` component for mobile bottom tabs
+- AI chat button repositioned above bottom nav
+
+### Color Palette ✅
+- Background: `#050505` (pure black) → `#0f172a` (deep navy)
+- Accents: Neon blue/purple → calm green (`#22c55e`) / purple (`#9333ea`)
+- Cleaned up `Layout.tsx` and `App.tsx` neon references
+
+### Files Created
+- `components/BottomNav.tsx` - Mobile bottom tab navigation
+- `components/ContentHub.tsx` - Unified content view with sub-tabs
+
+### Files Modified
+- `components/Layout.tsx` - New navItems, BottomNav, color cleanup
+- `App.tsx` - Updated routes, integrated ContentHub
+- `tailwind.config.js` - FM-style color palette
+- `components/AiAssistant.tsx` - Repositioned, green color
+- `.claude` - Added D14 context section
+
+### Known Issues
+- **Supabase 400/406 Errors**: Mock data IDs vs UUID mismatch (app falls back to mock data)
+- **Partial Color Cleanup**: Some inner components still have neon gradients
+
+### What's Missing
+- [ ] Full color cleanup in SquadView, ContentPipeline, PlayerCard
+- [ ] Content Schedule "Add Content" button functionality
+- [ ] Supabase database seeding with proper UUIDs
 
 ---
 

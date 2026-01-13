@@ -1,10 +1,72 @@
 # PitchSide AI — Context Engineering for Claude AI
 
-**Last Updated**: January 2025  
-**Version**: 3.0.2  
+**Last Updated**: January 2026  
+**Version**: 3.1.0 (D14 UI Redesign)  
 **Purpose**: Comprehensive context engineering strategy for Claude AI assistants working on PitchSide AI codebase
 
 ---
+
+## 🎨 D14 Simple Mode Navigation Redesign (January 2026)
+
+### Overview
+FM Mobile-inspired UI optimization to make navigation more accessible while preserving all functionality.
+
+### Navigation Changes
+| Before | After |
+|--------|-------|
+| Command Center | **Home** |
+| The Hype Engine | **Match Hub** |
+| Squad Intel | **Squad** |
+| Fan Comms | **Content** (merged hub) |
+| Sponsor Nexus | **Commercial** |
+| Settings + Education | **Admin** |
+
+### New Files Created
+| File | Purpose |
+|------|---------|
+| `components/BottomNav.tsx` | Mobile bottom tab navigation (6 items) |
+| `components/ContentHub.tsx` | Unified content view with sub-tabs (Posts, Assets, Schedule) |
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `components/Layout.tsx` | New navItems, added BottomNav, neon→green color cleanup |
+| `App.tsx` | Updated routes, integrated ContentHub, color cleanup |
+| `tailwind.config.js` | FM-style palette (deep navy bg, green/purple accents) |
+| `components/AiAssistant.tsx` | Repositioned for mobile bottom nav, green color |
+
+### Color Palette Changes
+```javascript
+// Before (Neon)
+dark-bg: '#050505'      // Pure black
+neon-blue: '#00f3ff'    // Aggressive cyan
+neon-purple: '#bc13fe'  // Bright purple
+neon-pink: '#ff0055'    // Hot pink
+
+// After (FM-Style)
+dark-bg: '#0f172a'      // Deep navy
+green-500: '#22c55e'    // FM green (primary CTA)
+purple-500: '#9333ea'   // Calm purple
+rose-500: '#f43f5e'     // Muted pink
+```
+
+### Current Issues
+1. **Supabase 400/406 Errors**: Mock data IDs (`c-1`) vs UUID mismatch
+   - `club_id=eq.c-1` → Supabase expects real UUID
+   - `clubs?id=eq.cb83c9cc-...` → Club doesn't exist in DB
+   - **Workaround**: App falls back to mock data
+
+2. **Partial Color Cleanup**: Some inner components still have neon gradients
+   - SquadView.tsx, ContentPipeline.tsx, PlayerCard.tsx
+
+### What's Missing
+- [ ] Full neon→calm color cleanup in all components
+- [ ] Content Schedule "Add Content" button functionality
+- [ ] Mobile viewport testing on real devices
+- [ ] Supabase database seeding with proper UUIDs
+
+---
+
 
 ## 🎯 Context Engineering Strategy
 
