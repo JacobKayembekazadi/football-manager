@@ -73,12 +73,12 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-neon-blue/30 shadow-[0_0_50px_rgba(0,243,255,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
             <div className="flex items-center gap-3">
-                <div className="p-2 rounded bg-white/5 border border-white/10 text-neon-blue">
+                <div className="p-2 rounded bg-white/5 border border-white/10 text-blue-400">
                     <Wand2 size={20} />
                 </div>
                 <div>
@@ -96,7 +96,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                 <div className="flex justify-between items-center mb-4">
                     <label className="text-[10px] font-mono text-slate-500 uppercase">Content Payload</label>
                     <div className="flex items-center gap-2">
-                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${status === 'APPROVED' ? 'text-neon-green border-neon-green/50 bg-neon-green/10' : status === 'PUBLISHED' ? 'text-neon-blue border-neon-blue/50 bg-neon-blue/10' : 'text-amber-400 border-amber-400/50 bg-amber-400/10'}`}>
+                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${status === 'APPROVED' ? 'text-green-500 border-green-500/50 bg-green-500/10' : status === 'PUBLISHED' ? 'text-blue-400 border-blue-500/50 bg-blue-500/10' : 'text-amber-400 border-amber-400/50 bg-amber-400/10'}`}>
                              {status}
                          </span>
                          <button onClick={handleCopy} className="text-slate-400 hover:text-white transition-colors">
@@ -107,14 +107,14 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                 <textarea 
                     value={editedBody}
                     onChange={(e) => setEditedBody(e.target.value)}
-                    className="flex-1 w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-slate-200 font-sans leading-relaxed resize-none focus:border-neon-blue outline-none transition-colors custom-scrollbar"
+                    className="flex-1 w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-slate-200 font-sans leading-relaxed resize-none focus:border-blue-500 outline-none transition-colors custom-scrollbar"
                 />
             </div>
 
             {/* AI Control Pane */}
             <div className="w-full md:w-80 bg-black/40 flex flex-col">
                 <div className="p-6 border-b border-white/5">
-                    <h4 className="text-xs font-bold text-neon-purple uppercase mb-4 flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-purple-500 uppercase mb-4 flex items-center gap-2">
                         <Sparkles size={14} /> AI Remix Engine
                     </h4>
                     
@@ -147,13 +147,13 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                                 value={instruction}
                                 onChange={(e) => setInstruction(e.target.value)}
                                 placeholder="e.g. Add more emojis..."
-                                className="flex-1 bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:border-neon-purple outline-none"
+                                className="flex-1 bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:border-purple-500 outline-none"
                                 onKeyDown={(e) => e.key === 'Enter' && handleRewrite()}
                             />
                             <button 
                                 onClick={handleRewrite}
                                 disabled={isRewriting || !instruction}
-                                className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50 rounded px-3 hover:bg-neon-purple/40 disabled:opacity-50"
+                                className="bg-purple-500/20 text-purple-500 border border-purple-500/50 rounded px-3 hover:bg-purple-500/40 disabled:opacity-50"
                             >
                                 {isRewriting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                             </button>
@@ -172,14 +172,14 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                          </button>
                          <button 
                              onClick={() => setStatus('APPROVED')}
-                             className={`py-2 rounded border text-xs font-bold uppercase transition-colors ${status === 'APPROVED' ? 'bg-neon-green/20 border-neon-green text-neon-green' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                             className={`py-2 rounded border text-xs font-bold uppercase transition-colors ${status === 'APPROVED' ? 'bg-green-500/20 border-green-500 text-green-500' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
                          >
                              Approve
                          </button>
                      </div>
                      <button 
                          onClick={() => setStatus('PUBLISHED')}
-                         className={`w-full py-2 rounded border text-xs font-bold uppercase transition-colors ${status === 'PUBLISHED' ? 'bg-neon-blue/20 border-neon-blue text-neon-blue' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                         className={`w-full py-2 rounded border text-xs font-bold uppercase transition-colors ${status === 'PUBLISHED' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
                      >
                          Mark Published
                      </button>
@@ -201,7 +201,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                 <button onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
                     Cancel
                 </button>
-                <button onClick={handleSave} className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
+                <button onClick={handleSave} className="px-6 py-2 bg-blue-500 text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
                     <Save size={16} /> Save Changes
                 </button>
             </div>

@@ -295,9 +295,9 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
       
       <div className="relative bg-[#0a0a0a] w-full max-w-5xl rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-neon-blue/10">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-blue-500/10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-neon-blue flex items-center justify-center shadow-[0_0_20px_rgba(188,19,254,0.4)]">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-[0_0_20px_rgba(188,19,254,0.4)]">
               <ImageIcon size={24} className="text-white" />
             </div>
             <div>
@@ -421,7 +421,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-neon-blue text-white font-bold rounded-lg flex items-center gap-2 hover:shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-lg flex items-center gap-2 hover:shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
                 >
                   {isGenerating ? (
                     <>

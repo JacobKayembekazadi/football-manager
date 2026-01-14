@@ -36,7 +36,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
   const getResultColor = () => {
      const us = isHome ? homeScore : awayScore;
      const them = isHome ? awayScore : homeScore;
-     if ((us || 0) > (them || 0)) return 'text-neon-green';
+     if ((us || 0) > (them || 0)) return 'text-green-500';
      if ((us || 0) < (them || 0)) return 'text-red-500';
      return 'text-slate-200';
   };
@@ -59,7 +59,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
             <div className="relative h-64 overflow-hidden border-b border-white/10 flex items-center justify-center shrink-0">
                  {/* Animated BG */}
                  <div className="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-20"></div>
-                 <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-blue to-transparent shadow-[0_0_20px_#00f3ff]"></div>
+                 <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.6)]"></div>
                  
                  <div className="relative z-10 flex flex-col items-center w-full">
                      <span className={`text-[10rem] font-display font-bold leading-none opacity-10 absolute select-none ${getResultColor()}`}>
@@ -69,10 +69,10 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                      <div className="flex items-center justify-between w-full max-w-3xl px-8 relative z-20">
                          {/* Home Team */}
                          <div className="text-center w-1/3">
-                             <h2 className={`text-4xl font-display font-bold ${isHome ? 'text-neon-blue' : 'text-white'}`}>
+                             <h2 className={`text-4xl font-display font-bold ${isHome ? 'text-blue-400' : 'text-white'}`}>
                                  {isHome ? club.name : fixture.opponent}
                              </h2>
-                             {isHome && <span className="text-xs font-mono text-neon-blue uppercase tracking-widest">[HOME]</span>}
+                             {isHome && <span className="text-xs font-mono text-blue-400 uppercase tracking-widest">[HOME]</span>}
                          </div>
 
                          {/* Scoreboard */}
@@ -88,10 +88,10 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
 
                          {/* Away Team */}
                          <div className="text-center w-1/3">
-                             <h2 className={`text-4xl font-display font-bold ${!isHome ? 'text-neon-blue' : 'text-white'}`}>
+                             <h2 className={`text-4xl font-display font-bold ${!isHome ? 'text-blue-400' : 'text-white'}`}>
                                  {!isHome ? club.name : fixture.opponent}
                              </h2>
-                             {!isHome && <span className="text-xs font-mono text-neon-blue uppercase tracking-widest">[AWAY]</span>}
+                             {!isHome && <span className="text-xs font-mono text-blue-400 uppercase tracking-widest">[AWAY]</span>}
                          </div>
                      </div>
                      
@@ -114,13 +114,13 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                     {/* Left: Report Narrative */}
                     <div className="lg:col-span-7 space-y-6">
                         <div className="flex items-center gap-2 mb-2">
-                             <Activity size={18} className="text-neon-blue" />
+                             <Activity size={18} className="text-blue-400" />
                              <h3 className="text-lg font-display font-bold text-white uppercase tracking-widest">Match Analysis</h3>
                         </div>
                         
                         {reportContent ? (
                             <div className="glass-card p-8 rounded-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-neon-blue to-transparent"></div>
+                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-transparent"></div>
                                 <div className="prose prose-invert prose-lg max-w-none font-sans leading-relaxed text-slate-200">
                                     <div className="whitespace-pre-line">{reportContent.body}</div>
                                 </div>
@@ -138,7 +138,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                         {/* Social Preview */}
                          <div className="mt-8">
                             <div className="flex items-center gap-2 mb-4">
-                                <Share2 size={18} className="text-neon-pink" />
+                                <Share2 size={18} className="text-amber-500" />
                                 <h3 className="text-lg font-display font-bold text-white uppercase tracking-widest">Social Media Protocol</h3>
                             </div>
                             <div className="grid gap-4">
@@ -152,7 +152,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                     {/* Right: Visual Stats */}
                     <div className="lg:col-span-5 space-y-6">
                          <div className="flex items-center gap-2 mb-2">
-                             <BarChart3 size={18} className="text-neon-green" />
+                             <BarChart3 size={18} className="text-green-500" />
                              <h3 className="text-lg font-display font-bold text-white uppercase tracking-widest">Telemetry</h3>
                         </div>
 
@@ -167,7 +167,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                                 <div className="flex items-center gap-4">
                                     <span className="text-2xl font-display font-bold text-white w-12 text-right">{stats.home_possession}%</span>
                                     <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden flex">
-                                        <div style={{ width: `${stats.home_possession}%` }} className="h-full bg-neon-blue shadow-[0_0_10px_#00f3ff]"></div>
+                                        <div style={{ width: `${stats.home_possession}%` }} className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                                         <div style={{ width: `${stats.away_possession}%` }} className="h-full bg-slate-700"></div>
                                     </div>
                                     <span className="text-2xl font-display font-bold text-slate-400 w-12">{stats.away_possession}%</span>
@@ -186,7 +186,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                                     <div className="flex-1 flex gap-1 h-8 items-end justify-center relative">
                                         {/* Simple visualization of shots comparison */}
                                         <div className="w-1/2 flex justify-end gap-1 items-end border-r border-white/10 pr-2">
-                                            <div style={{ height: `${Math.min(100, (stats.home_shots / 20) * 100)}%` }} className="w-4 bg-neon-blue rounded-t-sm shadow-[0_0_5px_#00f3ff]"></div>
+                                            <div style={{ height: `${Math.min(100, (stats.home_shots / 20) * 100)}%` }} className="w-4 bg-blue-500 rounded-t-sm shadow-[0_0_5px_rgba(59,130,246,0.5)]"></div>
                                         </div>
                                         <div className="w-1/2 flex justify-start gap-1 items-end pl-2">
                                             <div style={{ height: `${Math.min(100, (stats.away_shots / 20) * 100)}%` }} className="w-4 bg-slate-700 rounded-t-sm"></div>
@@ -199,7 +199,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                             {/* Momentum Chart (Mock Visualization) */}
                             <div className="pt-4 border-t border-white/5">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <TrendingUp size={14} className="text-neon-purple" />
+                                    <TrendingUp size={14} className="text-purple-500" />
                                     <span className="text-xs font-mono text-slate-400 uppercase">Match Momentum</span>
                                 </div>
                                 <div className="h-24 w-full flex items-end gap-1 opacity-80">
@@ -211,7 +211,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                                             <div 
                                                 key={i} 
                                                 style={{ height: `${height}%` }} 
-                                                className={`flex-1 rounded-t-[1px] ${isUs ? 'bg-neon-purple' : 'bg-slate-800'}`}
+                                                className={`flex-1 rounded-t-[1px] ${isUs ? 'bg-purple-500' : 'bg-slate-800'}`}
                                             ></div>
                                         )
                                     })}
@@ -231,7 +231,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
                             <div className="space-y-4">
                                 {fixture.scorers?.map((scorer, i) => (
                                     <div key={i} className="flex items-center gap-4">
-                                        <span className="text-neon-green font-mono text-xs">GOAL</span>
+                                        <span className="text-green-500 font-mono text-xs">GOAL</span>
                                         <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
                                         <span className="text-white font-bold text-sm">{scorer}</span>
                                     </div>

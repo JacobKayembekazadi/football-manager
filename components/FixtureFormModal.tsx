@@ -105,9 +105,9 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(0,243,255,0.1)] overflow-hidden animate-fade-in">
+      <div className="relative w-full max-w-lg mx-4 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(34,197,94,0.1)] overflow-hidden animate-fade-in">
         {/* Header gradient */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-purple-500 to-amber-500" />
 
         {/* Close button */}
         <button
@@ -142,7 +142,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
                   value={opponent}
                   onChange={(e) => setOpponent(e.target.value)}
                   placeholder="e.g., Manchester United"
-                  className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-neon-blue/50 focus:outline-none transition-colors"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-green-500/50 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -159,7 +159,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
                     type="date"
                     value={kickoffDate}
                     onChange={(e) => setKickoffDate(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white focus:border-neon-blue/50 focus:outline-none transition-colors"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white focus:border-green-500/50 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
                     type="time"
                     value={kickoffTime}
                     onChange={(e) => setKickoffTime(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white focus:border-neon-blue/50 focus:outline-none transition-colors"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white focus:border-green-500/50 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
                     onClick={() => setVenue(v)}
                     className={`flex-1 py-3 px-4 rounded-lg font-display font-bold uppercase tracking-wider text-sm transition-all flex items-center justify-center gap-2 ${
                       venue === v
-                        ? 'bg-neon-blue text-black'
+                        ? 'bg-green-500 text-black'
                         : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
                     }`}
                   >
@@ -213,7 +213,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
                 value={competition}
                 onChange={(e) => setCompetition(e.target.value)}
                 placeholder="e.g., Premier League, FA Cup"
-                className="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-slate-600 focus:border-neon-blue/50 focus:outline-none transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-slate-600 focus:border-green-500/50 focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -230,7 +230,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 py-3 px-4 bg-neon-blue text-black rounded-lg font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(0,243,255,0.35)] transition-all disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-green-500 text-black rounded-lg font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(34,197,94,0.35)] transition-all disabled:opacity-50"
             >
               {isSaving ? (
                 <>
