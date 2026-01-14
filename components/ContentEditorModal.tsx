@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ContentItem, Club } from '../types';
 import { rewriteContent } from '../services/geminiService';
 import { updateContentItem, deleteContentItem } from '../services/contentService';
+import { useToast } from './Toast';
 import { X, Save, Sparkles, Loader2, Check, Copy, Wand2, Trash2 } from 'lucide-react';
 
 interface ContentEditorModalProps {
@@ -14,6 +15,7 @@ interface ContentEditorModalProps {
 }
 
 const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onSave, onClose, onDelete }) => {
+  const toast = useToast();
   const [editedBody, setEditedBody] = useState(item.body);
   const [status, setStatus] = useState(item.status);
   const [instruction, setInstruction] = useState('');
@@ -23,7 +25,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this content?')) return;
-    
+
     setIsDeleting(true);
     try {
       if (onDelete) {
@@ -31,10 +33,11 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
       } else {
         await deleteContentItem(item.id);
       }
+      toast.success('Content deleted successfully.');
       onClose();
     } catch (error) {
       console.error('Error deleting content:', error);
-      alert('Failed to delete content. Please try again.');
+      toast.error('Failed to delete content. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -56,10 +59,11 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
         status,
       });
       onSave(updatedItem);
+      toast.success('Content saved successfully.');
       onClose();
     } catch (error) {
       console.error('Error saving content:', error);
-      alert('Failed to save content. Please try again.');
+      toast.error('Failed to save content. Please try again.');
     }
   };
 

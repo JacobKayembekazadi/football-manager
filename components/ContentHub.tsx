@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Club, ContentItem, Fixture, ContentGenStatus, ContentType } from '../types';
 import CommsArray from './CommsArray';
 import ContentPipeline from './ContentPipeline';
+import { useToast } from './Toast';
 import { FileText, Image, Calendar, Loader2, Plus, Sparkles } from 'lucide-react';
 import { generateContent } from '../services/geminiService';
 import { createContentItem } from '../services/contentService';
@@ -29,6 +30,7 @@ const ContentHub: React.FC<ContentHubProps> = ({
     onDeleteContent,
     onContentCreated,
 }) => {
+    const toast = useToast();
     const [activeSubTab, setActiveSubTab] = useState<SubTab>('posts');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatingSlot, setGeneratingSlot] = useState<string | null>(null);
@@ -62,7 +64,7 @@ const ContentHub: React.FC<ContentHubProps> = ({
             }
         } catch (error) {
             console.error('Error creating content:', error);
-            alert('Failed to generate content. Please try again.');
+            toast.error('Failed to generate content. Please try again.');
         } finally {
             setGeneratingSlot(null);
         }
@@ -72,7 +74,7 @@ const ContentHub: React.FC<ContentHubProps> = ({
     const handleAddContent = async () => {
         const upcomingFixtures = fixtures.filter(f => f.status === 'SCHEDULED');
         if (upcomingFixtures.length === 0) {
-            alert('No upcoming fixtures to create content for. Add a fixture first!');
+            toast.warning('No upcoming fixtures to create content for. Add a fixture first!');
             return;
         }
 
