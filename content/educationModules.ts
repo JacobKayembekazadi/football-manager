@@ -1,9 +1,11 @@
 /**
  * Education Modules
- * 
+ *
  * Defines the structured learning content for PitchSide AI.
  * Each module covers a specific use case with steps and navigation links.
  */
+
+export type ModuleCategory = 'getting-started' | 'content' | 'management' | 'integration';
 
 export interface EducationStep {
   title: string;
@@ -20,7 +22,33 @@ export interface EducationModule {
   estimatedTime: string;
   steps: EducationStep[];
   relatedTabs: string[];
+  category: ModuleCategory;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
+
+export const MODULE_CATEGORIES: { id: ModuleCategory; label: string; color: string }[] = [
+  { id: 'getting-started', label: 'Getting Started', color: 'green' },
+  { id: 'content', label: 'Content Creation', color: 'blue' },
+  { id: 'management', label: 'Management', color: 'purple' },
+  { id: 'integration', label: 'Integration', color: 'amber' },
+];
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  requirement: number; // Number of modules to complete
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+}
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'first-step', title: 'First Steps', description: 'Complete your first module', icon: 'Footprints', requirement: 1, tier: 'bronze' },
+  { id: 'getting-started', title: 'Quick Learner', description: 'Complete 3 modules', icon: 'Zap', requirement: 3, tier: 'silver' },
+  { id: 'halfway', title: 'Halfway There', description: 'Complete 4 modules', icon: 'Target', requirement: 4, tier: 'silver' },
+  { id: 'almost-done', title: 'Almost Pro', description: 'Complete 6 modules', icon: 'Star', requirement: 6, tier: 'gold' },
+  { id: 'master', title: 'PitchSide Master', description: 'Complete all modules', icon: 'Crown', requirement: 7, tier: 'platinum' },
+];
 
 export const EDUCATION_MODULES: EducationModule[] = [
   {
@@ -29,6 +57,8 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Set up your workspace with organizations and clubs to begin using PitchSide AI.',
     icon: 'Rocket',
     estimatedTime: '5 min',
+    category: 'getting-started',
+    difficulty: 'beginner',
     steps: [
       {
         title: 'Create your Organization',
@@ -46,10 +76,10 @@ export const EDUCATION_MODULES: EducationModule[] = [
         title: 'Explore the Command Center',
         description: 'Your dashboard shows upcoming fixtures, content tasks, and quick actions.',
         action: 'Go to Dashboard',
-        navigateTo: 'dashboard',
+        navigateTo: 'home',
       },
     ],
-    relatedTabs: ['dashboard', 'settings'],
+    relatedTabs: ['home', 'admin'],
   },
   {
     id: 'match-content',
@@ -57,12 +87,14 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Learn how to generate AI-powered match previews, reports, and social media posts.',
     icon: 'FileText',
     estimatedTime: '8 min',
+    category: 'content',
+    difficulty: 'intermediate',
     steps: [
       {
         title: 'Add fixtures to your schedule',
         description: 'Go to Match Schedule and add upcoming games with opponent, date, venue, and competition.',
-        action: 'Go to Fixtures',
-        navigateTo: 'fixtures',
+        action: 'Go to Match Hub',
+        navigateTo: 'match',
       },
       {
         title: 'Generate a match preview',
@@ -70,7 +102,7 @@ export const EDUCATION_MODULES: EducationModule[] = [
       },
       {
         title: 'Review and edit content',
-        description: 'All generated content appears in Holo-Content. Edit, approve, or regenerate as needed.',
+        description: 'All generated content appears in Content Hub. Edit, approve, or regenerate as needed.',
         action: 'Go to Content',
         navigateTo: 'content',
       },
@@ -83,7 +115,7 @@ export const EDUCATION_MODULES: EducationModule[] = [
         description: 'Generate platform-specific posts for Twitter, Instagram, or Facebook with one click.',
       },
     ],
-    relatedTabs: ['fixtures', 'content'],
+    relatedTabs: ['match', 'content'],
   },
   {
     id: 'squad-management',
@@ -91,10 +123,12 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Manage player profiles, stats, form ratings, and AI-generated analysis.',
     icon: 'Users',
     estimatedTime: '6 min',
+    category: 'management',
+    difficulty: 'beginner',
     steps: [
       {
         title: 'Add players to your squad',
-        description: 'Go to Squad Bio-Metrics and add players with position, number, and basic stats.',
+        description: 'Go to Squad and add players with position, number, and basic stats.',
         action: 'Go to Squad',
         navigateTo: 'squad',
       },
@@ -123,12 +157,14 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Connect Gmail or Outlook to manage club communications in one unified inbox.',
     icon: 'Inbox',
     estimatedTime: '7 min',
+    category: 'integration',
+    difficulty: 'intermediate',
     steps: [
       {
-        title: 'Navigate to Intel Inbox',
-        description: 'Go to the Inbox section in the sidebar.',
-        action: 'Go to Inbox',
-        navigateTo: 'inbox',
+        title: 'Navigate to Content Hub',
+        description: 'Go to the Content section in the navigation.',
+        action: 'Go to Content',
+        navigateTo: 'content',
       },
       {
         title: 'Connect your email provider',
@@ -147,7 +183,7 @@ export const EDUCATION_MODULES: EducationModule[] = [
         description: 'Send replies directly from PitchSide AI. Emails are sent via your connected account.',
       },
     ],
-    relatedTabs: ['inbox'],
+    relatedTabs: ['content'],
   },
   {
     id: 'ai-settings',
@@ -155,6 +191,8 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Configure AI settings: use managed AI or bring your own API key (BYOK).',
     icon: 'Sparkles',
     estimatedTime: '4 min',
+    category: 'integration',
+    difficulty: 'advanced',
     steps: [
       {
         title: 'Understand AI modes',
@@ -162,9 +200,9 @@ export const EDUCATION_MODULES: EducationModule[] = [
       },
       {
         title: 'Access AI settings',
-        description: 'Go to Settings to configure AI at the organization or club level.',
-        action: 'Go to Settings',
-        navigateTo: 'settings',
+        description: 'Go to Admin to configure AI at the organization or club level.',
+        action: 'Go to Admin',
+        navigateTo: 'admin',
       },
       {
         title: 'Organization-level settings',
@@ -176,10 +214,10 @@ export const EDUCATION_MODULES: EducationModule[] = [
       },
       {
         title: 'Usage tracking',
-        description: 'View AI usage stats in Settings to monitor token consumption.',
+        description: 'View AI usage stats in Admin to monitor token consumption.',
       },
     ],
-    relatedTabs: ['settings'],
+    relatedTabs: ['admin'],
   },
   {
     id: 'sponsor-management',
@@ -187,11 +225,13 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Track sponsors, contracts, and commercial relationships.',
     icon: 'Briefcase',
     estimatedTime: '5 min',
+    category: 'management',
+    difficulty: 'intermediate',
     steps: [
       {
-        title: 'Navigate to Sponsor Nexus',
-        description: 'Go to the Sponsor Nexus section in the sidebar.',
-        action: 'Go to Sponsors',
+        title: 'Navigate to Commercial',
+        description: 'Go to the Commercial section in the navigation.',
+        action: 'Go to Commercial',
         navigateTo: 'commercial',
       },
       {
@@ -215,24 +255,26 @@ export const EDUCATION_MODULES: EducationModule[] = [
     description: 'Manage administrative tasks, action items, and club operations.',
     icon: 'ShieldAlert',
     estimatedTime: '4 min',
+    category: 'management',
+    difficulty: 'advanced',
     steps: [
       {
-        title: 'Navigate to HQ Operations',
-        description: 'Go to the HQ Operations section in the sidebar.',
+        title: 'Navigate to Admin',
+        description: 'Go to the Admin section in the navigation.',
         action: 'Go to Admin',
         navigateTo: 'admin',
       },
       {
-        title: 'Create tasks',
-        description: 'Add tasks with title, due date, priority, and assignee.',
+        title: 'View system health',
+        description: 'Monitor API status, database connections, and storage usage.',
       },
       {
-        title: 'Track task status',
-        description: 'Update tasks as Pending, In Progress, or Complete.',
+        title: 'Track AI usage',
+        description: 'View AI usage statistics and feature breakdown charts.',
       },
       {
-        title: 'Review email summaries',
-        description: 'See a summary of recent inbox activity requiring attention.',
+        title: 'Export data',
+        description: 'Download usage reports and audit logs as CSV files.',
       },
     ],
     relatedTabs: ['admin'],
@@ -252,6 +294,65 @@ export const getModuleById = (id: string): EducationModule | undefined => {
 export const calculateProgress = (completedModules: string[]): number => {
   if (EDUCATION_MODULES.length === 0) return 0;
   return Math.round((completedModules.length / EDUCATION_MODULES.length) * 100);
+};
+
+/**
+ * Get modules by category
+ */
+export const getModulesByCategory = (category: ModuleCategory): EducationModule[] => {
+  return EDUCATION_MODULES.filter(m => m.category === category);
+};
+
+/**
+ * Get unlocked achievements based on completed modules
+ */
+export const getUnlockedAchievements = (completedModules: string[]): Achievement[] => {
+  const count = completedModules.length;
+  return ACHIEVEMENTS.filter(a => count >= a.requirement);
+};
+
+/**
+ * Get next achievement to unlock
+ */
+export const getNextAchievement = (completedModules: string[]): Achievement | null => {
+  const count = completedModules.length;
+  return ACHIEVEMENTS.find(a => count < a.requirement) || null;
+};
+
+/**
+ * Calculate total estimated time remaining
+ */
+export const calculateTimeRemaining = (completedModules: string[]): string => {
+  const incompleteModules = EDUCATION_MODULES.filter(m => !completedModules.includes(m.id));
+  const totalMinutes = incompleteModules.reduce((sum, m) => {
+    const mins = parseInt(m.estimatedTime.replace(/[^0-9]/g, ''), 10);
+    return sum + (isNaN(mins) ? 0 : mins);
+  }, 0);
+
+  if (totalMinutes === 0) return 'Complete!';
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
+/**
+ * Get recommended next module
+ */
+export const getRecommendedModule = (completedModules: string[]): EducationModule | null => {
+  // Priority: getting-started category first, then by difficulty
+  const incomplete = EDUCATION_MODULES.filter(m => !completedModules.includes(m.id));
+  if (incomplete.length === 0) return null;
+
+  // First check for getting-started category
+  const gettingStarted = incomplete.find(m => m.category === 'getting-started');
+  if (gettingStarted) return gettingStarted;
+
+  // Then prioritize by difficulty
+  const difficultyOrder = ['beginner', 'intermediate', 'advanced'];
+  return incomplete.sort((a, b) =>
+    difficultyOrder.indexOf(a.difficulty) - difficultyOrder.indexOf(b.difficulty)
+  )[0];
 };
 
 
