@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
-import { Club, Sponsor } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Club, Sponsor, SponsorROI } from '../types';
 import { generateSponsorReport, generateSponsorActivation, generateRenewalPitch } from '../services/geminiService';
-import { saveSponsorContent, createSponsor, deleteSponsor } from '../services/sponsorService';
+import { saveSponsorContent, createSponsor, deleteSponsor, updateSponsor } from '../services/sponsorService';
 import { generatePartnerValueReport } from '../services/sponsorPdfService';
 import SponsorFormModal from './SponsorFormModal';
-import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2, FileDown } from 'lucide-react';
+import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2, FileDown, Search, Filter, Edit2, X } from 'lucide-react';
 
 interface SponsorNexusProps {
   club: Club;
@@ -13,29 +13,140 @@ interface SponsorNexusProps {
   onRefetchSponsors?: () => Promise<void>;
 }
 
-const RevenueChart = () => (
-    <div className="h-16 flex items-end gap-1 w-full opacity-50">
-        {[40, 65, 45, 70, 55, 80, 60, 90, 75, 85, 95, 100].map((h, i) => (
-            <div key={i} className="flex-1 bg-yellow-400 rounded-t-sm" style={{height: `${h}%`, opacity: i/12 + 0.2}}></div>
-        ))}
-    </div>
-);
+// Dynamic Revenue Chart based on sponsor values
+const RevenueChart: React.FC<{ sponsors: Sponsor[] }> = ({ sponsors }) => {
+    // Parse sponsor values and create chart data
+    const chartData = useMemo(() => {
+        if (sponsors.length === 0) return Array(12).fill(20);
+
+        // Create monthly distribution based on sponsor values
+        const values = sponsors.map(s => {
+            const match = s.value.match(/[\d,]+/);
+            return match ? parseInt(match[0].replace(/,/g, '')) : 0;
+        });
+        const maxVal = Math.max(...values, 1);
+
+        // Simulate monthly growth pattern
+        return Array(12).fill(0).map((_, i) => {
+            const baseValue = values.reduce((sum, v) => sum + v, 0) / values.length;
+            const variation = Math.sin(i / 2) * 20 + Math.random() * 15;
+            return Math.min(100, Math.max(20, ((baseValue / maxVal) * 60) + variation + (i * 3)));
+        });
+    }, [sponsors]);
+
+    return (
+        <div className="h-16 flex items-end gap-1 w-full opacity-50">
+            {chartData.map((h, i) => (
+                <div key={i} className="flex-1 bg-yellow-400 rounded-t-sm" style={{height: `${h}%`, opacity: i/12 + 0.3}}></div>
+            ))}
+        </div>
+    );
+};
 
 const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSponsors }) => {
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [activeTab, setActiveTab] = useState<'ROI' | 'CREATIVE' | 'NEGOTIATION'>('ROI');
-  
+
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // CRUD State
   const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterTier, setFilterTier] = useState<'ALL' | 'Platinum' | 'Gold' | 'Silver'>('ALL');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'Active' | 'Expiring' | 'Negotiating'>('ALL');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // ROI Form State
+  const [roiImpressions, setRoiImpressions] = useState<number | ''>('');
+  const [roiEngagement, setRoiEngagement] = useState<number | ''>('');
+  const [roiClicks, setRoiClicks] = useState<number | ''>('');
+  const [roiConversions, setRoiConversions] = useState<number | ''>('');
+  const [isSavingRoi, setIsSavingRoi] = useState(false);
+
+  // Sync ROI form when sponsor changes
+  useEffect(() => {
+    if (selectedSponsor?.roi) {
+      setRoiImpressions(selectedSponsor.roi.impressions || '');
+      setRoiEngagement(selectedSponsor.roi.engagement_rate || '');
+      setRoiClicks(selectedSponsor.roi.clicks || '');
+      setRoiConversions(selectedSponsor.roi.conversions || '');
+    } else {
+      setRoiImpressions('');
+      setRoiEngagement('');
+      setRoiClicks('');
+      setRoiConversions('');
+    }
+  }, [selectedSponsor]);
+
+  // Calculate total revenue from sponsors
+  const totalRevenue = useMemo(() => {
+    return sponsors.reduce((sum, s) => {
+      const match = s.value.match(/[\d,]+/);
+      return sum + (match ? parseInt(match[0].replace(/,/g, '')) : 0);
+    }, 0);
+  }, [sponsors]);
+
+  // Filter sponsors
+  const filteredSponsors = useMemo(() => {
+    return sponsors.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           s.sector.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTier = filterTier === 'ALL' || s.tier === filterTier;
+      const matchesStatus = filterStatus === 'ALL' || s.status === filterStatus;
+      return matchesSearch && matchesTier && matchesStatus;
+    });
+  }, [sponsors, searchQuery, filterTier, filterStatus]);
 
   const handleCreateSponsor = async (sponsor: Omit<Sponsor, 'id'>) => {
     await createSponsor(club.id, sponsor);
     if (onRefetchSponsors) await onRefetchSponsors();
+  };
+
+  const handleUpdateSponsor = async (sponsor: Omit<Sponsor, 'id'>) => {
+    if (!editingSponsor) return;
+    await updateSponsor(editingSponsor.id, sponsor);
+    if (onRefetchSponsors) await onRefetchSponsors();
+    // Update selected sponsor if it was the one being edited
+    if (selectedSponsor?.id === editingSponsor.id) {
+      setSelectedSponsor({ ...editingSponsor, ...sponsor });
+    }
+    setEditingSponsor(null);
+  };
+
+  const handleSaveRoi = async () => {
+    if (!selectedSponsor) return;
+    setIsSavingRoi(true);
+    try {
+      const roiData: SponsorROI = {
+        impressions: roiImpressions === '' ? undefined : roiImpressions,
+        engagement_rate: roiEngagement === '' ? undefined : roiEngagement,
+        clicks: roiClicks === '' ? undefined : roiClicks,
+        conversions: roiConversions === '' ? undefined : roiConversions,
+        period_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        period_end: new Date().toISOString(),
+      };
+      await updateSponsor(selectedSponsor.id, { roi: roiData });
+      if (onRefetchSponsors) await onRefetchSponsors();
+      // Update local state
+      setSelectedSponsor({ ...selectedSponsor, roi: roiData });
+    } catch (error) {
+      console.error('Error saving ROI:', error);
+      alert('Failed to save ROI data. Please try again.');
+    } finally {
+      setIsSavingRoi(false);
+    }
+  };
+
+  const handleEditSponsor = (sponsor: Sponsor, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSponsor(sponsor);
+    setIsSponsorModalOpen(true);
   };
 
   const handleDeleteSponsor = async (sponsorId: string, e: React.MouseEvent) => {
@@ -100,27 +211,100 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                     <h2 className="text-3xl font-display font-bold text-white glow-text">SPONSOR <span className="text-yellow-400">NEXUS</span></h2>
                     <p className="text-slate-400 font-mono text-xs mt-1">Commercial Partnerships & ROI Tracking.</p>
                 </div>
-                <button 
-                    onClick={() => setIsSponsorModalOpen(true)}
+                <button
+                    onClick={() => { setEditingSponsor(null); setIsSponsorModalOpen(true); }}
                     data-tour="add-sponsor-btn"
                     className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/50 text-yellow-400 px-5 py-3 rounded-xl font-display font-bold uppercase text-xs hover:bg-yellow-500/20 transition-all shadow-[0_0_15px_rgba(234,179,8,0.2)] hover:shadow-[0_0_25px_rgba(234,179,8,0.4)]"
                 >
                     <Plus size={16} /> Add Sponsor
                 </button>
             </div>
-            
+
             <div className="glass-card p-4 rounded-xl border border-yellow-400/20 relative overflow-hidden flex items-center justify-between">
                 <div className="relative z-10">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase">Projected Revenue</span>
-                    <div className="text-2xl font-display font-bold text-white">£275,000</div>
+                    <span className="text-[10px] font-mono text-slate-500 uppercase">Total Portfolio Value</span>
+                    <div className="text-2xl font-display font-bold text-white">£{totalRevenue.toLocaleString()}</div>
                     <div className="text-[10px] text-green-400 font-mono flex items-center gap-1">
-                        <TrendingUp size={10} /> +12% YoY
+                        <TrendingUp size={10} /> {sponsors.length} Active Partners
                     </div>
                 </div>
                 <div className="w-32 h-12 relative z-0">
-                    <RevenueChart />
+                    <RevenueChart sponsors={sponsors} />
                 </div>
             </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search sponsors..."
+                    className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-yellow-500/50 outline-none"
+                />
+                {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                        <X size={14} />
+                    </button>
+                )}
+            </div>
+
+            <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs font-bold uppercase transition-all ${
+                    showFilters || filterTier !== 'ALL' || filterStatus !== 'ALL'
+                        ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-400'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                }`}
+            >
+                <Filter size={14} />
+                Filters
+                {(filterTier !== 'ALL' || filterStatus !== 'ALL') && (
+                    <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                )}
+            </button>
+
+            {showFilters && (
+                <div className="flex gap-2 animate-fade-in">
+                    <select
+                        value={filterTier}
+                        onChange={(e) => setFilterTier(e.target.value as any)}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-yellow-500/50 outline-none"
+                    >
+                        <option value="ALL">All Tiers</option>
+                        <option value="Platinum">Platinum</option>
+                        <option value="Gold">Gold</option>
+                        <option value="Silver">Silver</option>
+                    </select>
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value as any)}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-yellow-500/50 outline-none"
+                    >
+                        <option value="ALL">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Expiring">Expiring</option>
+                        <option value="Negotiating">Negotiating</option>
+                    </select>
+                    {(filterTier !== 'ALL' || filterStatus !== 'ALL') && (
+                        <button
+                            onClick={() => { setFilterTier('ALL'); setFilterStatus('ALL'); }}
+                            className="text-xs text-slate-400 hover:text-white px-2"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {filteredSponsors.length !== sponsors.length && (
+                <span className="text-xs text-slate-500 font-mono">
+                    Showing {filteredSponsors.length} of {sponsors.length}
+                </span>
+            )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
@@ -139,18 +323,18 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                         </button>
                     </div>
                 )}
-                {sponsors.map(sponsor => {
+                {filteredSponsors.map(sponsor => {
                     const health = calculateHealth(sponsor);
                     return (
-                        <div 
-                            key={sponsor.id} 
+                        <div
+                            key={sponsor.id}
                             onClick={() => { setSelectedSponsor(sponsor); setGeneratedContent(''); setActiveTab('ROI'); }}
                             className={`glass-card p-6 rounded-xl border transition-all group relative overflow-hidden cursor-pointer ${selectedSponsor?.id === sponsor.id ? 'border-yellow-400 bg-yellow-400/5' : 'border-white/5 hover:border-yellow-400/30'}`}
                         >
                             <div className="absolute top-0 right-0 p-4 opacity-5">
                                 <DollarSign size={80} />
                             </div>
-                            
+
                             <div className="flex justify-between items-start mb-4 relative z-10">
                                 <div className="w-12 h-12 rounded bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center font-display font-bold text-xl text-white">
                                     {sponsor.logo_initials}
@@ -159,6 +343,13 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border block ${getTierColor(sponsor.tier)}`}>
                                         {sponsor.tier}
                                     </span>
+                                    <button
+                                        onClick={(e) => handleEditSponsor(sponsor, e)}
+                                        className="p-1 text-slate-400/40 hover:text-yellow-400 hover:bg-yellow-500/10 rounded transition-all opacity-0 group-hover:opacity-100"
+                                        title="Edit sponsor"
+                                    >
+                                        <Edit2 size={12} />
+                                    </button>
                                     <button
                                         onClick={(e) => handleDeleteSponsor(sponsor.id, e)}
                                         disabled={deletingId === sponsor.id}
@@ -259,34 +450,55 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                                      <div className="mb-6 space-y-3">
                                          <h4 className="text-xs font-mono text-slate-500 uppercase">Update ROI Metrics</h4>
                                          <div className="grid grid-cols-2 gap-3">
-                                             <input
-                                                 type="number"
-                                                 placeholder="Impressions"
-                                                 defaultValue={selectedSponsor.roi?.impressions}
-                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
-                                             />
-                                             <input
-                                                 type="number"
-                                                 step="0.1"
-                                                 placeholder="Engagement Rate %"
-                                                 defaultValue={selectedSponsor.roi?.engagement_rate}
-                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
-                                             />
-                                             <input
-                                                 type="number"
-                                                 placeholder="Clicks"
-                                                 defaultValue={selectedSponsor.roi?.clicks}
-                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
-                                             />
-                                             <input
-                                                 type="number"
-                                                 placeholder="Conversions"
-                                                 defaultValue={selectedSponsor.roi?.conversions}
-                                                 className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
-                                             />
+                                             <div>
+                                                 <label className="text-[9px] text-slate-600 uppercase block mb-1">Impressions</label>
+                                                 <input
+                                                     type="number"
+                                                     placeholder="0"
+                                                     value={roiImpressions}
+                                                     onChange={(e) => setRoiImpressions(e.target.value ? parseInt(e.target.value) : '')}
+                                                     className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                                 />
+                                             </div>
+                                             <div>
+                                                 <label className="text-[9px] text-slate-600 uppercase block mb-1">Engagement %</label>
+                                                 <input
+                                                     type="number"
+                                                     step="0.1"
+                                                     placeholder="0.0"
+                                                     value={roiEngagement}
+                                                     onChange={(e) => setRoiEngagement(e.target.value ? parseFloat(e.target.value) : '')}
+                                                     className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                                 />
+                                             </div>
+                                             <div>
+                                                 <label className="text-[9px] text-slate-600 uppercase block mb-1">Clicks</label>
+                                                 <input
+                                                     type="number"
+                                                     placeholder="0"
+                                                     value={roiClicks}
+                                                     onChange={(e) => setRoiClicks(e.target.value ? parseInt(e.target.value) : '')}
+                                                     className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                                 />
+                                             </div>
+                                             <div>
+                                                 <label className="text-[9px] text-slate-600 uppercase block mb-1">Conversions</label>
+                                                 <input
+                                                     type="number"
+                                                     placeholder="0"
+                                                     value={roiConversions}
+                                                     onChange={(e) => setRoiConversions(e.target.value ? parseInt(e.target.value) : '')}
+                                                     className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-yellow-400 outline-none"
+                                                 />
+                                             </div>
                                          </div>
-                                         <button className="w-full py-2 bg-yellow-400/10 border border-yellow-400/50 text-yellow-400 rounded text-xs font-bold uppercase hover:bg-yellow-400/20 transition-colors">
-                                             Save ROI Data
+                                         <button
+                                             onClick={handleSaveRoi}
+                                             disabled={isSavingRoi}
+                                             className="w-full py-2 bg-yellow-400/10 border border-yellow-400/50 text-yellow-400 rounded text-xs font-bold uppercase hover:bg-yellow-400/20 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                         >
+                                             {isSavingRoi ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                             {isSavingRoi ? 'Saving...' : 'Save ROI Data'}
                                          </button>
                                      </div>
 
@@ -414,8 +626,9 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
         {/* Sponsor Form Modal */}
         <SponsorFormModal
             isOpen={isSponsorModalOpen}
-            onClose={() => setIsSponsorModalOpen(false)}
-            onSave={handleCreateSponsor}
+            onClose={() => { setIsSponsorModalOpen(false); setEditingSponsor(null); }}
+            onSave={editingSponsor ? handleUpdateSponsor : handleCreateSponsor}
+            editingSponsor={editingSponsor}
         />
     </div>
   );
