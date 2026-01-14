@@ -1511,6 +1511,9 @@ const AppAuthed: React.FC<{
         {activeTab === 'admin' && currentClub && (
           <SettingsView club={currentClub} />
         )}
+        {activeTab === 'education' && currentClub && currentClub.org_id && (
+          <EducationView orgId={currentClub.org_id} onNavigate={setActiveTab} />
+        )}
         {currentClub && <AiAssistant club={currentClub} />}
 
         {/* Onboarding Manager - handles welcome modal + tour */}

@@ -121,7 +121,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
         key={module.id}
         className={`glass-card rounded-xl border transition-all duration-300 ${
           isCompleted
-            ? 'border-neon-green/30 bg-neon-green/5'
+            ? 'border-green-500/30 bg-green-500/5'
             : 'border-white/10 hover:border-white/20'
         }`}
       >
@@ -135,13 +135,13 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
             <div
               className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 isCompleted
-                  ? 'bg-neon-green/20 border border-neon-green/30'
+                  ? 'bg-green-500/20 border border-green-500/30'
                   : 'bg-white/5 border border-white/10'
               }`}
             >
               <Icon
                 size={24}
-                className={isCompleted ? 'text-neon-green' : 'text-neon-blue'}
+                className={isCompleted ? 'text-green-500' : 'text-blue-400'}
               />
             </div>
 
@@ -152,7 +152,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
                   {module.title}
                 </h3>
                 {isCompleted && (
-                  <CheckCircle size={16} className="text-neon-green flex-shrink-0" />
+                  <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
                 )}
               </div>
               <p className="text-sm text-slate-400 line-clamp-2">{module.description}</p>
@@ -183,7 +183,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         isCompleted
-                          ? 'bg-neon-green/20 text-neon-green border border-neon-green/30'
+                          ? 'bg-green-500/20 text-green-500 border border-green-500/30'
                           : 'bg-white/5 text-slate-400 border border-white/10'
                       }`}
                     >
@@ -192,7 +192,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
                     {idx < module.steps.length - 1 && (
                       <div
                         className={`w-px flex-1 my-1 ${
-                          isCompleted ? 'bg-neon-green/30' : 'bg-white/10'
+                          isCompleted ? 'bg-green-500/30' : 'bg-white/10'
                         }`}
                       />
                     )}
@@ -206,7 +206,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
                           e.stopPropagation();
                           handleNavigate(step.navigateTo!);
                         }}
-                        className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-neon-blue hover:text-white transition-colors uppercase"
+                        className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 hover:text-white transition-colors uppercase"
                       >
                         {step.action} <ArrowRight size={12} />
                       </button>
@@ -225,7 +225,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
               className={`w-full py-2.5 rounded-lg font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all ${
                 isCompleted
                   ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                  : 'bg-neon-green text-black hover:shadow-[0_0_20px_rgba(0,255,136,0.35)]'
+                  : 'bg-green-500 text-black hover:shadow-[0_0_20px_rgba(34,197,94,0.35)]'
               }`}
             >
               {isCompleted ? (
@@ -247,7 +247,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-neon-blue border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -258,7 +258,7 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold text-white uppercase tracking-widest flex items-center gap-3">
-            <BookOpen className="text-neon-blue" size={28} />
+            <BookOpen className="text-blue-400" size={28} />
             Education Center
           </h1>
           <p className="text-sm text-slate-400 mt-1">
@@ -270,9 +270,9 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
         <div className="flex items-center gap-4">
           {/* Progress Badge */}
           <div className="flex items-center gap-3 px-4 py-2 bg-black/40 rounded-full border border-white/10">
-            <Trophy size={16} className={progress === 100 ? 'text-neon-green' : 'text-slate-500'} />
+            <Trophy size={16} className={progress === 100 ? 'text-green-500' : 'text-slate-500'} />
             <div className="text-xs font-mono">
-              <span className={progress === 100 ? 'text-neon-green' : 'text-white'}>{progress}%</span>
+              <span className={progress === 100 ? 'text-green-500' : 'text-white'}>{progress}%</span>
               <span className="text-slate-500"> complete</span>
             </div>
           </div>
@@ -298,13 +298,13 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
         </div>
         <div className="h-2 bg-black/40 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-neon-blue to-neon-green rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-blue-400 to-green-500 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
         {progress === 100 && (
-          <p className="text-xs text-neon-green font-mono mt-2 text-center animate-pulse">
-            🎉 Congratulations! You've completed all modules!
+          <p className="text-xs text-green-500 font-mono mt-2 text-center animate-pulse">
+            Congratulations! You've completed all modules!
           </p>
         )}
       </div>
@@ -315,26 +315,26 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
       </div>
 
       {/* Quick Tips */}
-      <div className="glass-card p-5 rounded-xl border border-neon-purple/20 bg-neon-purple/5">
+      <div className="glass-card p-5 rounded-xl border border-purple-500/20 bg-purple-500/5">
         <h3 className="font-display font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2">
-          <Sparkles className="text-neon-purple" size={18} />
+          <Sparkles className="text-purple-500" size={18} />
           Pro Tips
         </h3>
         <ul className="space-y-2 text-sm text-slate-300">
           <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
+            <span className="text-purple-500">•</span>
             Use the AI Assistant (bottom-right) for quick questions anytime
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
+            <span className="text-purple-500">•</span>
             Set your club's tone in Settings for consistent AI-generated content
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
+            <span className="text-purple-500">•</span>
             Connect email early – the inbox becomes your communication hub
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
+            <span className="text-purple-500">•</span>
             Update player form ratings after each match for accurate analysis
           </li>
         </ul>

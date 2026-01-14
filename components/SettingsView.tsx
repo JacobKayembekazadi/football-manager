@@ -206,7 +206,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-display font-bold text-white glow-text">
-          SETTINGS <span className="text-neon-blue">OPS</span>
+          SETTINGS <span className="text-blue-400">OPS</span>
         </h2>
         <p className="text-slate-400 font-mono text-xs mt-1">
           Configure AI mode (managed vs BYOK). Club overrides org.
@@ -231,43 +231,43 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
 
       {/* AI Usage Analytics */}
       {usageStats && (
-        <div className="glass-card p-6 rounded-2xl border border-neon-blue/20 space-y-6">
+        <div className="glass-card p-6 rounded-2xl border border-blue-500/20 space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
-                <BarChart3 size={18} className="text-neon-blue" />
+                <BarChart3 size={18} className="text-blue-400" />
                 AI Usage Analytics
               </h3>
               <p className="text-[10px] text-slate-500 font-mono mt-1">
                 Club-level AI consumption metrics
               </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-neon-blue/10 border border-neon-blue/30 rounded-lg">
-              <Activity size={14} className="text-neon-blue animate-pulse" />
-              <span className="text-xs font-mono text-neon-blue uppercase font-bold">Live Data</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <Activity size={14} className="text-blue-400 animate-pulse" />
+              <span className="text-xs font-mono text-blue-400 uppercase font-bold">Live Data</span>
             </div>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Requests */}
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-neon-blue/30 transition-colors">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
               <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                <Zap size={40} className="text-neon-blue" />
+                <Zap size={40} className="text-blue-400" />
               </div>
               <div className="relative z-10">
                 <p className="text-[10px] font-mono text-slate-500 uppercase mb-2">Total Requests</p>
                 <p className="text-3xl font-display font-bold text-white">{usageStats.totalRequests.toLocaleString()}</p>
                 <div className="mt-2 text-[10px] text-slate-400 font-mono">
-                  Last 7d: <span className="text-neon-blue">{usageStats.last7Days}</span>
+                  Last 7d: <span className="text-blue-400">{usageStats.last7Days}</span>
                 </div>
               </div>
             </div>
 
             {/* Text Generation */}
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-neon-purple/30 transition-colors">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-purple-500/30 transition-colors">
               <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                <MessageSquare size={40} className="text-neon-purple" />
+                <MessageSquare size={40} className="text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-[10px] font-mono text-slate-500 uppercase mb-2">Text Gen</p>
@@ -279,9 +279,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             </div>
 
             {/* Image Generation */}
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-neon-pink/30 transition-colors">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
               <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                <ImageIcon size={40} className="text-neon-pink" />
+                <ImageIcon size={40} className="text-amber-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-[10px] font-mono text-slate-500 uppercase mb-2">Image Gen</p>
@@ -293,9 +293,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             </div>
 
             {/* Activity Trend */}
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-neon-green/30 transition-colors">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 relative overflow-hidden group hover:border-green-500/30 transition-colors">
               <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                <TrendingUp size={40} className="text-neon-green" />
+                <TrendingUp size={40} className="text-green-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-[10px] font-mono text-slate-500 uppercase mb-2">30-Day Activity</p>
@@ -318,7 +318,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
                 <p className="text-xs text-slate-400 font-mono mb-1">characters</p>
               </div>
               <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-neon-blue to-cyan-400 rounded-full" style={{ width: '75%' }}></div>
+                <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style={{ width: '75%' }}></div>
               </div>
             </div>
 
@@ -331,7 +331,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
                 <p className="text-xs text-slate-400 font-mono mb-1">characters</p>
               </div>
               <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-neon-purple to-neon-pink rounded-full" style={{ width: '60%' }}></div>
+                <div className="h-full bg-gradient-to-r from-purple-500 to-amber-500 rounded-full" style={{ width: '60%' }}></div>
               </div>
             </div>
           </div>
@@ -356,7 +356,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
               key={m}
               onClick={() => setOrgMode(m)}
               className={`px-4 py-3 rounded-lg border text-xs font-bold uppercase transition-colors ${
-                orgMode === m ? 'border-neon-blue/50 bg-neon-blue/10 text-white' : 'border-white/10 text-slate-400 hover:text-white'
+                orgMode === m ? 'border-blue-500/50 bg-blue-500/10 text-white' : 'border-white/10 text-slate-400 hover:text-white'
               }`}
             >
               {m}
@@ -369,7 +369,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
           <input
             value={orgByokKey}
             onChange={(e) => setOrgByokKey(e.target.value)}
-            className="w-full mt-1 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-blue outline-none"
+            className="w-full mt-1 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-blue-500 outline-none"
             placeholder="Paste Gemini API key (stored encrypted)"
           />
           <p className="text-[10px] font-mono text-slate-500 mt-2">
@@ -380,7 +380,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
         <button
           onClick={saveOrg}
           disabled={!orgId}
-          className="w-full py-3 rounded-lg bg-neon-blue text-black font-display font-bold uppercase tracking-widest disabled:opacity-50"
+          className="w-full py-3 rounded-lg bg-blue-500 text-black font-display font-bold uppercase tracking-widest disabled:opacity-50"
         >
           Save Org AI Settings
         </button>
@@ -397,7 +397,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
               key={m}
               onClick={() => setClubMode(m)}
               className={`px-4 py-3 rounded-lg border text-xs font-bold uppercase transition-colors ${
-                clubMode === m ? 'border-neon-purple/50 bg-neon-purple/10 text-white' : 'border-white/10 text-slate-400 hover:text-white'
+                clubMode === m ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 text-slate-400 hover:text-white'
               }`}
             >
               {m}
@@ -411,7 +411,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             <input
               value={clubByokKey}
               onChange={(e) => setClubByokKey(e.target.value)}
-              className="w-full mt-1 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-blue outline-none"
+              className="w-full mt-1 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-blue-500 outline-none"
               placeholder="Paste club-specific Gemini key (stored encrypted)"
             />
           </div>
@@ -419,7 +419,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
 
         <button
           onClick={saveClub}
-          className="w-full py-3 rounded-lg bg-neon-purple text-white font-display font-bold uppercase tracking-widest"
+          className="w-full py-3 rounded-lg bg-purple-500 text-white font-display font-bold uppercase tracking-widest"
         >
           Save Club AI Settings
         </button>
