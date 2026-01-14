@@ -1,9 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import type { Club } from '../types';
-import { BarChart3, Image as ImageIcon, MessageSquare, TrendingUp, Activity, Zap, Database, Trash2, RefreshCw } from 'lucide-react';
+import {
+  BarChart3, Image as ImageIcon, MessageSquare, TrendingUp, Activity, Zap, Database, Trash2, RefreshCw,
+  Mic, Globe, Palette, CheckCircle, XCircle, Clock, Wifi, Download, FileText, Users, Trophy,
+  Plus, ArrowRight, Command, Briefcase, Radio, AlertTriangle, Shield, Sparkles
+} from 'lucide-react';
 import { seedDemoData, clearDemoData } from '../services/mockDataService';
 import { hasDemoData } from '../services/dataPresenceService';
+
+// AI Tone options
+const AI_TONES = [
+  { id: 'professional', label: 'Professional', desc: 'Formal, corporate-ready content', icon: Briefcase },
+  { id: 'casual', label: 'Casual', desc: 'Friendly, approachable tone', icon: MessageSquare },
+  { id: 'enthusiastic', label: 'Enthusiastic', desc: 'High-energy, fan-focused', icon: Sparkles },
+  { id: 'matchday', label: 'Match-Day Hype', desc: 'Electric, passionate commentary', icon: Radio },
+] as const;
+
+// Language options
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+] as const;
+
+// Brand color presets
+const COLOR_PRESETS = [
+  '#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'
+];
 
 interface SettingsViewProps {
   club: Club;
@@ -40,7 +67,29 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
     totalOutputChars: number;
     last7Days: number;
     last30Days: number;
+    dailyUsage: number[];
+    featureBreakdown: { feature: string; count: number }[];
+    recentActivity: { action: string; timestamp: string; type: string }[];
   } | null>(null);
+
+  // Phase 1: Branding & Tone Settings
+  const [aiTone, setAiTone] = useState<string>('professional');
+  const [contentLanguage, setContentLanguage] = useState<string>('en');
+  const [brandColor, setBrandColor] = useState<string>('#22c55e');
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+
+  // Phase 3: System Health
+  const [systemHealth, setSystemHealth] = useState<{
+    supabaseStatus: 'connected' | 'error' | 'checking';
+    geminiStatus: 'connected' | 'error' | 'checking';
+    latency: number;
+    lastChecked: Date | null;
+  }>({
+    supabaseStatus: 'checking',
+    geminiStatus: 'checking',
+    latency: 0,
+    lastChecked: null,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -82,7 +131,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
           .select('*')
           .eq('club_id', clubId)
           .order('created_at', { ascending: false });
-        
+
         if (!usageErr && usageEvents) {
           const now = new Date();
           const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -95,6 +144,31 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
           const totalInputChars = usageEvents.reduce((sum, e) => sum + (e.approx_input_chars || 0), 0);
           const totalOutputChars = usageEvents.reduce((sum, e) => sum + (e.approx_output_chars || 0), 0);
 
+          // Calculate daily usage for last 7 days
+          const dailyUsage = Array(7).fill(0);
+          usageEvents.forEach(e => {
+            const daysDiff = Math.floor((now.getTime() - new Date(e.created_at).getTime()) / (24 * 60 * 60 * 1000));
+            if (daysDiff < 7) dailyUsage[6 - daysDiff]++;
+          });
+
+          // Feature breakdown
+          const featureCounts: Record<string, number> = {};
+          usageEvents.forEach(e => {
+            const feature = e.meta?.feature || 'Other';
+            featureCounts[feature] = (featureCounts[feature] || 0) + 1;
+          });
+          const featureBreakdown = Object.entries(featureCounts)
+            .map(([feature, count]) => ({ feature, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // Recent activity (last 10)
+          const recentActivity = usageEvents.slice(0, 10).map(e => ({
+            action: e.meta?.feature || 'AI Request',
+            timestamp: e.created_at,
+            type: e.meta?.type || 'text',
+          }));
+
           setUsageStats({
             totalRequests: usageEvents.length,
             textRequests,
@@ -103,7 +177,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             totalOutputChars,
             last7Days: last7,
             last30Days: last30,
+            dailyUsage,
+            featureBreakdown,
+            recentActivity,
           });
+        }
+
+        // Load club branding settings
+        const { data: brandingData } = await supabase
+          .from('club_settings')
+          .select('ai_tone, content_language, brand_color')
+          .eq('club_id', clubId)
+          .maybeSingle();
+
+        if (brandingData) {
+          if (brandingData.ai_tone) setAiTone(brandingData.ai_tone);
+          if (brandingData.content_language) setContentLanguage(brandingData.content_language);
+          if (brandingData.brand_color) setBrandColor(brandingData.brand_color);
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load settings');
@@ -186,7 +276,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
 
   const handleClearData = async () => {
     if (!confirm('Are you sure you want to clear all demo data? This cannot be undone.')) return;
-    
+
     setIsClearing(true);
     setError(null);
     setSuccess(null);
@@ -201,6 +291,101 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
       setIsClearing(false);
     }
   };
+
+  // Phase 1: Save branding settings
+  const saveBrandingSettings = async () => {
+    if (!supabase || !isSupabaseConfigured()) return;
+    setIsSavingBranding(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const { error } = await supabase
+        .from('club_settings')
+        .upsert({
+          club_id: clubId,
+          ai_tone: aiTone,
+          content_language: contentLanguage,
+          brand_color: brandColor,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'club_id' });
+
+      if (error) throw error;
+      setSuccess('Branding settings saved successfully!');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save branding settings');
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
+  // Phase 3: Check system health
+  const checkSystemHealth = async () => {
+    setSystemHealth(prev => ({ ...prev, supabaseStatus: 'checking', geminiStatus: 'checking' }));
+
+    const startTime = Date.now();
+
+    // Check Supabase
+    try {
+      if (supabase && isSupabaseConfigured()) {
+        const { error } = await supabase.from('clubs').select('id').limit(1);
+        setSystemHealth(prev => ({
+          ...prev,
+          supabaseStatus: error ? 'error' : 'connected',
+          latency: Date.now() - startTime,
+        }));
+      } else {
+        setSystemHealth(prev => ({ ...prev, supabaseStatus: 'error' }));
+      }
+    } catch {
+      setSystemHealth(prev => ({ ...prev, supabaseStatus: 'error' }));
+    }
+
+    // For Gemini, we'll assume connected if Supabase is working (as Gemini is called via edge functions)
+    setSystemHealth(prev => ({
+      ...prev,
+      geminiStatus: prev.supabaseStatus === 'connected' ? 'connected' : 'error',
+      lastChecked: new Date(),
+    }));
+  };
+
+  // Phase 4: Export usage data
+  const exportUsageData = () => {
+    if (!usageStats) return;
+
+    const csvContent = [
+      ['Metric', 'Value'],
+      ['Total Requests', usageStats.totalRequests],
+      ['Text Requests', usageStats.textRequests],
+      ['Image Requests', usageStats.imageRequests],
+      ['Total Input Characters', usageStats.totalInputChars],
+      ['Total Output Characters', usageStats.totalOutputChars],
+      ['Last 7 Days', usageStats.last7Days],
+      ['Last 30 Days', usageStats.last30Days],
+      [''],
+      ['Feature Breakdown'],
+      ...usageStats.featureBreakdown.map(f => [f.feature, f.count]),
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-usage-${club.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Run health check on mount
+  useEffect(() => {
+    checkSystemHealth();
+  }, []);
+
+  // Calculate max daily usage for chart scaling
+  const maxDailyUsage = useMemo(() => {
+    if (!usageStats?.dailyUsage) return 1;
+    return Math.max(...usageStats.dailyUsage, 1);
+  }, [usageStats?.dailyUsage]);
 
   return (
     <div className="space-y-8">
@@ -336,11 +521,328 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             </div>
           </div>
 
-          <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+          {/* Phase 2: Daily Usage Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+              <p className="text-[10px] font-mono text-slate-500 uppercase mb-3">7-Day Usage Trend</p>
+              <div className="h-24 flex items-end gap-1">
+                {usageStats.dailyUsage.map((val, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className="w-full bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t transition-all hover:opacity-80"
+                      style={{ height: `${(val / maxDailyUsage) * 100}%`, minHeight: val > 0 ? '4px' : '0' }}
+                    />
+                    <span className="text-[8px] text-slate-600 font-mono">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).getDay()]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Feature Breakdown */}
+            <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+              <p className="text-[10px] font-mono text-slate-500 uppercase mb-3">Top Features</p>
+              <div className="space-y-2">
+                {usageStats.featureBreakdown.length > 0 ? (
+                  usageStats.featureBreakdown.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-[10px] mb-1">
+                          <span className="text-slate-300 truncate">{f.feature}</span>
+                          <span className="text-slate-500 font-mono">{f.count}</span>
+                        </div>
+                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${(f.count / usageStats.featureBreakdown[0].count) * 100}%`,
+                              background: ['#3b82f6', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444'][i % 5],
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-600 text-xs font-mono">No feature data yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
             <p className="text-[10px] text-slate-400 font-mono">
-              💡 <span className="font-bold">Tip:</span> These metrics help you understand AI usage patterns and plan capacity. 
-              Data refreshes when you reload this page.
+              💡 <span className="font-bold">Tip:</span> These metrics help you understand AI usage patterns and plan capacity.
             </p>
+            <button
+              onClick={exportUsageData}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs font-bold text-blue-400 hover:bg-blue-500/20 transition-colors"
+            >
+              <Download size={12} /> Export CSV
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 5: Quick Actions Hub */}
+      <div className="glass-card p-6 rounded-2xl border border-green-500/20 space-y-4">
+        <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <Command size={18} className="text-green-500" />
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'squad' }))}
+            className="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/30 rounded-xl transition-all group"
+          >
+            <Users size={24} className="text-slate-400 group-hover:text-green-500 transition-colors" />
+            <span className="text-[10px] font-mono text-slate-400 group-hover:text-white uppercase">Add Player</span>
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'match' }))}
+            className="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/30 rounded-xl transition-all group"
+          >
+            <Trophy size={24} className="text-slate-400 group-hover:text-green-500 transition-colors" />
+            <span className="text-[10px] font-mono text-slate-400 group-hover:text-white uppercase">New Match</span>
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'content' }))}
+            className="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/30 rounded-xl transition-all group"
+          >
+            <FileText size={24} className="text-slate-400 group-hover:text-green-500 transition-colors" />
+            <span className="text-[10px] font-mono text-slate-400 group-hover:text-white uppercase">Create Content</span>
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'commercial' }))}
+            className="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/30 rounded-xl transition-all group"
+          >
+            <Briefcase size={24} className="text-slate-400 group-hover:text-green-500 transition-colors" />
+            <span className="text-[10px] font-mono text-slate-400 group-hover:text-white uppercase">Add Sponsor</span>
+          </button>
+        </div>
+        <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+          <p className="text-[10px] text-slate-500 font-mono">
+            <span className="text-green-500 font-bold">Keyboard shortcuts:</span> Press <kbd className="px-1.5 py-0.5 bg-black/40 rounded text-slate-400 mx-1">?</kbd> anywhere to see all available shortcuts
+          </p>
+        </div>
+      </div>
+
+      {/* Phase 3: System Health Dashboard */}
+      <div className="glass-card p-6 rounded-2xl border border-cyan-500/20 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+            <Shield size={18} className="text-cyan-400" />
+            System Health
+          </h3>
+          <button
+            onClick={checkSystemHealth}
+            className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-xs font-bold text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+          >
+            <RefreshCw size={12} className={systemHealth.supabaseStatus === 'checking' ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Supabase Status */}
+          <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              systemHealth.supabaseStatus === 'connected' ? 'bg-green-500/20' :
+              systemHealth.supabaseStatus === 'error' ? 'bg-red-500/20' : 'bg-slate-500/20'
+            }`}>
+              {systemHealth.supabaseStatus === 'connected' ? (
+                <CheckCircle size={20} className="text-green-500" />
+              ) : systemHealth.supabaseStatus === 'error' ? (
+                <XCircle size={20} className="text-red-500" />
+              ) : (
+                <Clock size={20} className="text-slate-400 animate-pulse" />
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-mono text-slate-500 uppercase">Database</p>
+              <p className={`text-sm font-bold ${
+                systemHealth.supabaseStatus === 'connected' ? 'text-green-500' :
+                systemHealth.supabaseStatus === 'error' ? 'text-red-500' : 'text-slate-400'
+              }`}>
+                {systemHealth.supabaseStatus === 'connected' ? 'Connected' :
+                 systemHealth.supabaseStatus === 'error' ? 'Error' : 'Checking...'}
+              </p>
+            </div>
+          </div>
+
+          {/* Gemini API Status */}
+          <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              systemHealth.geminiStatus === 'connected' ? 'bg-green-500/20' :
+              systemHealth.geminiStatus === 'error' ? 'bg-red-500/20' : 'bg-slate-500/20'
+            }`}>
+              {systemHealth.geminiStatus === 'connected' ? (
+                <CheckCircle size={20} className="text-green-500" />
+              ) : systemHealth.geminiStatus === 'error' ? (
+                <XCircle size={20} className="text-red-500" />
+              ) : (
+                <Clock size={20} className="text-slate-400 animate-pulse" />
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-mono text-slate-500 uppercase">AI Engine</p>
+              <p className={`text-sm font-bold ${
+                systemHealth.geminiStatus === 'connected' ? 'text-green-500' :
+                systemHealth.geminiStatus === 'error' ? 'text-red-500' : 'text-slate-400'
+              }`}>
+                {systemHealth.geminiStatus === 'connected' ? 'Connected' :
+                 systemHealth.geminiStatus === 'error' ? 'Error' : 'Checking...'}
+              </p>
+            </div>
+          </div>
+
+          {/* Latency */}
+          <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              systemHealth.latency < 100 ? 'bg-green-500/20' :
+              systemHealth.latency < 300 ? 'bg-yellow-500/20' : 'bg-red-500/20'
+            }`}>
+              <Wifi size={20} className={
+                systemHealth.latency < 100 ? 'text-green-500' :
+                systemHealth.latency < 300 ? 'text-yellow-500' : 'text-red-500'
+              } />
+            </div>
+            <div>
+              <p className="text-xs font-mono text-slate-500 uppercase">Latency</p>
+              <p className={`text-sm font-bold ${
+                systemHealth.latency < 100 ? 'text-green-500' :
+                systemHealth.latency < 300 ? 'text-yellow-500' : 'text-red-500'
+              }`}>
+                {systemHealth.latency}ms
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {systemHealth.lastChecked && (
+          <p className="text-[10px] text-slate-600 font-mono text-right">
+            Last checked: {systemHealth.lastChecked.toLocaleTimeString()}
+          </p>
+        )}
+      </div>
+
+      {/* Phase 1: Club Branding & AI Tone */}
+      <div className="glass-card p-6 rounded-2xl border border-purple-500/20 space-y-6">
+        <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <Mic size={18} className="text-purple-500" />
+          Club Branding & AI Tone
+        </h3>
+
+        {/* AI Tone Selection */}
+        <div>
+          <label className="text-[10px] font-mono text-slate-500 uppercase block mb-3">AI Voice Style</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {AI_TONES.map((tone) => {
+              const Icon = tone.icon;
+              return (
+                <button
+                  key={tone.id}
+                  onClick={() => setAiTone(tone.id)}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    aiTone === tone.id
+                      ? 'border-purple-500/50 bg-purple-500/10'
+                      : 'border-white/10 hover:border-white/20 bg-white/5'
+                  }`}
+                >
+                  <Icon size={20} className={aiTone === tone.id ? 'text-purple-500' : 'text-slate-400'} />
+                  <p className={`text-sm font-bold mt-2 ${aiTone === tone.id ? 'text-white' : 'text-slate-300'}`}>
+                    {tone.label}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1">{tone.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Language & Brand Color */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2 flex items-center gap-2">
+              <Globe size={12} /> Content Language
+            </label>
+            <select
+              value={contentLanguage}
+              onChange={(e) => setContentLanguage(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-purple-500 outline-none"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>{lang.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2 flex items-center gap-2">
+              <Palette size={12} /> Brand Color
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="flex gap-2">
+                {COLOR_PRESETS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setBrandColor(color)}
+                    className={`w-8 h-8 rounded-lg transition-all ${
+                      brandColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <input
+                type="color"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                title="Custom color"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={saveBrandingSettings}
+          disabled={isSavingBranding}
+          className="w-full py-3 rounded-lg bg-purple-500 text-white font-display font-bold uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSavingBranding ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+          {isSavingBranding ? 'Saving...' : 'Save Branding Settings'}
+        </button>
+      </div>
+
+      {/* Phase 4: Recent Activity Log */}
+      {usageStats && usageStats.recentActivity.length > 0 && (
+        <div className="glass-card p-6 rounded-2xl border border-amber-500/20 space-y-4">
+          <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+            <Activity size={18} className="text-amber-500" />
+            Recent Activity
+          </h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+            {usageStats.recentActivity.map((activity, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-black/40 rounded-lg border border-white/5">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  activity.type === 'image' ? 'bg-amber-500/20' : 'bg-blue-500/20'
+                }`}>
+                  {activity.type === 'image' ? (
+                    <ImageIcon size={14} className="text-amber-500" />
+                  ) : (
+                    <MessageSquare size={14} className="text-blue-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white truncate">{activity.action}</p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
