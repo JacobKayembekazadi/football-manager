@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { Club, Sponsor } from '../types';
 import { generateSponsorReport, generateSponsorActivation, generateRenewalPitch } from '../services/geminiService';
 import { saveSponsorContent, createSponsor, deleteSponsor } from '../services/sponsorService';
+import { generatePartnerValueReport } from '../services/sponsorPdfService';
 import SponsorFormModal from './SponsorFormModal';
-import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2 } from 'lucide-react';
+import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2, FileDown } from 'lucide-react';
 
 interface SponsorNexusProps {
   club: Club;
