@@ -108,7 +108,10 @@ const Layout: React.FC<LayoutProps> = ({
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 py-6 space-y-2 overflow-y-auto ${isSidebarCollapsed ? 'md:px-2' : 'px-4'}`}>
+        <nav
+          className={`flex-1 py-6 space-y-2 overflow-y-auto ${isSidebarCollapsed ? 'md:px-2' : 'px-4'}`}
+          aria-label="Main navigation"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -121,6 +124,8 @@ const Layout: React.FC<LayoutProps> = ({
                   setIsMobileMenuOpen(false);
                 }}
                 title={isSidebarCollapsed ? item.label : undefined}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
                 className={`
                   w-full flex items-center gap-4 px-4 py-4 rounded-xl text-sm font-medium transition-all duration-300 group relative overflow-hidden
                   ${isSidebarCollapsed ? 'md:justify-center md:px-2' : ''}

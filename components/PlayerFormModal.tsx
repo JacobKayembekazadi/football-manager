@@ -95,25 +95,31 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
   const posConfig = POSITION_CONFIG[formData.position as keyof typeof POSITION_CONFIG];
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose}></div>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="player-form-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} aria-hidden="true"></div>
 
       <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-green-500/30 shadow-[0_0_50px_rgba(34,197,94,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-green-500/10 to-transparent">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center" aria-hidden="true">
               <User className="text-green-500" size={20} />
             </div>
             <div>
-              <h3 className="font-display font-bold text-white text-lg">
+              <h3 id="player-form-title" className="font-display font-bold text-white text-lg">
                 {player ? 'Edit Player' : 'Add New Player'}
               </h3>
               <p className="text-xs text-slate-500 font-mono">Squad Management System</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors" aria-label="Close form">
             <X size={20} />
           </button>
         </div>

@@ -214,22 +214,30 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fixture-form-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
       <div className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(34,197,94,0.1)] overflow-hidden animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
         {/* Header gradient */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-purple-500 to-amber-500" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-purple-500 to-amber-500" aria-hidden="true" />
 
         {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors z-10"
+          aria-label="Close form"
         >
           <X size={20} />
         </button>
@@ -237,11 +245,11 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center" aria-hidden="true">
               <Zap className="text-green-500" size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-display font-bold text-white uppercase tracking-wider">
+              <h2 id="fixture-form-title" className="text-xl font-display font-bold text-white uppercase tracking-wider">
                 {editingFixture ? 'Edit Fixture' : 'Schedule Match'}
               </h2>
               <p className="text-xs text-slate-500 font-mono">Configure matchday details</p>
