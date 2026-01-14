@@ -29,15 +29,15 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, fixture }) => {
 
   const getStatusColor = () => {
       if (item.status === 'DRAFT') return 'bg-amber-500/20 text-amber-400 border-amber-500/50';
-      if (item.status === 'PUBLISHED') return 'bg-neon-blue/20 text-neon-blue border-neon-blue/50';
-      return 'bg-neon-green/20 text-neon-green border-neon-green/50';
+      if (item.status === 'PUBLISHED') return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      return 'bg-green-500/20 text-green-500 border-green-500/50';
   };
 
   const getTypeColor = () => {
-      if (item.type === 'PREVIEW') return 'text-neon-purple shadow-[0_0_10px_rgba(188,19,254,0.3)]';
-      if (item.type === 'REPORT') return 'text-neon-blue shadow-[0_0_10px_rgba(0,243,255,0.3)]';
-      if (item.type === 'GRAPHIC_COPY') return 'text-neon-green shadow-[0_0_10px_rgba(10,255,10,0.3)]';
-      return 'text-neon-pink shadow-[0_0_10px_rgba(255,0,85,0.3)]';
+      if (item.type === 'PREVIEW') return 'text-purple-400 shadow-[0_0_10px_rgba(167,139,250,0.3)]';
+      if (item.type === 'REPORT') return 'text-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.3)]';
+      if (item.type === 'GRAPHIC_COPY') return 'text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]';
+      return 'text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]';
   };
 
   return (
@@ -81,8 +81,8 @@ const ContentCard: React.FC<ContentCardProps> = ({ item, fixture }) => {
             onClick={handleCopy}
             className={`
                 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-display uppercase transition-all
-                ${copied 
-                    ? 'bg-neon-green/20 text-neon-green border border-neon-green/50' 
+                ${copied
+                    ? 'bg-green-500/20 text-green-500 border border-green-500/50'
                     : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
                 }
             `}

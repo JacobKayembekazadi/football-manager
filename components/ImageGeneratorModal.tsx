@@ -135,7 +135,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
               <select
                 value={selectedFixtureId}
                 onChange={(e) => setSelectedFixtureId(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-blue outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-blue-400 outline-none"
               >
                 <option value="">Choose upcoming match...</option>
                 {upcomingFixtures.map(f => (
@@ -155,7 +155,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                     onClick={() => setGraphicStyle(style)}
                     className={`px-4 py-3 rounded-lg border text-sm font-bold uppercase transition-all ${
                       graphicStyle === style
-                        ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
+                        ? 'bg-blue-500/20 border-blue-400 text-blue-400'
                         : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/30'
                     }`}
                   >
@@ -175,7 +175,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
               <select
                 value={selectedFixtureId}
                 onChange={(e) => setSelectedFixtureId(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-blue outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-blue-400 outline-none"
               >
                 <option value="">Choose completed match...</option>
                 {completedFixtures.slice(0, 10).map(f => (
@@ -196,7 +196,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
               <select
                 value={selectedPlayerId}
                 onChange={(e) => setSelectedPlayerId(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-blue outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-blue-400 outline-none"
               >
                 <option value="">Choose player...</option>
                 {club.players.map(p => (
@@ -229,7 +229,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                     onClick={() => setAnnouncementType(type)}
                     className={`px-4 py-2 rounded-lg border text-xs font-bold uppercase transition-all ${
                       announcementType === type
-                        ? 'bg-neon-pink/20 border-neon-pink text-neon-pink'
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-500'
                         : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/30'
                     }`}
                   >
@@ -246,7 +246,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                 value={announcementTitle}
                 onChange={(e) => setAnnouncementTitle(e.target.value)}
                 placeholder="e.g., NEW SIGNING INCOMING"
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-pink outline-none placeholder:text-slate-600"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-amber-500 outline-none placeholder:text-slate-600"
               />
             </div>
 
@@ -257,7 +257,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                 value={announcementSubtitle}
                 onChange={(e) => setAnnouncementSubtitle(e.target.value)}
                 placeholder="e.g., Welcome to the family..."
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-pink outline-none placeholder:text-slate-600"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-amber-500 outline-none placeholder:text-slate-600"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Describe what you want to generate... e.g., 'A dramatic training session silhouette with fog and stadium lights'"
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-neon-purple outline-none placeholder:text-slate-600 h-32 resize-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-purple-500 outline-none placeholder:text-slate-600 h-32 resize-none"
               />
             </div>
 
@@ -295,9 +295,9 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
       
       <div className="relative bg-[#0a0a0a] w-full max-w-5xl rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-neon-purple/10 to-neon-blue/10">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-neon-blue/10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center shadow-[0_0_20px_rgba(188,19,254,0.4)]">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-neon-blue flex items-center justify-center shadow-[0_0_20px_rgba(188,19,254,0.4)]">
               <ImageIcon size={24} className="text-white" />
             </div>
             <div>
@@ -327,7 +327,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <tab.icon size={18} className={activeTab === tab.id ? 'text-neon-blue' : ''} />
+                <tab.icon size={18} className={activeTab === tab.id ? 'text-blue-400' : ''} />
                 <div className="text-left">
                   <p className="text-sm font-bold">{tab.label}</p>
                   <p className="text-[10px] text-slate-500">{tab.description}</p>
@@ -342,7 +342,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
               {/* Form Section */}
               <div className="space-y-4">
                 <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <Palette size={14} className="text-neon-purple" />
+                  <Palette size={14} className="text-purple-500" />
                   Configuration
                 </h4>
                 {renderFormContent()}
@@ -352,7 +352,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
               {generatedImage && (
                 <div className="space-y-4">
                   <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles size={14} className="text-neon-green" />
+                    <Sparkles size={14} className="text-green-500" />
                     Generated Output
                   </h4>
                   
@@ -367,7 +367,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-4">
                       <button
                         onClick={handleDownload}
-                        className="px-4 py-2 bg-neon-blue text-black font-bold rounded-lg flex items-center gap-2 hover:scale-105 transition-transform"
+                        className="px-4 py-2 bg-blue-500 text-black font-bold rounded-lg flex items-center gap-2 hover:scale-105 transition-transform"
                       >
                         <Download size={16} />
                         Download
@@ -401,7 +401,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
             {/* Footer Actions */}
             <div className="p-6 border-t border-white/10 bg-black/30 flex items-center justify-between">
               <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 AI Image Generation Ready
               </div>
               
@@ -421,7 +421,7 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="px-6 py-3 bg-gradient-to-r from-neon-purple to-neon-blue text-white font-bold rounded-lg flex items-center gap-2 hover:shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-neon-blue text-white font-bold rounded-lg flex items-center gap-2 hover:shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
                 >
                   {isGenerating ? (
                     <>

@@ -575,3 +575,47 @@ Requirements:
 export const generatePlayerVideo = async (_club: Club, _player: Player): Promise<string | null> => {
   return null;
 };
+
+/**
+ * Generate viral video content ideas for the club's social media
+ */
+export const generateViralIdeas = async (club: Club): Promise<string[]> => {
+  const prompt = `
+${getCommonSystemPrompt(club)}
+
+Task: Generate 5 creative, viral-worthy video content ideas for ${club.name}'s social media channels.
+
+Focus on:
+- Behind-the-scenes content that fans love
+- Player personality showcases
+- Training ground moments
+- Fan engagement concepts
+- Trend-worthy formats (TikTok/Reels style)
+
+Format: Return ONLY a JSON array of 5 strings, each being a short video idea description (max 100 chars each).
+Example: ["Player challenge: keepy-uppies while answering fan questions", "Time-lapse of matchday preparation"]
+
+IMPORTANT: Return ONLY the JSON array, no other text.
+`.trim();
+
+  try {
+    const response = await invokeAi(club.id, prompt, 'generate_viral_ideas');
+    // Parse the JSON response
+    const ideas = JSON.parse(response);
+    if (Array.isArray(ideas) && ideas.length > 0) {
+      return ideas.slice(0, 5);
+    }
+    return getDefaultViralIdeas();
+  } catch (error) {
+    console.error('Error generating viral ideas:', error);
+    return getDefaultViralIdeas();
+  }
+};
+
+const getDefaultViralIdeas = (): string[] => [
+  'Player Spotlight: Behind-the-scenes training session with star players',
+  'Matchday Atmosphere: Pre-game fan interviews and stadium walk-through',
+  'Tactical Breakdown: Animated video explaining key match moments',
+  'Locker Room Cam: Post-match celebrations and team reactions',
+  'Youth Academy Feature: Upcoming talent showcase and development journey'
+];

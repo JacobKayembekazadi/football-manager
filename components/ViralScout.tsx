@@ -32,11 +32,11 @@ const ViralScout: React.FC<ViralScoutProps> = ({ club, onGenerateIdeas }) => {
   };
 
   return (
-    <div className="glass-card p-6 rounded-xl border border-neon-purple/20 space-y-4">
+    <div className="glass-card p-6 rounded-xl border border-purple-500/20 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-neon-purple/10 border border-neon-purple/30 flex items-center justify-center">
-            <Video size={20} className="text-neon-purple" />
+          <div className="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+            <Video size={20} className="text-purple-500" />
           </div>
           <div>
             <h3 className="text-lg font-display font-bold text-white">Viral Scout</h3>
@@ -47,7 +47,7 @@ const ViralScout: React.FC<ViralScoutProps> = ({ club, onGenerateIdeas }) => {
           <button
             onClick={handleGenerate}
             disabled={status === 'generating'}
-            className="px-4 py-2 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple rounded-lg font-bold uppercase text-xs hover:bg-neon-purple/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-purple-500/10 border border-purple-500/50 text-purple-500 rounded-lg font-bold uppercase text-xs hover:bg-purple-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {status === 'generating' ? (
               <>
@@ -70,7 +70,7 @@ const ViralScout: React.FC<ViralScoutProps> = ({ club, onGenerateIdeas }) => {
             key={idx}
             className="bg-white/5 p-3 rounded border border-white/10 flex items-start gap-3"
           >
-            <Lightbulb size={16} className="text-neon-purple flex-shrink-0 mt-0.5" />
+            <Lightbulb size={16} className="text-purple-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-slate-200 flex-1">{idea}</p>
           </div>
         ))}

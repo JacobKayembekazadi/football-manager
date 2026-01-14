@@ -27,7 +27,7 @@ import {
   INITIAL_FIXTURES, INITIAL_CONTENT, INITIAL_SPONSORS,
   ContentGenStatus
 } from './types';
-import { generateContent, generateOpponentReport, suggestScorers } from './services/geminiService';
+import { generateContent, generateOpponentReport, suggestScorers, generateViralIdeas } from './services/geminiService';
 import { scheduleContentSequence } from './services/contentSequenceService';
 import { useSupabaseQuery } from './hooks/useSupabaseQuery';
 import { useRealtimeSubscription } from './hooks/useRealtimeSubscription';
@@ -300,7 +300,7 @@ const Dashboard: React.FC<{
                 {isInitiating ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} className="fill-white" />}
                 {isInitiating ? 'Processing Data...' : 'Initiate Weekly Protocol'}
               </button>
-              <button onClick={() => onNavigate('fixtures')} className="px-6 py-4 bg-black/40 border border-white/20 text-white font-bold font-display uppercase rounded-lg hover:bg-white/10 transition-all flex items-center gap-2 backdrop-blur-md">
+              <button onClick={() => onNavigate('match')} className="px-6 py-4 bg-black/40 border border-white/20 text-white font-bold font-display uppercase rounded-lg hover:bg-white/10 transition-all flex items-center gap-2 backdrop-blur-md">
                 <Trophy size={18} /> Log Match Result
               </button>
             </div>
@@ -449,7 +449,7 @@ const Dashboard: React.FC<{
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 Latest Content Generations
               </h3>
-              <button onClick={() => onNavigate('fixtures')} className="text-xs font-mono text-green-500 hover:text-white transition-colors flex items-center gap-1 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500/10">
+              <button onClick={() => onNavigate('content')} className="text-xs font-mono text-green-500 hover:text-white transition-colors flex items-center gap-1 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500/10">
                 VIEW ALL <ArrowRight size={12} />
               </button>
             </div>
@@ -467,7 +467,7 @@ const Dashboard: React.FC<{
           </div>
 
           {/* Viral Scout Widget */}
-          <ViralScout club={club} />
+          <ViralScout club={club} onGenerateIdeas={() => generateViralIdeas(club)} />
         </div>
 
         {/* Live Feed Mockup (Terminal Style) */}
