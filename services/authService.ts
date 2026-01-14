@@ -29,6 +29,20 @@ export const signOut = async () => {
   await supabase.auth.signOut();
 };
 
+export const resetPassword = async (email: string) => {
+  if (!supabase || !isSupabaseConfigured()) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+};
+
+export const updatePassword = async (newPassword: string) => {
+  if (!supabase || !isSupabaseConfigured()) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+};
+
 
 
 
