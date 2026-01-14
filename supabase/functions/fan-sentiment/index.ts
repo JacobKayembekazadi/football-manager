@@ -2,13 +2,14 @@
  * Supabase Edge Function: fan-sentiment
  *
  * Collects and analyzes fan sentiment from Twitter using Apify.
- * 
+ * - Includes CORS protection and rate limiting
+ *
  * Flow:
  * 1. Use Apify to scrape Twitter mentions of the club
  * 2. Perform hybrid sentiment analysis (keyword filtering + Gemini AI)
  * 3. Calculate sentiment score and mood
  * 4. Store snapshot in database
- * 
+ *
  * IMPORTANT:
  * - Requires APIFY_TOKEN environment variable
  * - Uses Gemini API for deep sentiment analysis (resolves key via resolveGeminiKey)
@@ -17,90 +18,39 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  getCorsHeaders,
+  handleCorsPreflightRequest,
+  corsJsonResponse,
+  corsErrorResponse,
+} from '../_shared/cors.ts';
+import {
+  checkRateLimit,
+  getRateLimitKey,
+  rateLimitExceededResponse,
+  addRateLimitHeaders,
+  RATE_LIMITS,
+} from '../_shared/rateLimit.ts';
+import { resolveGeminiKey } from '../_shared/aiKeyResolver.ts';
 
 const APIFY_TOKEN = Deno.env.get('APIFY_TOKEN');
 
 // Sentiment keywords for fast filtering
 const KEYWORDS = {
-  positive: ['happy', 'amazing', 'brilliant', 'love', 'excited', 'win', 'victory', 'euphoric', 'incredible', 'fantastic', 'great', 'awesome', 'best', 'wonderful'],
-  negative: ['angry', 'sad', 'disappointed', 'hate', 'worried', 'lose', 'defeat', 'terrible', 'awful', 'disaster', 'bad', 'worst', 'horrible', 'pathetic'],
+  positive: [
+    'happy', 'amazing', 'brilliant', 'love', 'excited', 'win', 'victory',
+    'euphoric', 'incredible', 'fantastic', 'great', 'awesome', 'best', 'wonderful'
+  ],
+  negative: [
+    'angry', 'sad', 'disappointed', 'hate', 'worried', 'lose', 'defeat',
+    'terrible', 'awful', 'disaster', 'bad', 'worst', 'horrible', 'pathetic'
+  ],
 };
 
-function b64ToBytes(b64: string) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-
-async function decryptSecret(ciphertextB64: string, ivB64: string): Promise<string> {
-  const keyB64 = Deno.env.get('APP_ENCRYPTION_KEY');
-  if (!keyB64) throw new Error('Missing APP_ENCRYPTION_KEY');
-
-  const keyBytes = b64ToBytes(keyB64);
-  const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['decrypt']);
-  const iv = b64ToBytes(ivB64);
-  const ciphertext = b64ToBytes(ciphertextB64);
-  const plaintextBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-  return new TextDecoder().decode(plaintextBuf);
-}
-
-async function resolveGeminiKey(supabase: any, clubId: string): Promise<{ key: string; source: string; orgId: string }> {
-  // Determine orgId from club (RLS-protected)
-  const { data: club, error: clubErr } = await supabase
-    .from('clubs')
-    .select('id, org_id')
-    .eq('id', clubId)
-    .single();
-  if (clubErr || !club) throw new Error('Invalid club or access denied');
-
-  const orgId = club.org_id as string;
-
-  // Club override
-  const { data: clubSettings } = await supabase
-    .from('club_ai_settings')
-    .select('mode, byok_key_ciphertext, byok_key_iv')
-    .eq('club_id', clubId)
-    .maybeSingle();
-
-  if (
-    clubSettings &&
-    clubSettings.mode === 'byok' &&
-    clubSettings.byok_key_ciphertext &&
-    clubSettings.byok_key_iv
-  ) {
-    const key = await decryptSecret(clubSettings.byok_key_ciphertext, clubSettings.byok_key_iv);
-    return { key, source: 'club_byok', orgId };
-  }
-
-  // Org default
-  const { data: orgSettings } = await supabase
-    .from('org_ai_settings')
-    .select('mode, byok_key_ciphertext, byok_key_iv')
-    .eq('org_id', orgId)
-    .maybeSingle();
-
-  if (
-    orgSettings &&
-    (orgSettings.mode === 'byok' || orgSettings.mode === 'hybrid') &&
-    orgSettings.byok_key_ciphertext &&
-    orgSettings.byok_key_iv
-  ) {
-    const key = await decryptSecret(orgSettings.byok_key_ciphertext, orgSettings.byok_key_iv);
-    return { key, source: 'org_byok', orgId };
-  }
-
-  const platformKey = Deno.env.get('GEMINI_API_KEY');
-  if (!platformKey) throw new Error('Missing GEMINI_API_KEY (platform managed)');
-  return { key: platformKey, source: 'platform_managed', orgId };
-}
-
-async function geminiAnalyzeSentiment(apiKey: string, tweets: string[]): Promise<{ score: number; confidence: number }> {
+async function geminiAnalyzeSentiment(
+  apiKey: string,
+  tweets: string[]
+): Promise<{ score: number; confidence: number }> {
   const prompt = `Analyze the sentiment of these tweets about a football club. Rate the overall sentiment from 0 (very negative) to 100 (very positive).
 
 Tweets:
@@ -190,9 +140,12 @@ function calculateMood(score: number): 'euphoric' | 'happy' | 'neutral' | 'worri
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
+
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get('Authorization') || '';
@@ -208,23 +161,29 @@ serve(async (req) => {
     // Service role client for database inserts (bypasses RLS)
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get user for rate limiting
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+
+    // Check rate limit (stricter for expensive operation)
+    const rateLimitKey = getRateLimitKey(req, userId, 'fan-sentiment');
+    const rateLimitResult = checkRateLimit(rateLimitKey, RATE_LIMITS.FAN_SENTIMENT);
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitExceededResponse(rateLimitResult, corsHeaders);
+    }
+
     const body = await req.json();
     const clubId = body?.clubId as string | undefined;
     const clubName = body?.clubName as string | undefined;
     const orgId = body?.orgId as string | undefined;
 
     if (!clubId || !clubName || !orgId) {
-      return new Response(JSON.stringify({ error: 'Missing clubId, clubName, or orgId' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return corsJsonResponse({ error: 'Missing clubId, clubName, or orgId' }, req, 400);
     }
 
     if (!APIFY_TOKEN) {
-      return new Response(JSON.stringify({ error: 'APIFY_TOKEN not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return corsJsonResponse({ error: 'APIFY_TOKEN not configured' }, req, 500);
     }
 
     // Step 1: Use Apify to scrape Twitter
@@ -234,7 +193,7 @@ serve(async (req) => {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${APIFY_TOKEN}`,
+          Authorization: `Bearer ${APIFY_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -266,7 +225,7 @@ serve(async (req) => {
       const statusResponse = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}`,
         {
-          headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` },
+          headers: { Authorization: `Bearer ${APIFY_TOKEN}` },
         }
       );
       const statusData = await statusResponse.json();
@@ -282,7 +241,7 @@ serve(async (req) => {
     const resultsResponse = await fetch(
       `https://api.apify.com/v2/actor-runs/${runId}/dataset/items`,
       {
-        headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` },
+        headers: { Authorization: `Bearer ${APIFY_TOKEN}` },
       }
     );
 
@@ -291,10 +250,10 @@ serve(async (req) => {
     }
 
     const tweets = await resultsResponse.json();
+    const snapshotDate = new Date().toISOString().split('T')[0];
 
     if (!Array.isArray(tweets) || tweets.length === 0) {
       // No tweets found, return neutral sentiment
-      const snapshotDate = new Date().toISOString().split('T')[0];
       const neutralSentiment = {
         org_id: orgId,
         club_id: clubId,
@@ -313,9 +272,14 @@ serve(async (req) => {
         .from('fan_sentiment_snapshots')
         .upsert(neutralSentiment, { onConflict: 'club_id,snapshot_date' });
 
+      const responseHeaders = addRateLimitHeaders(
+        { ...corsHeaders, 'Content-Type': 'application/json' },
+        rateLimitResult
+      );
+
       return new Response(JSON.stringify(neutralSentiment), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: responseHeaders,
       });
     }
 
@@ -338,13 +302,10 @@ serve(async (req) => {
     }
 
     // Step 4: Calculate weighted average (70% keyword, 30% Gemini)
-    const finalScore = Math.round(
-      keywordResults.keywordScore * 0.7 + geminiScore * 0.3
-    );
+    const finalScore = Math.round(keywordResults.keywordScore * 0.7 + geminiScore * 0.3);
 
     // Step 5: Determine mood and prepare snapshot
     const sentimentMood = calculateMood(finalScore);
-    const snapshotDate = new Date().toISOString().split('T')[0];
     const keywordsFound = [
       ...KEYWORDS.positive.filter((kw) =>
         tweetTexts.some((t) => t.toLowerCase().includes(kw))
@@ -378,16 +339,17 @@ serve(async (req) => {
       throw dbError;
     }
 
+    const responseHeaders = addRateLimitHeaders(
+      { ...corsHeaders, 'Content-Type': 'application/json' },
+      rateLimitResult
+    );
+
     return new Response(JSON.stringify(sentimentSnapshot), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error('Error in fan-sentiment:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return corsErrorResponse(error as Error, req, 500);
   }
 });
-

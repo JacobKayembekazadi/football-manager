@@ -1,3 +1,4 @@
+import { generateDemoUUID, DEMO_UUIDS } from './utils/uuid';
 
 export interface PlayerStats {
   pace: number;
@@ -167,8 +168,8 @@ const daysFromNow = (days: number) => new Date(Date.now() + 86400000 * days).toI
 // --- SQUAD (18 Players with Season Stats & Analysis) ---
 export const INITIAL_PLAYERS: Player[] = [
   // GOALKEEPERS
-  { 
-    id: 'p-1', 
+  {
+    id: generateDemoUUID('player', 1),
     name: 'Viktor Volkov', 
     position: 'GK', 
     number: 1, 
@@ -176,8 +177,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 7.8,
     analysis: 'Commanding presence between the posts. 4 clean sheets in last 6 matches. Distribution has improved significantly - long ball accuracy up to 72%. Key save ratio of 81% puts him among the league\'s elite.'
   },
-  { 
-    id: 'p-13', 
+  {
+    id: generateDemoUUID('player', 13),
     name: 'Alisson Becker', 
     position: 'GK', 
     number: 13, 
@@ -187,8 +188,8 @@ export const INITIAL_PLAYERS: Player[] = [
   },
   
   // DEFENDERS
-  { 
-    id: 'p-2', 
+  {
+    id: generateDemoUUID('player', 2),
     name: 'Sam Miller', 
     position: 'DEF', 
     number: 4, 
@@ -197,8 +198,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.4,
     analysis: 'The heartbeat of our defense. Captain\'s performances driving team morale. 92% aerial duel success rate. 3 goals from set pieces - a genuine goal threat. Leadership qualities evident in tight games.'
   },
-  { 
-    id: 'p-6', 
+  {
+    id: generateDemoUUID('player', 6),
     name: 'Kieran Torres', 
     position: 'DEF', 
     number: 3, 
@@ -206,8 +207,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 7.6,
     analysis: 'Dynamic left-back averaging 2.3 key passes per game. Overlapping runs creating width. 4 assists in league play. Defensive positioning improving under new tactical setup.'
   },
-  { 
-    id: 'p-9', 
+  {
+    id: generateDemoUUID('player', 9),
     name: 'Virgil Ironside', 
     position: 'DEF', 
     number: 5, 
@@ -215,8 +216,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.1,
     analysis: 'Colossus at the back. Partnership with Miller yielding results - only 8 goals conceded with both starting. Reading of the game is exceptional. 94% pass completion in own half.'
   },
-  { 
-    id: 'p-12', 
+  {
+    id: generateDemoUUID('player', 12),
     name: 'Kyle Sterling', 
     position: 'DEF', 
     number: 2, 
@@ -224,8 +225,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 7.9,
     analysis: 'Tireless right-back covering 11.8km per match average. Defensive contribution strong with 3.1 tackles per game. Could improve final ball quality - 2 assists only so far.'
   },
-  { 
-    id: 'p-14', 
+  {
+    id: generateDemoUUID('player', 14),
     name: 'Lucas Mendez', 
     position: 'DEF', 
     number: 15, 
@@ -235,8 +236,8 @@ export const INITIAL_PLAYERS: Player[] = [
   },
   
   // MIDFIELDERS
-  { 
-    id: 'p-3', 
+  {
+    id: generateDemoUUID('player', 3),
     name: 'Jay Patel', 
     position: 'MID', 
     number: 8, 
@@ -244,8 +245,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.0,
     analysis: 'The metronome. 91% pass accuracy in the final third. 5 assists this campaign with eye for the killer ball. Workrate in pressing improved - 8.2 ball recoveries per 90.'
   },
-  { 
-    id: 'p-7', 
+  {
+    id: generateDemoUUID('player', 7),
     name: 'Luka Modrić', 
     position: 'MID', 
     number: 14, 
@@ -253,8 +254,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 9.0,
     analysis: 'Maestro pulling the strings. 7 goals, 6 assists - involved in 52% of our goals. Set-piece delivery is elite. At 38, still the best midfielder in the league. Pure class.'
   },
-  { 
-    id: 'p-11', 
+  {
+    id: generateDemoUUID('player', 11),
     name: 'Kevin De Bruyne', 
     position: 'MID', 
     number: 17, 
@@ -262,8 +263,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 9.4,
     analysis: 'Simply unstoppable when fit. 8 assists in 10 league games - on pace for record. Vision and execution are unmatched. The assist for Thorn\'s hat-trick was pure artistry.'
   },
-  { 
-    id: 'p-15', 
+  {
+    id: generateDemoUUID('player', 15),
     name: 'Jude Chen', 
     position: 'MID', 
     number: 22, 
@@ -271,8 +272,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.2,
     analysis: 'Box-to-box dynamo breaking out this season. 4 goals from midfield - all from outside the box. Progressive carries leading to chances. The future of this club.'
   },
-  { 
-    id: 'p-16', 
+  {
+    id: generateDemoUUID('player', 16),
     name: 'Marco Silva', 
     position: 'MID', 
     number: 6, 
@@ -282,8 +283,8 @@ export const INITIAL_PLAYERS: Player[] = [
   },
   
   // FORWARDS
-  { 
-    id: 'p-4', 
+  {
+    id: generateDemoUUID('player', 4),
     name: 'Marcus Thorn', 
     position: 'FWD', 
     number: 9, 
@@ -291,8 +292,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 9.5,
     analysis: 'ELECTRIC. 14 goals in 13 league games - top scorer by 4. Hat-trick hero against Orbital. Pressing from the front creating turnovers. Clinical finishing (42% conversion). On course for Golden Boot.'
   },
-  { 
-    id: 'p-5', 
+  {
+    id: generateDemoUUID('player', 5),
     name: 'Billy Bones', 
     position: 'FWD', 
     number: 10, 
@@ -300,8 +301,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.7,
     analysis: 'Partnership with Thorn is lethal - 12 goal contributions as a duo. 6 goals, 5 assists. Dribbling success rate of 68%. Creates space for others. Big game player.'
   },
-  { 
-    id: 'p-8', 
+  {
+    id: generateDemoUUID('player', 8),
     name: 'Erling Haaland', 
     position: 'FWD', 
     number: 11, 
@@ -309,8 +310,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 8.9,
     analysis: 'The super-sub. 5 goals from 420 minutes - a goal every 84 minutes. Physical presence changing games when introduced. Itching for more starts.'
   },
-  { 
-    id: 'p-17', 
+  {
+    id: generateDemoUUID('player', 17),
     name: 'Rico Santos', 
     position: 'FWD', 
     number: 19, 
@@ -318,8 +319,8 @@ export const INITIAL_PLAYERS: Player[] = [
     form: 7.5,
     analysis: 'Raw pace merchant. 2 goals from the bench. Needs to improve decision-making in final third. Terrifying option against tired defenders.'
   },
-  { 
-    id: 'p-18', 
+  {
+    id: generateDemoUUID('player', 18),
     name: 'Tomás Vega', 
     position: 'FWD', 
     number: 21, 
@@ -330,7 +331,7 @@ export const INITIAL_PLAYERS: Player[] = [
 ];
 
 export const MOCK_CLUB: Club = {
-  id: 'c-1',
+  id: DEMO_UUIDS.club,
   name: 'Neon City FC',
   nickname: 'The Cyberpunks',
   slug: 'neon-city-fc',
@@ -347,8 +348,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   // === COMPLETED MATCHES ===
   // Matchweek 1 - Season Opener
   {
-    id: 'f-1',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 1),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Phoenix Rising',
     kickoff_time: daysAgo(98), // Sept 1
     status: 'COMPLETED',
@@ -364,8 +365,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 2
   {
-    id: 'f-2',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 2),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Steelforge United',
     kickoff_time: daysAgo(91), // Sept 8
     status: 'COMPLETED',
@@ -381,8 +382,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 3
   {
-    id: 'f-3',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 3),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Quantum FC',
     kickoff_time: daysAgo(84), // Sept 15
     status: 'COMPLETED',
@@ -398,8 +399,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 4
   {
-    id: 'f-4',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 4),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Binary Stars',
     kickoff_time: daysAgo(77), // Sept 22
     status: 'COMPLETED',
@@ -415,8 +416,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 5
   {
-    id: 'f-5',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 5),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Nebula City',
     kickoff_time: daysAgo(70), // Sept 29
     status: 'COMPLETED',
@@ -432,8 +433,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 6 - Cup Match
   {
-    id: 'f-6',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 6),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Metro Wanderers',
     kickoff_time: daysAgo(63), // Oct 6 - Cup R2
     status: 'COMPLETED',
@@ -449,8 +450,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 7
   {
-    id: 'f-7',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 7),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Titan Rovers',
     kickoff_time: daysAgo(56), // Oct 13
     status: 'COMPLETED',
@@ -466,8 +467,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 8
   {
-    id: 'f-8',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 8),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Apex Athletic',
     kickoff_time: daysAgo(49), // Oct 20
     status: 'COMPLETED',
@@ -483,8 +484,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 9
   {
-    id: 'f-9',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 9),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Vector Valley',
     kickoff_time: daysAgo(42), // Oct 27
     status: 'COMPLETED',
@@ -500,8 +501,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 10
   {
-    id: 'f-10',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 10),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Cipher Town',
     kickoff_time: daysAgo(35), // Nov 3
     status: 'COMPLETED',
@@ -517,8 +518,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 11 - Cup Match
   {
-    id: 'f-11',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 11),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Apex Athletic',
     kickoff_time: daysAgo(28), // Nov 10 - Cup R3
     status: 'COMPLETED',
@@ -534,8 +535,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 12
   {
-    id: 'f-12',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 12),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Orbital United',
     kickoff_time: daysAgo(21), // Nov 17 - BIG GAME
     status: 'COMPLETED',
@@ -551,8 +552,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 13
   {
-    id: 'f-13',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 13),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Grid FC',
     kickoff_time: daysAgo(14), // Nov 24
     status: 'COMPLETED',
@@ -568,8 +569,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 14 - LAST MATCH
   {
-    id: 'f-14',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 14),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Nova Dynamic',
     kickoff_time: daysAgo(7), // Dec 1
     status: 'COMPLETED',
@@ -587,8 +588,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   // === UPCOMING MATCHES ===
   // Matchweek 15
   {
-    id: 'f-15',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 15),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Phoenix Rising',
     kickoff_time: daysFromNow(3), // Dec 14 - Saturday 3pm
     status: 'SCHEDULED',
@@ -598,8 +599,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 16
   {
-    id: 'f-16',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 16),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Steelforge United',
     kickoff_time: daysFromNow(10), // Dec 21
     status: 'SCHEDULED',
@@ -608,8 +609,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Cup Quarter-Final
   {
-    id: 'f-17',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 17),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Quantum FC',
     kickoff_time: daysFromNow(17), // Dec 28 - Cup QF
     status: 'SCHEDULED',
@@ -618,8 +619,8 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   // Matchweek 17 - New Years Day
   {
-    id: 'f-18',
-    club_id: 'c-1',
+    id: generateDemoUUID('fixture', 18),
+    club_id: DEMO_UUIDS.club,
     opponent: 'Binary Stars',
     kickoff_time: daysFromNow(21), // Jan 1
     status: 'SCHEDULED',
@@ -632,9 +633,9 @@ export const INITIAL_FIXTURES: Fixture[] = [
 export const INITIAL_CONTENT: ContentItem[] = [
   // === PUBLISHED CONTENT ===
   {
-    id: 'cnt-1',
-    club_id: 'c-1',
-    fixture_id: 'f-12',
+    id: generateDemoUUID('content', 1),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 12),
     type: 'REPORT',
     platform: 'Website',
     title: 'THORN HAT-TRICK SINKS ORBITAL IN TITLE SIX-POINTER',
@@ -643,9 +644,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(20),
   },
   {
-    id: 'cnt-2',
-    club_id: 'c-1',
-    fixture_id: 'f-12',
+    id: generateDemoUUID('content', 2),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 12),
     type: 'SOCIAL',
     platform: 'Twitter',
     body: `🔥 FULL TIME: Orbital 1-3 NEON CITY\n\n⚽ Thorn 23' \n⚽ Thorn 58'\n⚽ Thorn 78'\n\nStatement. Made. 💜⚡\n\n#NeonCityFC #CyberLeague #ThornOnFire`,
@@ -653,9 +654,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(21),
   },
   {
-    id: 'cnt-3',
-    club_id: 'c-1',
-    fixture_id: 'f-10',
+    id: generateDemoUUID('content', 3),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 10),
     type: 'REPORT',
     platform: 'Website',
     title: 'FIVE-STAR CYBERPUNKS CRUSH CIPHER TOWN',
@@ -664,9 +665,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(34),
   },
   {
-    id: 'cnt-4',
-    club_id: 'c-1',
-    fixture_id: 'f-13',
+    id: generateDemoUUID('content', 4),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 13),
     type: 'SOCIAL',
     platform: 'Instagram',
     body: `Another win secured ✅\n\nModrić from the spot ⚽\nHaaland with the header 🎯\n\n2nd place LOCKED IN going into December 💪\n\n#NeonCityFC #OnTheRise`,
@@ -674,8 +675,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(13),
   },
   {
-    id: 'cnt-5',
-    club_id: 'c-1',
+    id: generateDemoUUID('content', 5),
+    club_id: DEMO_UUIDS.club,
     type: 'NEWSLETTER',
     platform: 'Email',
     title: 'November Review: Our Best Month Yet',
@@ -686,9 +687,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
   
   // === APPROVED CONTENT (Ready to Post) ===
   {
-    id: 'cnt-6',
-    club_id: 'c-1',
-    fixture_id: 'f-15',
+    id: generateDemoUUID('content', 6),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 15),
     type: 'PREVIEW',
     platform: 'Website',
     title: 'PREVIEW: Phoenix Rising (A) - Revenge Mission',
@@ -697,9 +698,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(1),
   },
   {
-    id: 'cnt-7',
-    club_id: 'c-1',
-    fixture_id: 'f-15',
+    id: generateDemoUUID('content', 7),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 15),
     type: 'SOCIAL',
     platform: 'Twitter',
     body: `🔜 MATCHDAY INCOMING\n\n🆚 Phoenix Rising\n📍 Flame Stadium\n🗓️ Saturday 3PM\n📺 Stream on CyberLeague+\n\nTime to keep the momentum going 💜⚡\n\n#NCFC #PhxNCFC`,
@@ -707,9 +708,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(1),
   },
   {
-    id: 'cnt-8',
-    club_id: 'c-1',
-    fixture_id: 'f-15',
+    id: generateDemoUUID('content', 8),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 15),
     type: 'GRAPHIC_COPY',
     platform: 'Instagram',
     body: `GAMEDAY GRAPHIC\n\n🔥 PHOENIX RISING vs NEON CITY FC 🔥\n\nSATURDAY | 3PM | FLAME STADIUM\n\n"Back where it all started"\n\n#NCFC #AwayDays`,
@@ -719,9 +720,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
   
   // === DRAFT CONTENT (Needs Review) ===
   {
-    id: 'cnt-9',
-    club_id: 'c-1',
-    fixture_id: 'f-14',
+    id: generateDemoUUID('content', 9),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 14),
     type: 'REPORT',
     platform: 'Website',
     title: 'FRUSTRATION AT NOVA AS CHANCES GO BEGGING',
@@ -730,8 +731,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(6),
   },
   {
-    id: 'cnt-10',
-    club_id: 'c-1',
+    id: generateDemoUUID('content', 10),
+    club_id: DEMO_UUIDS.club,
     type: 'ARTICLE',
     platform: 'Website',
     title: 'THORN: "I\'m Just Getting Started"',
@@ -740,9 +741,9 @@ export const INITIAL_CONTENT: ContentItem[] = [
     created_at: daysAgo(3),
   },
   {
-    id: 'cnt-11',
-    club_id: 'c-1',
-    fixture_id: 'f-17',
+    id: generateDemoUUID('content', 11),
+    club_id: DEMO_UUIDS.club,
+    fixture_id: generateDemoUUID('fixture', 17),
     type: 'PREVIEW',
     platform: 'Website',
     title: 'CUP QUARTER-FINAL PREVIEW: Quantum FC',
@@ -754,8 +755,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
 
 // --- SPONSORS (Commercial Partners) ---
 export const INITIAL_SPONSORS: Sponsor[] = [
-  { 
-    id: 's-1', 
+  {
+    id: generateDemoUUID('sponsor', 1),
     name: 'CyberDyne Systems', 
     sector: 'Technology', 
     tier: 'Platinum', 
@@ -764,8 +765,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     status: 'Active', 
     logo_initials: 'CD' 
   },
-  { 
-    id: 's-2', 
+  {
+    id: generateDemoUUID('sponsor', 2),
     name: 'Orbital Energy Drinks', 
     sector: 'Beverage', 
     tier: 'Gold', 
@@ -774,8 +775,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     status: 'Expiring', 
     logo_initials: 'OE' 
   },
-  { 
-    id: 's-3', 
+  {
+    id: generateDemoUUID('sponsor', 3),
     name: 'NeoTextile Apparel', 
     sector: 'Sportswear', 
     tier: 'Gold', 
@@ -784,8 +785,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     status: 'Active', 
     logo_initials: 'NT' 
   },
-  { 
-    id: 's-4', 
+  {
+    id: generateDemoUUID('sponsor', 4),
     name: 'Quantum Motors', 
     sector: 'Automotive', 
     tier: 'Silver', 
@@ -794,8 +795,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     status: 'Active', 
     logo_initials: 'QM' 
   },
-  { 
-    id: 's-5', 
+  {
+    id: generateDemoUUID('sponsor', 5),
     name: 'DataStream Analytics', 
     sector: 'Tech/Data', 
     tier: 'Silver', 
@@ -804,8 +805,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     status: 'Negotiating', 
     logo_initials: 'DS' 
   },
-  { 
-    id: 's-6', 
+  {
+    id: generateDemoUUID('sponsor', 6),
     name: 'GridBank Financial', 
     sector: 'Finance', 
     tier: 'Platinum', 

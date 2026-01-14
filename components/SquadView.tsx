@@ -190,8 +190,8 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
             slug: 'neon-city-fc',
             tone_context: 'Futuristic',
             players: safePlayers,
-            primary_color: '#00f3ff',
-            secondary_color: '#bc13fe'
+            primary_color: '#22c55e',
+            secondary_color: '#9333ea'
         };
 
         const videoUri = await generatePlayerVideo(mockClubContext, selectedPlayer);
@@ -287,7 +287,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       {/* Header Controls */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
          <div>
-            <h2 className="text-3xl font-display font-bold text-white glow-text">SQUAD <span className="text-neon-blue">INTEL</span></h2>
+            <h2 className="text-3xl font-display font-bold text-white glow-text">SQUAD <span className="text-green-500">INTEL</span></h2>
             <p className="text-slate-400 font-mono text-xs mt-1">Player intelligence for brand building.</p>
          </div>
          
@@ -299,7 +299,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                     placeholder="Search database..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none transition-all placeholder:text-slate-600 font-mono"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all placeholder:text-slate-600 font-mono"
                 />
             </div>
             
@@ -310,7 +310,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                     className="bg-black/40 border border-white/10 text-slate-300 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-2 font-mono text-xs uppercase h-[42px] min-w-[120px] justify-between"
                 >
                     <span className="flex items-center gap-2">
-                        <ArrowUpDown size={14} className="text-neon-blue" /> 
+                        <ArrowUpDown size={14} className="text-green-500" /> 
                         {sortOptions.find(o => o.key === sortConfig.key)?.label}
                     </span>
                     {sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
@@ -324,7 +324,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                 <button
                                     key={option.key}
                                     onClick={() => handleSort(option.key)}
-                                    className={`px-4 py-2 text-left text-xs font-mono uppercase hover:bg-white/5 flex justify-between items-center transition-colors ${sortConfig.key === option.key ? 'text-neon-blue bg-white/5' : 'text-slate-400'}`}
+                                    className={`px-4 py-2 text-left text-xs font-mono uppercase hover:bg-white/5 flex justify-between items-center transition-colors ${sortConfig.key === option.key ? 'text-green-500 bg-white/5' : 'text-slate-400'}`}
                                 >
                                     {option.label}
                                     {sortConfig.key === option.key && (
@@ -339,13 +339,13 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
 
             <button 
                 onClick={toggleFilter}
-                className={`bg-neon-blue/10 border border-neon-blue/50 text-neon-blue px-3 py-2 rounded-lg hover:bg-neon-blue/20 transition-colors flex items-center gap-2 font-mono text-xs uppercase h-[42px] ${filterPosition !== 'ALL' ? 'bg-neon-blue/20 shadow-[0_0_10px_rgba(0,243,255,0.2)]' : ''}`}
+                className={`bg-green-500/10 border border-green-500/50 text-green-500 px-3 py-2 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-2 font-mono text-xs uppercase h-[42px] ${filterPosition !== 'ALL' ? 'bg-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.2)]' : ''}`}
             >
                 <Filter size={16} /> {filterPosition}
             </button>
             <button 
                 onClick={handleAddPlayer}
-                className="bg-neon-blue text-black px-4 py-2 rounded-lg font-bold font-display uppercase hover:bg-cyan-300 transition-colors shadow-[0_0_15px_rgba(0,243,255,0.4)] flex items-center gap-2 h-[42px]"
+                className="bg-green-500 text-black px-4 py-2 rounded-lg font-bold font-display uppercase hover:bg-green-400 transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)] flex items-center gap-2 h-[42px]"
             >
                 <Plus size={18} /> Add
             </button>
@@ -366,18 +366,18 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                 <div className="space-y-3">
                     <div className="flex justify-between text-xs text-slate-400 font-mono">
                         <span>ATTACK RATING</span>
-                        <span className="text-neon-pink">87</span>
+                        <span className="text-amber-500">87</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-neon-pink w-[87%] shadow-[0_0_10px_#ff0055]"></div>
+                        <div className="h-full bg-amber-500 w-[87%] shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
                     </div>
 
                     <div className="flex justify-between text-xs text-slate-400 font-mono">
                         <span>DEFENSE RATING</span>
-                        <span className="text-neon-blue">82</span>
+                        <span className="text-green-500">82</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-neon-blue w-[82%] shadow-[0_0_10px_#00f3ff]"></div>
+                        <div className="h-full bg-green-500 w-[82%] shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
                     </div>
                 </div>
             </div>
@@ -403,7 +403,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                     <button 
                         onClick={handleAddPlayer}
                         data-tour="add-player-btn"
-                        className="inline-flex items-center gap-2 bg-neon-blue text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(0,243,255,0.35)] transition-all"
+                        className="inline-flex items-center gap-2 bg-green-500 text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(34,197,94,0.35)] transition-all"
                     >
                         <Plus size={16} /> Add Your First Player
                     </button>
@@ -441,12 +441,12 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       {selectedPlayer && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedPlayer(null)}></div>
-            <div className="relative w-full max-w-6xl h-[85vh] bg-[#050505] rounded-3xl overflow-hidden border border-neon-blue/30 shadow-[0_0_50px_rgba(0,243,255,0.15)] flex flex-col lg:flex-row">
+            <div className="relative w-full max-w-6xl h-[85vh] bg-[#050505] rounded-3xl overflow-hidden border border-green-500/30 shadow-[0_0_50px_rgba(34,197,94,0.15)] flex flex-col lg:flex-row">
                 
                 {/* Close Button */}
                 <button 
                     onClick={() => setSelectedPlayer(null)} 
-                    className="absolute top-4 right-4 z-20 bg-black/50 p-2 rounded-full text-white hover:text-neon-pink transition-colors"
+                    className="absolute top-4 right-4 z-20 bg-black/50 p-2 rounded-full text-white hover:text-red-400 transition-colors"
                 >
                     <X size={20} />
                 </button>
@@ -465,7 +465,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                             <div className="text-center p-8 relative z-10 flex flex-col items-center">
                                 {selectedPlayer.image_url ? (
                                      <div className="relative group/image">
-                                        <img src={selectedPlayer.image_url} alt="Profile" className="w-48 h-48 object-cover rounded-full border-4 border-white/10 mb-6 shadow-[0_0_30px_rgba(0,243,255,0.2)]" />
+                                        <img src={selectedPlayer.image_url} alt="Profile" className="w-48 h-48 object-cover rounded-full border-4 border-white/10 mb-6 shadow-[0_0_30px_rgba(34,197,94,0.2)]" />
                                         <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover/image:opacity-100 transition-opacity">
                                             <label className="cursor-pointer flex flex-col items-center text-white">
                                                 <Camera size={24} />
@@ -475,8 +475,8 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                         </div>
                                      </div>
                                 ) : (
-                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 group-hover:border-neon-blue/50 transition-colors">
-                                        <User size={32} className="text-slate-500 group-hover:text-neon-blue" />
+                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 group-hover:border-green-500/50 transition-colors">
+                                        <User size={32} className="text-slate-500 group-hover:text-green-500" />
                                     </div>
                                 )}
                                 
@@ -503,7 +503,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                      <button 
                                         onClick={handleGenerateVideo}
                                         disabled={isGeneratingVideo}
-                                        className="px-8 py-3 bg-neon-blue/10 border border-neon-blue/50 hover:bg-neon-blue hover:text-black text-neon-blue rounded-lg font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="px-8 py-3 bg-green-500/10 border border-green-500/50 hover:bg-green-500 hover:text-black text-green-500 rounded-lg font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                     >
                                         {isGeneratingVideo ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
                                         {isGeneratingVideo ? 'Requesting Uplink...' : 'Generate Veo Highlight'}
@@ -519,7 +519,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                         <div className="absolute bottom-0 left-0 p-8 w-full">
                             <h2 className="text-4xl font-display font-bold text-white">{selectedPlayer.name}</h2>
                             <div className="flex items-center gap-4 mt-2">
-                                <span className="bg-neon-blue text-black px-2 py-0.5 rounded text-xs font-bold font-mono">#{selectedPlayer.number}</span>
+                                <span className="bg-green-500 text-black px-2 py-0.5 rounded text-xs font-bold font-mono">#{selectedPlayer.number}</span>
                                 <span className="text-slate-300 font-mono text-sm uppercase tracking-wider">{selectedPlayer.position}</span>
                                 <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
                                 <span className="text-slate-300 font-mono text-sm">{MOCK_CLUB.name}</span>
@@ -532,7 +532,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                 <div className="lg:w-1/2 bg-glass-panel flex flex-col overflow-y-auto custom-scrollbar">
                     {/* Top Bar */}
                     <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-10">
-                        <div className="flex items-center gap-2 text-neon-blue">
+                        <div className="flex items-center gap-2 text-green-500">
                              <Cpu size={18} />
                              <span className="font-display font-bold uppercase tracking-widest text-sm">Intelligence Hub</span>
                         </div>
@@ -549,8 +549,8 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                         <div className="flex flex-col md:flex-row items-center gap-8">
                              <div className="relative">
                                  {/* Glowing background for chart */}
-                                 <div className="absolute inset-0 bg-neon-blue/20 blur-[50px] rounded-full"></div>
-                                 <RadarChart stats={selectedPlayer.stats} size={240} color={selectedPlayer.form > 8 ? '#0aff0a' : '#00f3ff'} />
+                                 <div className="absolute inset-0 bg-green-500/20 blur-[50px] rounded-full"></div>
+                                 <RadarChart stats={selectedPlayer.stats} size={240} color={selectedPlayer.form > 8 ? '#22c55e' : '#3b82f6'} />
                              </div>
                              
                              <div className="flex-1 w-full grid grid-cols-2 gap-3">
@@ -569,14 +569,14 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                         </div>
 
                         {/* AI Scout Report */}
-                        <div className="glass-card p-6 rounded-xl border border-neon-purple/20 relative overflow-hidden">
+                        <div className="glass-card p-6 rounded-xl border border-purple-500/20 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-20">
-                                <Zap size={100} className="text-neon-purple" />
+                                <Zap size={100} className="text-purple-400" />
                             </div>
                             
                             <div className="relative z-10">
                                 <h4 className="text-sm font-bold font-display text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <span className="w-1.5 h-1.5 bg-neon-purple rounded-full animate-pulse"></span>
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse"></span>
                                     AI Scout Report
                                 </h4>
                                 
@@ -586,7 +586,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                     </p>
                                 ) : (
                                     <div className="flex flex-col items-center py-4 text-slate-500">
-                                        <Loader2 size={24} className="animate-spin mb-2 text-neon-purple" />
+                                        <Loader2 size={24} className="animate-spin mb-2 text-purple-400" />
                                         <span className="text-xs font-mono">Analyzing telemetry...</span>
                                     </div>
                                 )}
@@ -596,7 +596,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                     <button 
                                         onClick={handleGenerateAnalysis}
                                         disabled={isAnalyzing}
-                                        className="text-[10px] text-neon-purple hover:text-white uppercase font-bold tracking-wider disabled:opacity-50"
+                                        className="text-[10px] text-purple-400 hover:text-white uppercase font-bold tracking-wider disabled:opacity-50"
                                     >
                                         {isAnalyzing ? 'Updating...' : 'Refresh Analysis'}
                                     </button>
@@ -605,14 +605,14 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                         </div>
 
                         {/* AI Player Card Generation */}
-                        <div className="glass-card p-6 rounded-xl border border-neon-blue/20 relative overflow-hidden">
+                        <div className="glass-card p-6 rounded-xl border border-green-500/20 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-20">
-                                <ImageIcon size={80} className="text-neon-blue" />
+                                <ImageIcon size={80} className="text-green-500" />
                             </div>
                             
                             <div className="relative z-10">
                                 <h4 className="text-sm font-bold font-display text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <span className="w-1.5 h-1.5 bg-neon-blue rounded-full animate-pulse"></span>
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                     AI Player Card
                                 </h4>
 
@@ -626,7 +626,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={handleDownloadCard}
-                                                className="flex-1 px-4 py-2 bg-neon-blue text-black font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-2 hover:bg-cyan-300 transition-colors"
+                                                className="flex-1 px-4 py-2 bg-green-500 text-black font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-2 hover:bg-green-400 transition-colors"
                                             >
                                                 <Download size={14} />
                                                 Download
@@ -648,7 +648,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                         <button
                                             onClick={handleGeneratePlayerCard}
                                             disabled={isGeneratingCard}
-                                            className="px-6 py-3 bg-neon-blue/10 border border-neon-blue/50 text-neon-blue rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2 hover:bg-neon-blue hover:text-black transition-all disabled:opacity-50 mx-auto"
+                                            className="px-6 py-3 bg-green-500/10 border border-green-500/50 text-green-500 rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2 hover:bg-green-500 hover:text-black transition-all disabled:opacity-50 mx-auto"
                                         >
                                             {isGeneratingCard ? (
                                                 <>
