@@ -5,6 +5,7 @@ import PlayerCard from './PlayerCard';
 import TacticsBoard from './TacticsBoard';
 import RadarChart from './RadarChart';
 import PlayerFormModal from './PlayerFormModal';
+import { useToast } from './Toast';
 import { generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
 import { createPlayer, updatePlayer, deletePlayer } from '../services/playerService';
 import { Plus, Search, Filter, X, Loader2, Cpu, Activity, Zap, ArrowUpDown, ArrowUp, ArrowDown, Upload, User, Camera, Image as ImageIcon, Download } from 'lucide-react';
@@ -16,6 +17,7 @@ interface SquadViewProps {
 }
 
 const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
+  const toast = useToast();
   const safePlayers = Array.isArray(players) ? players : [];
   const currentClub = club ?? MOCK_CLUB;
   const clubId = currentClub.id;
@@ -139,9 +141,10 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
           try {
               await deletePlayer(playerId);
               setPlayers(safePlayers.filter(p => p.id !== playerId));
+              toast.success('Player deleted successfully.');
           } catch (error) {
               console.error('Error deleting player:', error);
-              alert('Failed to delete player. Please try again.');
+              toast.error('Failed to delete player. Please try again.');
           }
       }
   };
@@ -153,15 +156,17 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
           if (exists) {
               await updatePlayer(player.id, player);
               setPlayers(safePlayers.map(p => p.id === player.id ? player : p));
+              toast.success('Player updated successfully.');
           } else {
               const { id, ...playerData } = player;
               const newPlayer = await createPlayer(clubId, playerData);
               setPlayers([...safePlayers, newPlayer]);
+              toast.success('Player added successfully.');
           }
           setIsFormOpen(false);
       } catch (error) {
           console.error('Error saving player:', error);
-          alert('Failed to save player. Please try again.');
+          toast.error('Failed to save player. Please try again.');
       }
   };
 

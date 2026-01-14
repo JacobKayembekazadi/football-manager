@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ContentItem, Club } from '../types';
 import { rewriteContent } from '../services/geminiService';
 import { updateContentItem, deleteContentItem } from '../services/contentService';
+import { useToast } from './Toast';
 import { X, Save, Sparkles, Loader2, Check, Copy, Wand2, Trash2 } from 'lucide-react';
 
 interface ContentEditorModalProps {
@@ -14,6 +15,7 @@ interface ContentEditorModalProps {
 }
 
 const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onSave, onClose, onDelete }) => {
+  const toast = useToast();
   const [editedBody, setEditedBody] = useState(item.body);
   const [status, setStatus] = useState(item.status);
   const [instruction, setInstruction] = useState('');
@@ -23,7 +25,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this content?')) return;
-    
+
     setIsDeleting(true);
     try {
       if (onDelete) {
@@ -31,10 +33,11 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
       } else {
         await deleteContentItem(item.id);
       }
+      toast.success('Content deleted successfully.');
       onClose();
     } catch (error) {
       console.error('Error deleting content:', error);
-      alert('Failed to delete content. Please try again.');
+      toast.error('Failed to delete content. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -56,10 +59,11 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
         status,
       });
       onSave(updatedItem);
+      toast.success('Content saved successfully.');
       onClose();
     } catch (error) {
       console.error('Error saving content:', error);
-      alert('Failed to save content. Please try again.');
+      toast.error('Failed to save content. Please try again.');
     }
   };
 
@@ -70,23 +74,29 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose}></div>
-      
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="content-editor-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose} aria-hidden="true"></div>
+
       <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
             <div className="flex items-center gap-3">
-                <div className="p-2 rounded bg-white/5 border border-white/10 text-blue-400">
+                <div className="p-2 rounded bg-white/5 border border-white/10 text-blue-400" aria-hidden="true">
                     <Wand2 size={20} />
                 </div>
                 <div>
-                    <h3 className="font-display font-bold text-white text-lg">HOLO-EDITOR v2.0</h3>
+                    <h3 id="content-editor-title" className="font-display font-bold text-white text-lg">HOLO-EDITOR v2.0</h3>
                     <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">{item.type} // {item.platform}</p>
                 </div>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={20} /></button>
+            <button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close editor"><X size={20} /></button>
         </div>
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">

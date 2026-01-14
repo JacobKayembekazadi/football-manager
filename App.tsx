@@ -20,6 +20,7 @@ import EducationView from './components/EducationView';
 import FixtureFormModal from './components/FixtureFormModal';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
+import { ToastProvider } from './components/Toast';
 import { handleError } from './utils/errorHandler';
 import {
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
@@ -1619,27 +1620,39 @@ const App: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center">
-        <LoadingSpinner size={28} text="Booting auth systems..." />
-      </div>
+      <ToastProvider>
+        <div className="min-h-screen bg-dark-bg text-slate-100 flex items-center justify-center">
+          <LoadingSpinner size={28} text="Booting auth systems..." />
+        </div>
+      </ToastProvider>
     );
   }
 
 
   if (!session) {
-    return <AuthScreen />;
+    return (
+      <ToastProvider>
+        <AuthScreen />
+      </ToastProvider>
+    );
   }
 
   if (!ctx) {
-    return <WorkspaceGate onReady={(next) => setCtx(next)} />;
+    return (
+      <ToastProvider>
+        <WorkspaceGate onReady={(next) => setCtx(next)} />
+      </ToastProvider>
+    );
   }
 
   return (
-    <AppAuthed
-      clubId={ctx.clubId}
-      supabaseConfigured={true}
-      onSwitchWorkspace={() => setCtx(null)}
-    />
+    <ToastProvider>
+      <AppAuthed
+        clubId={ctx.clubId}
+        supabaseConfigured={true}
+        onSwitchWorkspace={() => setCtx(null)}
+      />
+    </ToastProvider>
   );
 };
 

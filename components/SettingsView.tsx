@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { seedDemoData, clearDemoData } from '../services/mockDataService';
 import { hasDemoData } from '../services/dataPresenceService';
+import { Skeleton, StatCardSkeleton } from './Skeleton';
 
 // AI Tone options
 const AI_TONES = [
@@ -398,19 +399,34 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
         </p>
       </div>
 
-      {(loading || error || success) && (
-        <div className="space-y-2">
-          {loading && <div className="text-[10px] font-mono text-slate-500">Loading…</div>}
-          {error && (
-            <div className="text-xs font-mono text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              {error}
+      {error && (
+        <div className="text-xs font-mono text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="text-xs font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+          {success}
+        </div>
+      )}
+
+      {loading && (
+        <div className="space-y-6">
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </div>
+          {/* Settings cards skeleton */}
+          <div className="glass-card p-6 rounded-2xl border border-white/5">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <div className="grid grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-20" variant="rectangular" />
+              ))}
             </div>
-          )}
-          {success && (
-            <div className="text-xs font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-              {success}
-            </div>
-          )}
+          </div>
         </div>
       )}
 

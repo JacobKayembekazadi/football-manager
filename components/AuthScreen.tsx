@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { signInWithEmailPassword, signUpWithEmailPassword } from '../services/authService';
+import { signInWithEmailPassword, signUpWithEmailPassword, resetPassword } from '../services/authService';
 import {
   validatePassword,
   checkPasswordRequirements,
@@ -7,7 +7,7 @@ import {
   getStrengthTextColor,
 } from '../utils/passwordValidation';
 
-type Mode = 'signin' | 'signup';
+type Mode = 'signin' | 'signup' | 'reset';
 
 const AuthScreen: React.FC = () => {
   const [mode, setMode] = useState<Mode>('signin');
@@ -45,7 +45,7 @@ const AuthScreen: React.FC = () => {
       if (mode === 'signin') {
         await signInWithEmailPassword(email.trim(), password);
         // Success - auth listener will handle navigation
-      } else {
+      } else if (mode === 'signup') {
         const result = await signUpWithEmailPassword(email.trim(), password);
 
         // Check if email confirmation is required
@@ -54,6 +54,11 @@ const AuthScreen: React.FC = () => {
           setMode('signin');
         }
         // If session exists, user is auto-logged in (no confirmation required)
+      } else if (mode === 'reset') {
+        await resetPassword(email.trim());
+        setSuccess('Password reset email sent! Check your inbox and follow the link.');
+        setMode('signin');
+        setPassword('');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed';
@@ -68,6 +73,8 @@ const AuthScreen: React.FC = () => {
         setMode('signin');
       } else if (message.includes('Password should be at least')) {
         setError('Password must be at least 8 characters long.');
+      } else if (message.includes('rate limit')) {
+        setError('Too many requests. Please wait a moment and try again.');
       } else {
         setError(message);
       }
@@ -85,7 +92,9 @@ const AuthScreen: React.FC = () => {
         <p className="text-xs font-mono text-slate-400 mt-2">
           {mode === 'signin'
             ? 'Sign in to your workspace to access clubs, inbox, and AI tools.'
-            : 'Create your account to get started with PitchSide.'}
+            : mode === 'signup'
+            ? 'Create your account to get started with PitchSide.'
+            : 'Enter your email to receive a password reset link.'}
         </p>
 
         <form onSubmit={submit} className="mt-8 space-y-4">
@@ -101,6 +110,7 @@ const AuthScreen: React.FC = () => {
               autoComplete="email"
             />
           </div>
+          {mode !== 'reset' && (
           <div>
             <label className="text-[10px] font-mono text-slate-500 uppercase">Password</label>
             <input
@@ -163,6 +173,21 @@ const AuthScreen: React.FC = () => {
               </p>
             )}
           </div>
+          )}
+
+          {mode === 'signin' && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('reset');
+                setError(null);
+                setSuccess(null);
+              }}
+              className="text-[10px] font-mono text-slate-500 hover:text-brand-500 transition-colors"
+            >
+              Forgot password?
+            </button>
+          )}
 
           {error && (
             <div className="text-xs font-mono text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
@@ -190,26 +215,45 @@ const AuthScreen: React.FC = () => {
                 Processing...
               </span>
             ) : (
-              mode === 'signin' ? 'Sign in' : 'Create account'
+              mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'
             )}
           </button>
         </form>
 
         <div className="mt-6 flex items-center justify-between text-xs font-mono text-slate-500">
-          <span>
-            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
-          </span>
-          <button
-            onClick={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin');
-              setError(null);
-              setSuccess(null);
-            }}
-            className="text-brand-500 hover:text-white transition-colors"
-            type="button"
-          >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
-          </button>
+          {mode === 'reset' ? (
+            <>
+              <span>Remember your password?</span>
+              <button
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="text-brand-500 hover:text-white transition-colors"
+                type="button"
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <span>
+                {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
+              </span>
+              <button
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="text-brand-500 hover:text-white transition-colors"
+                type="button"
+              >
+                {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Demo mode hint */}

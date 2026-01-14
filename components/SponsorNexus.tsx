@@ -5,6 +5,7 @@ import { generateSponsorReport, generateSponsorActivation, generateRenewalPitch 
 import { saveSponsorContent, createSponsor, deleteSponsor, updateSponsor } from '../services/sponsorService';
 import { generatePartnerValueReport } from '../services/sponsorPdfService';
 import SponsorFormModal from './SponsorFormModal';
+import { useToast } from './Toast';
 import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2, FileDown, Search, Filter, Edit2, X } from 'lucide-react';
 
 interface SponsorNexusProps {
@@ -44,6 +45,7 @@ const RevenueChart: React.FC<{ sponsors: Sponsor[] }> = ({ sponsors }) => {
 };
 
 const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSponsors }) => {
+  const toast = useToast();
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [activeTab, setActiveTab] = useState<'ROI' | 'CREATIVE' | 'NEGOTIATION'>('ROI');
 
@@ -137,7 +139,7 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
       setSelectedSponsor({ ...selectedSponsor, roi: roiData });
     } catch (error) {
       console.error('Error saving ROI:', error);
-      alert('Failed to save ROI data. Please try again.');
+      toast.error('Failed to save ROI data. Please try again.');
     } finally {
       setIsSavingRoi(false);
     }
@@ -520,7 +522,7 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                                                         URL.revokeObjectURL(url);
                                                     } catch (error) {
                                                         console.error('Error generating PDF:', error);
-                                                        alert('Failed to generate PDF. Please try again.');
+                                                        toast.error('Failed to generate PDF. Please try again.');
                                                     }
                                                 }}
                                                 className="w-full px-6 py-3 bg-yellow-400/10 hover:bg-yellow-400 hover:text-black border border-yellow-400/50 text-yellow-400 rounded font-bold uppercase transition-all text-xs flex items-center justify-center gap-2"
@@ -595,10 +597,10 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
                                                         content: generatedContent,
                                                     });
                                                     setGeneratedContent('');
-                                                    alert('Content saved successfully!');
+                                                    toast.success('Content saved successfully!');
                                                 } catch (error) {
                                                     console.error('Error saving sponsor content:', error);
-                                                    alert('Failed to save content. Please try again.');
+                                                    toast.error('Failed to save content. Please try again.');
                                                 } finally {
                                                     setIsSaving(false);
                                                 }
