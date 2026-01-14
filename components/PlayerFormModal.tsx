@@ -71,11 +71,11 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-2xl bg-[#0a0a0a] rounded-2xl border border-neon-blue/30 shadow-[0_0_50px_rgba(0,243,255,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
-        
+      <div className="relative w-full max-w-2xl bg-[#0a0a0a] rounded-2xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
+
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
             <h3 className="font-display font-bold text-white text-lg flex items-center gap-2">
-                <User className="text-neon-blue" size={20} />
+                <User className="text-blue-400" size={20} />
                 {player ? 'EDIT BIO-METRICS' : 'NEW SQUAD UNIT'}
             </h3>
             <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={20} /></button>
@@ -94,7 +94,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                             required
                             value={formData.name}
                             onChange={e => handleChange('name', e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-neon-blue outline-none transition-colors"
+                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-blue-500 outline-none transition-colors"
                         />
                     </div>
                     <div>
@@ -104,15 +104,15 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                             required
                             value={formData.number}
                             onChange={e => handleChange('number', parseInt(e.target.value))}
-                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-neon-blue outline-none transition-colors"
+                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-blue-500 outline-none transition-colors"
                         />
                     </div>
                     <div>
                         <label className="block text-xs text-slate-400 mb-1 font-mono uppercase">Position</label>
-                        <select 
+                        <select
                             value={formData.position}
                             onChange={e => handleChange('position', e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-neon-blue outline-none transition-colors"
+                            className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-blue-500 outline-none transition-colors"
                         >
                             <option value="GK">Goalkeeper (GK)</option>
                             <option value="DEF">Defender (DEF)</option>
@@ -128,9 +128,9 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                                 min="0" max="10" step="0.1"
                                 value={formData.form}
                                 onChange={e => handleChange('form', parseFloat(e.target.value))}
-                                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-neon-green"
+                                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-green-500"
                             />
-                            <span className="text-neon-green font-bold font-mono">{formData.form?.toFixed(1)}</span>
+                            <span className="text-green-500 font-bold font-mono">{formData.form?.toFixed(1)}</span>
                         </div>
                     </div>
                 </div>
@@ -151,7 +151,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                                 min="0" max="99"
                                 value={(formData.stats as any)[key]}
                                 onChange={e => handleStatChange(key as keyof PlayerStats, parseInt(e.target.value))}
-                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-neon-blue"
+                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                             />
                         </div>
                     ))}
@@ -177,7 +177,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                                 }
                             }}
                             placeholder="Add tags like: Veteran, Fan Favorite, Top Scorer..."
-                            className="flex-1 bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-neon-purple outline-none transition-colors placeholder:text-slate-600"
+                            className="flex-1 bg-white/5 border border-white/10 rounded px-4 py-2 text-white focus:border-purple-500 outline-none transition-colors placeholder:text-slate-600"
                         />
                         <button
                             type="button"
@@ -187,7 +187,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                                     setTagInput('');
                                 }
                             }}
-                            className="px-4 py-2 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple rounded hover:bg-neon-purple/20 transition-colors font-mono text-xs uppercase"
+                            className="px-4 py-2 bg-purple-500/10 border border-purple-500/50 text-purple-500 rounded hover:bg-purple-500/20 transition-colors font-mono text-xs uppercase"
                         >
                             Add
                         </button>
@@ -196,7 +196,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                         {formData.narrative_tags?.map((tag, idx) => (
                             <span
                                 key={idx}
-                                className="inline-flex items-center gap-2 px-3 py-1 bg-neon-purple/10 border border-neon-purple/30 text-neon-purple rounded-full text-xs font-mono uppercase"
+                                className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-full text-xs font-mono uppercase"
                             >
                                 {tag}
                                 <button
@@ -214,16 +214,15 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onSave, onClo
                 </div>
             </div>
 
+            <div className="p-6 border-t border-white/10 bg-black/50 flex justify-end gap-4">
+                <button type="button" onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" className="px-6 py-2 bg-blue-500 text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
+                    <Save size={16} /> Save Unit
+                </button>
+            </div>
         </form>
-
-        <div className="p-6 border-t border-white/10 bg-black/50 flex justify-end gap-4">
-            <button onClick={onClose} className="px-6 py-2 rounded text-xs font-bold uppercase hover:bg-white/10 text-slate-300 transition-colors">
-                Cancel
-            </button>
-            <button type="submit" className="px-6 py-2 bg-neon-blue text-black rounded font-bold uppercase shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-cyan-300 transition-all flex items-center gap-2">
-                <Save size={16} /> Save Unit
-            </button>
-        </div>
 
       </div>
     </div>
