@@ -61,28 +61,28 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
         {/* Header HUD */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
             <div>
-                <h2 className="text-3xl font-display font-bold text-white glow-text">HOLO-<span className="text-neon-pink">CONTENT</span></h2>
+                <h2 className="text-3xl font-display font-bold text-white glow-text">HOLO-<span className="text-amber-500">CONTENT</span></h2>
                 <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Automation.</p>
             </div>
-            
+
             <div className="flex gap-4">
                 <StatsCard label="Pending Review" value={draftItems.length} icon={Clock} color="text-amber-400" />
-                <StatsCard label="Ready to Post" value={approvedItems.length} icon={CheckCircle2} color="text-neon-green" />
-                <StatsCard label="Live Assets" value={publishedItems.length} icon={Send} color="text-neon-blue" />
+                <StatsCard label="Ready to Post" value={approvedItems.length} icon={CheckCircle2} color="text-green-500" />
+                <StatsCard label="Live Assets" value={publishedItems.length} icon={Send} color="text-blue-400" />
             </div>
 
             <div className="flex gap-3 ml-auto xl:ml-0">
-                <button 
+                <button
                     onClick={() => setShowImageGenerator(true)}
-                    className="flex items-center gap-2 bg-neon-purple/10 border border-neon-purple/50 text-neon-purple px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-purple/20 transition-all shadow-[0_0_15px_rgba(188,19,254,0.2)] hover:shadow-[0_0_25px_rgba(188,19,254,0.4)]"
+                    className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/50 text-purple-500 px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-purple-500/20 transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
                 >
                     <ImageIcon size={18} />
                     AI Graphics
                 </button>
-                <button 
+                <button
                     onClick={onManualGenerate}
                     disabled={isGenerating}
-                    className="flex items-center gap-2 bg-neon-pink/10 border border-neon-pink/50 text-neon-pink px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-neon-pink/20 transition-all shadow-[0_0_15px_rgba(255,0,85,0.2)] hover:shadow-[0_0_25px_rgba(255,0,85,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/50 text-amber-500 px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
                     {isGenerating ? 'RUNNING...' : 'WEEKLY SCOUT'}
@@ -159,9 +159,9 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
 
                     {/* Approved Column */}
                     <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden">
-                        <div className="p-4 border-b border-white/5 bg-neon-green/5 flex justify-between items-center">
-                            <span className="text-xs font-bold font-display uppercase text-neon-green">Approved / Ready</span>
-                            <span className="text-[10px] bg-neon-green/20 text-neon-green px-2 rounded-full">{approvedItems.length}</span>
+                        <div className="p-4 border-b border-white/5 bg-green-500/5 flex justify-between items-center">
+                            <span className="text-xs font-bold font-display uppercase text-green-500">Approved / Ready</span>
+                            <span className="text-[10px] bg-green-500/20 text-green-500 px-2 rounded-full">{approvedItems.length}</span>
                         </div>
                          <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                             {approvedItems.map(item => (
@@ -174,9 +174,9 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
 
                     {/* Published Column */}
                     <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden">
-                        <div className="p-4 border-b border-white/5 bg-neon-blue/5 flex justify-between items-center">
-                            <span className="text-xs font-bold font-display uppercase text-neon-blue">Published</span>
-                            <span className="text-[10px] bg-neon-blue/20 text-neon-blue px-2 rounded-full">{publishedItems.length}</span>
+                        <div className="p-4 border-b border-white/5 bg-blue-500/5 flex justify-between items-center">
+                            <span className="text-xs font-bold font-display uppercase text-blue-400">Published</span>
+                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 rounded-full">{publishedItems.length}</span>
                         </div>
                         <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                             {publishedItems.map(item => (
@@ -196,10 +196,10 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                         <Sparkles size={32} />
                     </div>
                     <p className="text-slate-400 font-mono text-sm mb-4">No content yet</p>
-                    <button 
+                    <button
                         onClick={onManualGenerate}
                         disabled={isGenerating}
-                        className="inline-flex items-center gap-2 bg-neon-pink text-white px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(255,0,85,0.35)] transition-all disabled:opacity-50"
+                        className="inline-flex items-center gap-2 bg-amber-500 text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all disabled:opacity-50"
                     >
                         {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                         Generate Your First Content

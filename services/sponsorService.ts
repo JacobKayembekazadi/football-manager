@@ -113,6 +113,11 @@ export const updateSponsor = async (
     updateData.generated_content = updates.generated_content;
   }
 
+  // Handle ROI data if provided
+  if (updates.roi !== undefined) {
+    updateData.roi = updates.roi;
+  }
+
   const { data, error } = await supabase
     .from(TABLES.SPONSORS)
     .update(updateData)
@@ -223,4 +228,5 @@ const mapSponsorFromDb = (row: any): Sponsor => ({
   contract_end: row.contract_end,
   status: row.status as 'Active' | 'Expiring' | 'Negotiating',
   logo_initials: row.logo_initials,
+  roi: row.roi || undefined,
 });

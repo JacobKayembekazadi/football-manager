@@ -5,9 +5,9 @@ import PlayerCard from './PlayerCard';
 import TacticsBoard from './TacticsBoard';
 import RadarChart from './RadarChart';
 import PlayerFormModal from './PlayerFormModal';
-import { generatePlayerVideo, generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
+import { generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
 import { createPlayer, updatePlayer, deletePlayer } from '../services/playerService';
-import { Plus, Search, Filter, X, Film, Loader2, Play, Cpu, Activity, Zap, ArrowUpDown, ArrowUp, ArrowDown, Upload, User, Camera, Image as ImageIcon, Download } from 'lucide-react';
+import { Plus, Search, Filter, X, Loader2, Cpu, Activity, Zap, ArrowUpDown, ArrowUp, ArrowDown, Upload, User, Camera, Image as ImageIcon, Download } from 'lucide-react';
 
 interface SquadViewProps {
   players: Player[];
@@ -30,9 +30,7 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'form', direction: 'desc' });
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [videoError, setVideoError] = useState('');
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [generatedCard, setGeneratedCard] = useState<ImageGenerationResult | null>(null);
 
@@ -175,41 +173,6 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
   };
 
   // --- AI Handlers ---
-
-  const handleGenerateVideo = async () => {
-    if (!selectedPlayer) return;
-    
-    setIsGeneratingVideo(true);
-    setVideoError('');
-    
-    try {
-        const mockClubContext: Club = {
-            id: 'c-1',
-            name: 'Neon City FC',
-            nickname: 'The Cyberpunks',
-            slug: 'neon-city-fc',
-            tone_context: 'Futuristic',
-            players: safePlayers,
-            primary_color: '#22c55e',
-            secondary_color: '#9333ea'
-        };
-
-        const videoUri = await generatePlayerVideo(mockClubContext, selectedPlayer);
-        
-        if (videoUri) {
-            const updatedPlayer = { ...selectedPlayer, highlight_uri: videoUri };
-            await updatePlayer(selectedPlayer.id, updatedPlayer);
-            updatePlayerInList(updatedPlayer);
-            setSelectedPlayer(updatedPlayer);
-        } else {
-            setVideoError('Failed to generate video stream.');
-        }
-    } catch (e) {
-        setVideoError('Error connecting to Veo visual cortex.');
-    } finally {
-        setIsGeneratingVideo(false);
-    }
-  };
 
   const handleGenerateAnalysis = async () => {
       if (!selectedPlayer) return;
@@ -489,26 +452,13 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                                     </>
                                 )}
                                 
-                                {videoError && <p className="text-red-400 text-xs font-mono mt-2 mb-4 border border-red-500/20 bg-red-500/10 p-2 rounded">{videoError}</p>}
-
-                                <div className="flex flex-col gap-3 w-full max-w-xs">
-                                     {!selectedPlayer.image_url && (
-                                        <label className="cursor-pointer px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                                            <Upload size={14} />
-                                            Upload Profile Image
-                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                        </label>
-                                     )}
-
-                                     <button 
-                                        onClick={handleGenerateVideo}
-                                        disabled={isGeneratingVideo}
-                                        className="px-8 py-3 bg-green-500/10 border border-green-500/50 hover:bg-green-500 hover:text-black text-green-500 rounded-lg font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {isGeneratingVideo ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
-                                        {isGeneratingVideo ? 'Requesting Uplink...' : 'Generate Veo Highlight'}
-                                    </button>
-                                </div>
+                                {!selectedPlayer.image_url && (
+                                    <label className="cursor-pointer px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                        <Upload size={14} />
+                                        Upload Profile Image
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                    </label>
+                                )}
                             </div>
                         )}
                         

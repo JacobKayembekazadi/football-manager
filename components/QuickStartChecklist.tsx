@@ -48,7 +48,7 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
       description: 'Add an upcoming match',
       completed: fixtures.filter(f => f.status === 'SCHEDULED').length > 0,
       icon: Calendar,
-      tab: 'fixtures',
+      tab: 'match',
     },
     {
       id: 'content',
@@ -56,15 +56,15 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
       description: 'Create your first AI content',
       completed: contentItems.length > 0,
       icon: Sparkles,
-      tab: 'fixtures',
+      tab: 'content',
     },
     {
       id: 'education',
-      label: 'Complete education modules',
-      description: 'Learn platform features',
+      label: 'Explore admin settings',
+      description: 'Configure platform preferences',
       completed: hasCompletedEducation,
       icon: BookOpen,
-      tab: 'education',
+      tab: 'admin',
     },
   ];
 
@@ -77,11 +77,11 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
   }
 
   return (
-    <div className="glass-card rounded-2xl p-6 border border-neon-green/20" data-tour="quickstart">
+    <div className="glass-card rounded-2xl p-6 border border-green-500/20" data-tour="quickstart">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center">
-            <Rocket size={20} className="text-neon-green" />
+          <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+            <Rocket size={20} className="text-green-500" />
           </div>
           <div>
             <h3 className="font-display font-bold text-white uppercase tracking-wider">Quick Start</h3>
@@ -91,14 +91,14 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
           </div>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-display font-bold text-neon-green">{Math.round(progressPercent)}%</span>
+          <span className="text-2xl font-display font-bold text-green-500">{Math.round(progressPercent)}%</span>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-6">
-        <div 
-          className="h-full bg-gradient-to-r from-neon-green to-emerald-400 transition-all duration-500 shadow-[0_0_10px_rgba(0,255,136,0.5)]"
+        <div
+          className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
@@ -110,15 +110,15 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
             key={item.id}
             onClick={() => onNavigate(item.tab)}
             className={`w-full flex items-center gap-4 p-3 rounded-lg transition-all group ${
-              item.completed 
-                ? 'bg-neon-green/5 border border-neon-green/20' 
-                : 'bg-white/[0.02] border border-white/5 hover:border-neon-green/30 hover:bg-neon-green/5'
+              item.completed
+                ? 'bg-green-500/5 border border-green-500/20'
+                : 'bg-white/[0.02] border border-white/5 hover:border-green-500/30 hover:bg-green-500/5'
             }`}
           >
             {/* Checkbox */}
-            <div className={`flex-shrink-0 ${item.completed ? 'text-neon-green' : 'text-slate-600'}`}>
+            <div className={`flex-shrink-0 ${item.completed ? 'text-green-500' : 'text-slate-600'}`}>
               {item.completed ? (
-                <CheckCircle2 size={20} className="fill-neon-green/20" />
+                <CheckCircle2 size={20} className="fill-green-500/20" />
               ) : (
                 <Circle size={20} />
               )}
@@ -126,9 +126,9 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
 
             {/* Icon */}
             <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-              item.completed 
-                ? 'bg-neon-green/10 text-neon-green' 
-                : 'bg-white/5 text-slate-500 group-hover:text-neon-green group-hover:bg-neon-green/10'
+              item.completed
+                ? 'bg-green-500/10 text-green-500'
+                : 'bg-white/5 text-slate-500 group-hover:text-green-500 group-hover:bg-green-500/10'
             } transition-colors`}>
               <item.icon size={16} />
             </div>
@@ -136,7 +136,7 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
             {/* Label */}
             <div className="flex-1 text-left">
               <span className={`text-sm font-medium ${
-                item.completed ? 'text-neon-green' : 'text-white group-hover:text-neon-green'
+                item.completed ? 'text-green-500' : 'text-white group-hover:text-green-500'
               } transition-colors`}>
                 {item.label}
               </span>
@@ -147,7 +147,7 @@ const QuickStartChecklist: React.FC<QuickStartChecklistProps> = ({
 
             {/* Arrow */}
             {!item.completed && (
-              <ChevronRight size={16} className="text-slate-600 group-hover:text-neon-green transition-colors" />
+              <ChevronRight size={16} className="text-slate-600 group-hover:text-green-500 transition-colors" />
             )}
           </button>
         ))}

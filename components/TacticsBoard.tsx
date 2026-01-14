@@ -102,9 +102,9 @@ const TacticsBoard: React.FC<TacticsBoardProps> = ({ players, onExpand, isExpand
       // Determine color based on actual position
       let colorClass = 'bg-slate-500 shadow-[0_0_15px_rgba(100,116,139,0.6)]';
       if (p.position === 'GK') colorClass = 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]';
-      if (p.position === 'DEF') colorClass = 'bg-neon-blue shadow-[0_0_15px_rgba(0,243,255,0.6)]';
-      if (p.position === 'MID') colorClass = 'bg-neon-purple shadow-[0_0_15px_rgba(188,19,254,0.6)]';
-      if (p.position === 'FWD') colorClass = 'bg-neon-pink shadow-[0_0_15px_rgba(255,0,85,0.6)]';
+      if (p.position === 'DEF') colorClass = 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)]';
+      if (p.position === 'MID') colorClass = 'bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.6)]';
+      if (p.position === 'FWD') colorClass = 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)]';
 
       return (
         <div 
@@ -121,12 +121,12 @@ const TacticsBoard: React.FC<TacticsBoardProps> = ({ players, onExpand, isExpand
   };
 
   return (
-    <div className={`glass-card rounded-2xl relative overflow-hidden border-neon-blue/20 flex flex-col ${isExpanded ? 'h-full w-full border-none bg-black' : 'p-6'}`}>
+    <div className={`glass-card rounded-2xl relative overflow-hidden border-blue-500/20 flex flex-col ${isExpanded ? 'h-full w-full border-none bg-black' : 'p-6'}`}>
       
       {/* Header */}
       <div className={`flex justify-between items-center z-10 relative ${isExpanded ? 'p-6 bg-black/50 backdrop-blur-md border-b border-white/10' : 'mb-6'}`}>
         <h3 className="text-xl font-display font-bold text-white flex items-center gap-2">
-            <span className="w-2 h-2 bg-neon-green rounded-full shadow-[0_0_10px_#0aff0a]"></span>
+            <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.8)]"></span>
             Tactical Overview
         </h3>
         
@@ -136,7 +136,7 @@ const TacticsBoard: React.FC<TacticsBoardProps> = ({ players, onExpand, isExpand
                     <button 
                         key={f}
                         onClick={() => setFormation(f)}
-                        className={`px-3 py-1 rounded-md text-xs font-mono border transition-all ${formation === f ? 'bg-neon-blue/20 border-neon-blue text-neon-blue' : 'border-white/10 text-slate-400 hover:text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs font-mono border transition-all ${formation === f ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'border-white/10 text-slate-400 hover:text-white'}`}
                     >
                         {f}
                     </button>
@@ -149,7 +149,7 @@ const TacticsBoard: React.FC<TacticsBoardProps> = ({ players, onExpand, isExpand
                          value={newFormation}
                          onChange={(e) => setNewFormation(e.target.value)}
                          placeholder="4-2-3-1"
-                         className="w-20 bg-black/40 border border-white/20 rounded px-2 py-1 text-xs text-white outline-none focus:border-neon-blue"
+                         className="w-20 bg-black/40 border border-white/20 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500"
                          autoFocus
                          onBlur={() => !newFormation && setIsAddingFormation(false)}
                          onKeyDown={(e) => e.key === 'Enter' && handleAddFormation()}
