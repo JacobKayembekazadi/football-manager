@@ -3,6 +3,7 @@ import type { Org, Club } from '../types';
 import { getMyOrgs, createOrg } from '../services/orgService';
 import { createClub, getClubsForOrg } from '../services/clubService';
 import { signOut } from '../services/authService';
+import { Skeleton } from './Skeleton';
 
 interface WorkspaceGateProps {
   onReady: (ctx: { orgId: string; clubId: string }) => void;
@@ -156,10 +157,24 @@ const WorkspaceGate: React.FC<WorkspaceGateProps> = ({ onReady }) => {
             <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white">
               Workspaces
             </h3>
-            {loading && <span className="text-[10px] font-mono text-slate-500">Loading…</span>}
+            {loading && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <span className="text-[10px] font-mono text-slate-500">Loading…</span>
+              </div>
+            )}
           </div>
 
-          {orgs.length > 0 ? (
+          {loading && orgs.length === 0 ? (
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="p-4 rounded-xl border border-white/10 bg-black/20">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              ))}
+            </div>
+          ) : orgs.length > 0 ? (
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
               {orgs.map((o) => (
                 <button

@@ -42,6 +42,7 @@ import {
   TrendingUp,
   Lock,
 } from 'lucide-react';
+import { Skeleton, CardSkeleton } from './Skeleton';
 import {
   EDUCATION_MODULES,
   MODULE_CATEGORIES,
@@ -419,8 +420,31 @@ const EducationView: React.FC<EducationViewProps> = ({ orgId, onNavigate }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-72" variant="rectangular" />
+        </div>
+
+        {/* Progress bar skeleton */}
+        <div className="glass-card p-4 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <Skeleton className="h-2 w-full" variant="rectangular" />
+        </div>
+
+        {/* Module cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
