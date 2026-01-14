@@ -1505,6 +1505,7 @@ const AppAuthed: React.FC<{
               await deleteContentItem(contentId);
               await refetchContent();
             }}
+            onContentCreated={refetchContent}
           />
         )}
         {activeTab === 'admin' && currentClub && (

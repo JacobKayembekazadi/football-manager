@@ -131,22 +131,23 @@
 
 | Item | Status | Action Required |
 |------|--------|-----------------|
-| CORS Configuration | ❌ Open | Restrict to production domain(s) |
-| Rate Limiting | ❌ Missing | Add to AI Edge Functions |
+| CORS Configuration | ✅ Done | Restricted to production domains in shared/_shared/cors.ts |
+| Rate Limiting | ✅ Done | Added to all AI Edge Functions via _shared/rateLimit.ts |
 | Error Monitoring | ❌ Missing | Integrate Sentry or LogRocket |
 | Email Verification | ⚠️ Optional | Enforce for production signups |
-| Password Policy | ⚠️ Weak | Increase from 6 char minimum |
+| Password Policy | ✅ Done | 8+ chars, uppercase, lowercase, number required |
 | Production Secrets | ⚠️ Review | Audit all env vars are set |
-| Input Sanitization | ⚠️ Partial | XSS/injection review needed |
+| Input Sanitization | ✅ Done | XSS protection via utils/sanitize.ts |
+| Security Headers | ✅ Done | CSP, HSTS, X-Frame-Options in vercel.json |
 
 ### 🟠 High Priority
 
 | Item | Status | Action Required |
 |------|--------|-----------------|
 | Mobile Responsiveness | ⚠️ Partial | Refine remaining components |
-| Color Cleanup | ⚠️ Partial | Remove neon from SquadView, PlayerCard |
-| Content Schedule Button | ❌ Missing | Wire up "Add Content" functionality |
-| UUID Seeding | ⚠️ Issues | Fix mock data ID mismatches |
+| Color Cleanup | ✅ Done | Neon colors replaced with calm brand palette in SquadView, PlayerCard |
+| Content Schedule Button | ✅ Done | "Add Content" button and content slots now functional |
+| UUID Seeding | ✅ Done | Mock data uses proper UUIDs via utils/uuid.ts |
 | Outlook OAuth Creds | ❌ Missing | Configure for production |
 | Custom SMTP | ❌ Missing | Replace Supabase default emails |
 | Usage Analytics | ❌ Missing | Add GA4 or Plausible |
@@ -226,13 +227,13 @@
 | Category | Completion |
 |----------|------------|
 | Core Features | 95% |
-| Security | 80% |
+| Security | 95% |
 | Testing | 75% |
 | Documentation | 95% |
-| Production Hardening | 60% |
+| Production Hardening | 90% |
 | Mobile Experience | 70% |
 
-**Overall**: Feature-complete, needs security hardening for production.
+**Overall**: Feature-complete, security hardening mostly complete. Ready for final polish.
 
 ---
 
