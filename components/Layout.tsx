@@ -14,6 +14,7 @@ import {
   Zap,
   Bell,
   LogOut,
+  Radio,
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 import { signOut } from '../services/authService';
