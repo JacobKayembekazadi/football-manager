@@ -1149,7 +1149,7 @@ const AppAuthed: React.FC<{
   supabaseConfigured: boolean;
   onSwitchWorkspace?: () => void;
 }> = ({ clubId, supabaseConfigured, onSwitchWorkspace }) => {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [generateStatus, setGenerateStatus] = useState<ContentGenStatus>('idle');
   const [isDemoDataActive, setIsDemoDataActive] = useState(false);
   const [isCheckingData, setIsCheckingData] = useState(true);
@@ -1448,7 +1448,7 @@ const AppAuthed: React.FC<{
           />
         )}
 
-        {activeTab === 'home' && currentClub && (
+        {activeTab === 'dashboard' && currentClub && (
           <Dashboard
             fixtures={fixtures}
             contentItems={contentItems}
@@ -1457,7 +1457,7 @@ const AppAuthed: React.FC<{
             onRunScout={runWeeklyScout}
           />
         )}
-        {activeTab === 'match' && currentClub && (
+        {activeTab === 'matchday' && currentClub && (
           <HypeEngine
             fixtures={fixtures}
             contentItems={contentItems}
@@ -1480,40 +1480,104 @@ const AppAuthed: React.FC<{
             }}
           />
         )}
-        {activeTab === 'squad' && currentClub && (
+        {activeTab === 'availability' && currentClub && (
           <SquadView
             players={currentClub.players}
             setPlayers={handleUpdatePlayers}
             club={currentClub}
           />
         )}
-        {activeTab === 'commercial' && currentClub && (
+        {activeTab === 'finance' && currentClub && (
           <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
         )}
-        {activeTab === 'content' && currentClub && (
-          <ContentHub
-            club={currentClub}
-            contentItems={contentItems}
-            fixtures={fixtures}
-            generateStatus={generateStatus}
-            onManualGenerate={async () => {
-              if (fixtures.length > 0) {
-                await runHypeProtocol(fixtures[0], { matchType: 'league' });
-              }
-            }}
-            onUpdateContent={handleUpdateContent}
-            onDeleteContent={async (contentId) => {
-              await deleteContentItem(contentId);
-              await refetchContent();
-            }}
-            onContentCreated={refetchContent}
-          />
-        )}
-        {activeTab === 'admin' && currentClub && (
+        {activeTab === 'club-ops' && currentClub && (
           <SettingsView club={currentClub} />
         )}
-        {activeTab === 'education' && currentClub && currentClub.org_id && (
-          <EducationView orgId={currentClub.org_id} onNavigate={setActiveTab} />
+        {activeTab === 'inbox' && currentClub && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Inbox</h2>
+              <p className="text-sm text-slate-400 mt-1">Notifications, approvals, and updates</p>
+            </div>
+            <div className="grid gap-4">
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Invoice #1042 awaiting approval</p>
+                    <p className="text-xs text-slate-500 mt-1">Finance • 2 hours ago</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">James Wilson - Hamstring strain reported</p>
+                    <p className="text-xs text-slate-500 mt-1">Medical • 4 hours ago</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Matchday checklist complete for Saturday</p>
+                    <p className="text-xs text-slate-500 mt-1">Operations • 1 day ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 text-center">Full inbox functionality coming soon</p>
+          </div>
+        )}
+        {activeTab === 'equipment' && currentClub && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Equipment</h2>
+              <p className="text-sm text-slate-400 mt-1">Kit inventory, laundry, and issue tracking</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Inventory</p>
+                <p className="text-2xl font-bold text-white mt-1">148</p>
+                <p className="text-xs text-slate-400">items in stock</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Laundry</p>
+                <p className="text-2xl font-bold text-amber-400 mt-1">23</p>
+                <p className="text-xs text-slate-400">items in wash</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Issued</p>
+                <p className="text-2xl font-bold text-green-400 mt-1">42</p>
+                <p className="text-xs text-slate-400">items out</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Low Stock</p>
+                <p className="text-2xl font-bold text-red-400 mt-1">5</p>
+                <p className="text-xs text-slate-400">items to reorder</p>
+              </div>
+            </div>
+            <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+              <h3 className="text-sm font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Issue Kit
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Return Kit
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Log Laundry
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  View Inventory
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 text-center">Full equipment management coming soon</p>
+          </div>
         )}
         {currentClub && <AiAssistant club={currentClub} />}
 

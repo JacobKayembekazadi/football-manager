@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
 import {
-  Home,
-  Trophy,
-  Users,
+  LayoutDashboard,
+  Inbox,
+  UserCheck,
+  Calendar,
+  Package,
+  Building2,
+  Wallet,
   Settings,
   Menu,
   X,
   Zap,
-  Radio,
   Bell,
-  Briefcase,
-  FileText,
   LogOut,
-  BookOpen
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 import { signOut } from '../services/authService';
@@ -60,13 +60,13 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'match', label: 'Match Hub', icon: Trophy },
-    { id: 'squad', label: 'Squad', icon: Users },
-    { id: 'content', label: 'Content', icon: FileText },
-    { id: 'commercial', label: 'Commercial', icon: Briefcase },
-    { id: 'education', label: 'Learn', icon: BookOpen },
-    { id: 'admin', label: 'Admin', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inbox', label: 'Inbox', icon: Inbox },
+    { id: 'availability', label: 'Availability', icon: UserCheck },
+    { id: 'matchday', label: 'Matchday', icon: Calendar },
+    { id: 'equipment', label: 'Equipment', icon: Package },
+    { id: 'club-ops', label: 'Club Ops', icon: Building2 },
+    { id: 'finance', label: 'Finance', icon: Wallet },
   ];
 
   return (
