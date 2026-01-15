@@ -189,7 +189,7 @@ const WeatherWidget: React.FC = () => {
   )
 }
 
-// --- Dashboard Component (Futuristic Command Center) ---
+// --- Dashboard Component (Simplified 4-Block Layout) ---
 const Dashboard: React.FC<{
   fixtures: Fixture[],
   contentItems: ContentItem[],
@@ -197,369 +197,126 @@ const Dashboard: React.FC<{
   onNavigate: (tab: string) => void,
   onRunScout: () => Promise<void>,
   hasCompletedEducation?: boolean
-}> = ({ fixtures, contentItems, club, onNavigate, onRunScout, hasCompletedEducation }) => {
+}> = ({ fixtures, club, onNavigate }) => {
   const upcoming = fixtures.filter(f => f.status === 'SCHEDULED');
-  const [isInitiating, setIsInitiating] = useState(false);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [isAnalyzingOpponent, setIsAnalyzingOpponent] = useState(false);
-  const [opponentAnalysis, setOpponentAnalysis] = useState<string | null>(null);
-  const [showImageGenerator, setShowImageGenerator] = useState(false);
-  const [fanSentiment, setFanSentiment] = useState<FanSentiment | null>(null);
-  const [isRefreshingSentiment, setIsRefreshingSentiment] = useState(false);
+  const nextMatch = upcoming[0];
 
-  const handleInitiateProtocol = async () => {
-    setIsInitiating(true);
-    await onRunScout();
-    setIsInitiating(false);
-    onNavigate('content');
+  // Determine day type based on fixtures
+  const getDayType = () => {
+    if (!nextMatch) return { label: 'Admin Day', action: 'Review tasks' };
+    const matchDate = new Date(nextMatch.date);
+    const today = new Date();
+    const daysUntil = Math.ceil((matchDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntil <= 0) return { label: 'Matchday', action: 'Go to Matchday' };
+    if (daysUntil <= 2) return { label: 'Matchday Prep', action: 'Final checks' };
+    return { label: 'Training Day', action: 'Review availability' };
   };
 
-  const handleViewAnalysis = async () => {
-    if (!upcoming[0]) return;
+  const dayType = getDayType();
 
-    setShowAnalysisModal(true);
-    if (!opponentAnalysis) {
-      setIsAnalyzingOpponent(true);
-      const report = await generateOpponentReport(club, upcoming[0].opponent);
-      setOpponentAnalysis(report);
-      setIsAnalyzingOpponent(false);
-    }
-  };
+  // Mock availability data (would come from real data)
+  const availabilityIssues = [
+    { name: 'J. Wilson', status: 'Out', reason: 'Hamstring', color: 'text-red-500' },
+    { name: 'M. Chen', status: 'Doubtful', reason: 'Knock', color: 'text-amber-500' },
+    { name: 'R. Silva', status: 'Doubtful', reason: 'Illness', color: 'text-amber-500' },
+  ];
 
-  // Fetch fan sentiment on mount
-  useEffect(() => {
-    const fetchSentiment = async () => {
-      if (!club?.id) return;
-      try {
-        const sentiment = await getLatestFanSentiment(club.id);
-        setFanSentiment(sentiment);
-      } catch (error) {
-        console.error('Error fetching fan sentiment:', error);
-        // Fallback to mock data handled by service
-      }
-    };
-    fetchSentiment();
-  }, [club?.id]);
-
-  const handleRefreshSentiment = async () => {
-    if (!club?.id || !club?.name || !club?.org_id || isRefreshingSentiment) return;
-
-    setIsRefreshingSentiment(true);
-    try {
-      const refreshed = await refreshFanSentiment(club.id, club.name, club.org_id || '');
-      setFanSentiment(refreshed);
-    } catch (error) {
-      console.error('Error refreshing fan sentiment:', error);
-      handleError(error, 'Failed to refresh fan sentiment');
-    } finally {
-      setIsRefreshingSentiment(false);
-    }
-  };
-
-  // Calculate display values
-  const sentimentScore = fanSentiment?.sentiment_score ?? 92;
-  const sentimentMood = fanSentiment?.sentiment_mood?.toUpperCase() ?? 'EUPHORIC';
-  const moodColor =
-    sentimentScore >= 80 ? 'text-green-400' :
-      sentimentScore >= 60 ? 'text-blue-400' :
-        sentimentScore >= 40 ? 'text-yellow-400' :
-          sentimentScore >= 20 ? 'text-orange-400' :
-            'text-red-400';
+  // Mock inbox items
+  const inboxItems = [
+    { id: '1', text: 'Invoice #1042 awaiting approval', source: 'Finance', time: '2h ago', dot: 'bg-amber-500' },
+    { id: '2', text: 'Kit delivery confirmed for Thursday', source: 'Equipment', time: '4h ago', dot: 'bg-green-500' },
+    { id: '3', text: 'Travel arrangements need confirmation', source: 'Operations', time: '1d ago', dot: 'bg-blue-500' },
+  ];
 
   return (
-    <div className="space-y-6 pb-8">
-      <NewsTicker />
+    <div className="space-y-4 pb-8 max-w-4xl">
+      {/* Block 1: CONTINUE Button (Primary Action) */}
+      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Today</p>
+        <h2 className="text-2xl font-bold text-white mb-1">{dayType.label}</h2>
+        <p className="text-sm text-slate-400 mb-4">{dayType.action}</p>
+        <button
+          onClick={() => onNavigate(dayType.label === 'Matchday' ? 'matchday' : 'availability')}
+          className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-lg text-lg transition-colors"
+        >
+          Continue
+        </button>
+      </div>
 
-      {/* Hero / Status Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Status Card */}
-        <div className="lg:col-span-2 glass-panel p-8 rounded-3xl relative overflow-hidden group border border-green-500/30">
-          {/* Background Chart */}
-          <MomentumChart />
-
-          <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
-
-          <div className="relative z-10 flex flex-col h-full justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span>
-                <span className="text-xs font-mono text-green-400 tracking-widest uppercase">System Optimal // Season Week 14</span>
-              </div>
-              <h2 className="text-5xl font-display font-bold text-white mb-2 glow-text tracking-tight">COMMAND <br />CENTER</h2>
-              <p className="text-slate-300 max-w-lg mb-8 font-mono text-sm border-l-2 border-green-500 pl-4">
-                <span className="text-green-500 font-bold">LATEST:</span> Opponent analysis for {upcoming[0]?.opponent || 'Next Match'} is ready for review. Tactical adjustments recommended based on weather patterns.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={handleInitiateProtocol}
-                disabled={isInitiating}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold font-display uppercase rounded-lg shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_50px_rgba(34,197,94,0.5)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3 disabled:opacity-50 disabled:scale-100 relative overflow-hidden group/btn"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                {isInitiating ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} className="fill-white" />}
-                {isInitiating ? 'Processing Data...' : 'Initiate Weekly Protocol'}
-              </button>
-              <button onClick={() => onNavigate('match')} className="px-6 py-4 bg-black/40 border border-white/20 text-white font-bold font-display uppercase rounded-lg hover:bg-white/10 transition-all flex items-center gap-2 backdrop-blur-md">
-                <Trophy size={18} /> Log Match Result
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Next Match Countdown Widget */}
-        <div className="glass-card p-6 rounded-3xl flex flex-col justify-between border-t-4 border-t-rose-500 relative overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-          <div className="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent"></div>
+      {/* Block 2: Next Match (Compact) */}
+      <div
+        className="bg-slate-800/50 border border-white/10 rounded-xl p-4 cursor-pointer hover:border-white/20 transition-colors"
+        onClick={() => onNavigate('matchday')}
+      >
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-mono text-rose-500 uppercase tracking-widest">Next Engagement</span>
-              <div className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-[9px] font-bold text-rose-500 uppercase">League Match</div>
-            </div>
-            <h3 className="text-3xl font-display font-bold text-white mt-4">{upcoming[0]?.opponent || 'TBD'}</h3>
-            <p className="text-slate-400 text-sm flex items-center gap-1 mt-1 font-mono uppercase"><MapPin size={12} /> {upcoming[0]?.venue || 'Unknown'} Sector</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Next Match</p>
+            <p className="text-lg font-semibold text-white mt-1">
+              {nextMatch ? `vs ${nextMatch.opponent}` : 'No fixtures scheduled'}
+            </p>
+            {nextMatch && (
+              <p className="text-sm text-slate-400">
+                {new Date(nextMatch.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                {' '}&bull;{' '}{nextMatch.venue}
+              </p>
+            )}
           </div>
-
-          <div className="mt-8 space-y-4">
-            <div className="flex gap-2">
-              {['02', '14', '35', '12'].map((time, i) => (
-                <div key={i} className="flex-1 bg-black/60 rounded-lg py-2 text-center border border-white/5 shadow-inner">
-                  <span className="block text-2xl font-display font-bold text-white tracking-wider">{time}</span>
-                  <span className="text-[7px] text-slate-500 uppercase font-mono tracking-widest">{['Days', 'Hrs', 'Min', 'Sec'][i]}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowImageGenerator(true)}
-              className="w-full py-2.5 bg-purple-500/10 border border-purple-500/50 text-purple-500 rounded-lg text-xs font-bold uppercase hover:bg-purple-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              <ImageIcon size={14} />
-              Generate Matchday Graphic
-            </button>
-          </div>
+          <ArrowRight className="text-slate-500" size={20} />
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Sentiment Gauge */}
-        <div className="glass-card p-5 rounded-2xl border-green-500/20">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Fan Sentiment</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefreshSentiment}
-                disabled={isRefreshingSentiment}
-                className="text-slate-400 hover:text-green-500 transition-colors disabled:opacity-50"
-                title="Refresh sentiment"
-              >
-                {isRefreshingSentiment ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <TrendingUp size={16} className="text-emerald-500" />
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="relative h-28 flex items-center justify-center">
-            {/* CSS Gauge Simulation */}
-            <div className="w-24 h-12 border-t-[10px] border-l-[10px] border-r-[10px] border-green-500 rounded-t-full border-b-0 absolute top-4 opacity-20"></div>
-            <div className="w-24 h-12 border-t-[10px] border-l-[10px] border-r-[10px] border-emerald-500 rounded-t-full border-b-0 absolute top-4" style={{ clipPath: `polygon(0 0, ${sentimentScore}% 0, ${sentimentScore}% 100%, 0 100%)`, transform: 'rotate(-45deg)', transformOrigin: 'bottom center' }}></div>
-            <div className="absolute bottom-4 flex flex-col items-center">
-              <span className="text-4xl font-display font-bold text-white">{sentimentScore}%</span>
-              <span className={`text-[9px] ${moodColor} font-mono tracking-widest uppercase`}>{sentimentMood}</span>
-            </div>
-          </div>
-          <div className="w-full bg-white/5 rounded-full h-1 mt-1">
-            <div className={`h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500`} style={{ width: `${sentimentScore}%` }}></div>
-          </div>
-          {fanSentiment && (
-            <div className="mt-2 text-[9px] text-slate-500 font-mono">
-              {fanSentiment.total_mentions} mentions • {fanSentiment.data_source}
-            </div>
-          )}
+      {/* Block 3: Inbox Preview (3 items max) */}
+      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Inbox</p>
+          <button
+            onClick={() => onNavigate('inbox')}
+            className="text-xs text-green-500 hover:text-green-400 transition-colors"
+          >
+            View all
+          </button>
         </div>
-
-        {/* Win Probability Widget */}
-        <WinProbability opponent={upcoming[0]?.opponent || 'Next Opponent'} />
-
-        {/* Weather Widget */}
-        <WeatherWidget />
-
-      </div>
-
-      {/* Secondary Metrics / Sponsor Widget (NEW) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-card p-5 rounded-2xl border-yellow-400/20 cursor-pointer hover:border-yellow-400/40 transition-colors" onClick={() => onNavigate('commercial')}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Commercial Status</span>
-            <Briefcase size={16} className="text-yellow-400" />
-          </div>
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-2xl font-display font-bold text-white">96%</span>
-              <span className="text-[10px] text-green-400 font-mono">ON TARGET</span>
-            </div>
-            <p className="text-[10px] text-slate-500 font-mono">Revenue Projection: £275k</p>
-          </div>
-        </div>
-
-        {/* Next Opponent Analysis */}
-        <div className="lg:col-span-3 glass-card p-5 rounded-2xl border-white/10 relative overflow-hidden group hover:border-red-500/30 transition-colors cursor-pointer" onClick={handleViewAnalysis}>
-          <div className="absolute inset-0 bg-noise opacity-10"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Opponent Intel</span>
-            <span className="text-xs font-bold text-white bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 animate-pulse">HIGH THREAT</span>
-          </div>
-          <div className="relative z-10">
-            <div className="text-lg font-bold text-white truncate">{upcoming[0]?.opponent}</div>
-            <div className="text-xs text-slate-400 mt-1 font-mono">Form: <span className="text-green-400">W</span>-L-<span className="text-green-400">W</span>-<span className="text-green-400">W</span>-D</div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex -space-x-2">
-                <div className="w-6 h-6 rounded-full bg-slate-700 border border-black" title="Key Player 1"></div>
-                <div className="w-6 h-6 rounded-full bg-slate-600 border border-black" title="Key Player 2"></div>
-                <div className="w-6 h-6 rounded-full bg-slate-800 border border-black flex items-center justify-center text-[8px] text-white font-mono">+2</div>
+        <div className="space-y-3">
+          {inboxItems.map(item => (
+            <div key={item.id} className="flex items-start gap-3">
+              <div className={`w-2 h-2 rounded-full mt-1.5 ${item.dot}`}></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{item.text}</p>
+                <p className="text-xs text-slate-500">{item.source} &bull; {item.time}</p>
               </div>
-              <button
-                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors group-hover:bg-red-500/20 group-hover:text-red-400"
-              >
-                <ArrowRight size={14} />
-              </button>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Quick Start + Content Feed Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-6">
-          {/* Quick Start Checklist */}
-          <QuickStartChecklist
-            players={club.players}
-            fixtures={fixtures}
-            contentItems={contentItems}
-            hasCompletedEducation={hasCompletedEducation}
-            onNavigate={onNavigate}
-          />
-
-          {/* Content Feed */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                Latest Content Generations
-              </h3>
-              <button onClick={() => onNavigate('content')} className="text-xs font-mono text-green-500 hover:text-white transition-colors flex items-center gap-1 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500/10">
-                VIEW ALL <ArrowRight size={12} />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {contentItems.slice(0, 2).map(item => {
-                const fixture = fixtures.find(f => f.id === item.fixture_id);
-                return <ContentCard key={item.id} item={item} fixture={fixture} />;
-              })}
-              {contentItems.length === 0 && (
-                <div className="col-span-2 text-center py-12 glass-panel rounded-xl border-dashed border-slate-700">
-                  <p className="text-slate-500 font-mono text-sm">NO DATA IN STREAM.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Viral Scout Widget */}
-          <ViralScout club={club} onGenerateIdeas={() => generateViralIdeas(club)} />
+      {/* Block 4: Availability Preview */}
+      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Availability Issues</p>
+          <button
+            onClick={() => onNavigate('availability')}
+            className="text-xs text-green-500 hover:text-green-400 transition-colors"
+          >
+            View squad
+          </button>
         </div>
-
-        {/* Live Feed Mockup (Terminal Style) */}
-        <div className="glass-card rounded-2xl p-0 border-l-2 border-l-emerald-500 overflow-hidden flex flex-col h-full">
-          <div className="p-4 border-b border-white/5 bg-black/40 flex justify-between items-center">
-            <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider">System Log</h3>
-            <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
-              <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
-              <div className="w-2 h-2 rounded-full bg-green-500/50"></div>
-            </div>
-          </div>
-          <div className="p-4 space-y-4 relative flex-1 font-mono text-xs bg-black/20">
-            <div className="absolute left-[19px] top-4 bottom-4 w-[1px] bg-slate-800"></div>
-            {[
-              { time: '10:42:05', text: 'Social sentiment analysis complete. Trend: POSITIVE.', color: 'text-emerald-500', icon: Zap },
-              { time: '09:15:22', text: 'Opponent tactical profile updated [v2.4].', color: 'text-white', icon: Target },
-              { time: '08:30:00', text: 'Daily briefing generated for coaching staff.', color: 'text-slate-400', icon: FileText },
-              { time: '08:00:00', text: 'System boot sequence initiated.', color: 'text-slate-500', icon: Activity },
-            ].map((log, i) => (
-              <div key={i} className="flex gap-4 relative z-10 group">
-                <div className={`w-6 h-6 rounded-full border border-black flex items-center justify-center ${i === 0 ? 'bg-emerald-500 text-black animate-pulse' : 'bg-slate-800 text-slate-400'} shadow-lg z-20`}>
-                  <log.icon size={10} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <span className={`font-bold ${log.color}`}>{i === 0 ? '>> ' : ''}{log.text}</span>
-                  </div>
-                  <p className="text-[10px] font-mono text-slate-600 mt-0.5">{log.time}</p>
+        {availabilityIssues.length > 0 ? (
+          <div className="space-y-2">
+            {availabilityIssues.map((player, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <span className="text-sm text-white">{player.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">{player.reason}</span>
+                  <span className={`text-xs font-medium ${player.color}`}>{player.status}</span>
                 </div>
               </div>
             ))}
-            <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
-        </div>
+        ) : (
+          <p className="text-sm text-slate-400">All players available</p>
+        )}
       </div>
-
-      {/* Opponent Analysis Modal */}
-      {showAnalysisModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowAnalysisModal(false)}></div>
-          <div className="relative bg-[#0a0a0a] w-full max-w-2xl rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
-                  <Target size={20} />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-white text-lg">TACTICAL BRIEFING</h3>
-                  <p className="text-xs font-mono text-red-400 tracking-widest">CLASSIFIED // EYES ONLY</p>
-                </div>
-              </div>
-              <button onClick={() => setShowAnalysisModal(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
-            </div>
-
-            <div className="p-8 overflow-y-auto custom-scrollbar">
-              {isAnalyzingOpponent ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 size={40} className="text-green-500 animate-spin mb-4" />
-                  <p className="text-green-500 font-mono text-sm animate-pulse tracking-widest">DECRYPTING OPPONENT DATA STREAM...</p>
-                </div>
-              ) : (
-                <div className="prose prose-invert prose-sm max-w-none font-mono">
-                  <div className="whitespace-pre-line leading-relaxed text-slate-300">
-                    {opponentAnalysis}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-black/50 border-t border-white/10 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                <AlertTriangle size={12} className="text-yellow-500" />
-                CONFIDENTIALITY LEVEL: HIGH
-              </div>
-              <button onClick={() => setShowAnalysisModal(false)} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded text-xs font-bold text-white uppercase transition-colors border border-white/5">
-                Close Briefing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Generator Modal */}
-      {showImageGenerator && (
-        <ImageGeneratorModal
-          club={club}
-          fixtures={fixtures}
-          onClose={() => setShowImageGenerator(false)}
-        />
-      )}
     </div>
   );
 };
@@ -694,8 +451,8 @@ const HypeEngine: React.FC<{
     <div className="space-y-6 animate-fade-in relative h-full flex flex-col">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white glow-text">THE <span className="text-green-500">HYPE ENGINE</span></h2>
-          <p className="text-slate-400 font-mono text-xs mt-1">Automated content campaigns for every matchday.</p>
+          <h2 className="text-2xl font-bold text-white">Matchday</h2>
+          <p className="text-slate-400 text-sm mt-1">Fixtures, results, and matchday operations</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -703,7 +460,7 @@ const HypeEngine: React.FC<{
           <button
             onClick={() => setIsFixtureModalOpen(true)}
             data-tour="add-fixture-btn"
-            className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 px-5 py-3 rounded-xl font-display font-bold uppercase text-xs hover:bg-emerald-500/20 transition-all shadow-[0_0_15px_rgba(0,255,136,0.2)] hover:shadow-[0_0_25px_rgba(0,255,136,0.4)]"
+            className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2 rounded-lg font-medium text-sm hover:bg-green-500/20 transition-colors"
           >
             <Plus size={16} /> Schedule Fixture
           </button>
@@ -712,13 +469,13 @@ const HypeEngine: React.FC<{
           <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-green-500 text-black shadow-[0_0_10px_#22c55e]' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
             >
               <Calendar size={14} /> Upcoming Ops
             </button>
             <button
               onClick={() => setActiveTab('archive')}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'archive' ? 'bg-purple-500 text-white shadow-[0_0_10px_#bc13fe]' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'archive' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
             >
               <Archive size={14} /> Result Archive
             </button>
@@ -1149,7 +906,7 @@ const AppAuthed: React.FC<{
   supabaseConfigured: boolean;
   onSwitchWorkspace?: () => void;
 }> = ({ clubId, supabaseConfigured, onSwitchWorkspace }) => {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [generateStatus, setGenerateStatus] = useState<ContentGenStatus>('idle');
   const [isDemoDataActive, setIsDemoDataActive] = useState(false);
   const [isCheckingData, setIsCheckingData] = useState(true);
@@ -1448,7 +1205,7 @@ const AppAuthed: React.FC<{
           />
         )}
 
-        {activeTab === 'home' && currentClub && (
+        {activeTab === 'dashboard' && currentClub && (
           <Dashboard
             fixtures={fixtures}
             contentItems={contentItems}
@@ -1457,7 +1214,7 @@ const AppAuthed: React.FC<{
             onRunScout={runWeeklyScout}
           />
         )}
-        {activeTab === 'match' && currentClub && (
+        {activeTab === 'matchday' && currentClub && (
           <HypeEngine
             fixtures={fixtures}
             contentItems={contentItems}
@@ -1480,40 +1237,104 @@ const AppAuthed: React.FC<{
             }}
           />
         )}
-        {activeTab === 'squad' && currentClub && (
+        {activeTab === 'availability' && currentClub && (
           <SquadView
             players={currentClub.players}
             setPlayers={handleUpdatePlayers}
             club={currentClub}
           />
         )}
-        {activeTab === 'commercial' && currentClub && (
+        {activeTab === 'finance' && currentClub && (
           <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
         )}
-        {activeTab === 'content' && currentClub && (
-          <ContentHub
-            club={currentClub}
-            contentItems={contentItems}
-            fixtures={fixtures}
-            generateStatus={generateStatus}
-            onManualGenerate={async () => {
-              if (fixtures.length > 0) {
-                await runHypeProtocol(fixtures[0], { matchType: 'league' });
-              }
-            }}
-            onUpdateContent={handleUpdateContent}
-            onDeleteContent={async (contentId) => {
-              await deleteContentItem(contentId);
-              await refetchContent();
-            }}
-            onContentCreated={refetchContent}
-          />
-        )}
-        {activeTab === 'admin' && currentClub && (
+        {activeTab === 'club-ops' && currentClub && (
           <SettingsView club={currentClub} />
         )}
-        {activeTab === 'education' && currentClub && currentClub.org_id && (
-          <EducationView orgId={currentClub.org_id} onNavigate={setActiveTab} />
+        {activeTab === 'inbox' && currentClub && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Inbox</h2>
+              <p className="text-sm text-slate-400 mt-1">Notifications, approvals, and updates</p>
+            </div>
+            <div className="grid gap-4">
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Invoice #1042 awaiting approval</p>
+                    <p className="text-xs text-slate-500 mt-1">Finance • 2 hours ago</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">James Wilson - Hamstring strain reported</p>
+                    <p className="text-xs text-slate-500 mt-1">Medical • 4 hours ago</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Matchday checklist complete for Saturday</p>
+                    <p className="text-xs text-slate-500 mt-1">Operations • 1 day ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 text-center">Full inbox functionality coming soon</p>
+          </div>
+        )}
+        {activeTab === 'equipment' && currentClub && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Equipment</h2>
+              <p className="text-sm text-slate-400 mt-1">Kit inventory, laundry, and issue tracking</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Inventory</p>
+                <p className="text-2xl font-bold text-white mt-1">148</p>
+                <p className="text-xs text-slate-400">items in stock</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Laundry</p>
+                <p className="text-2xl font-bold text-amber-400 mt-1">23</p>
+                <p className="text-xs text-slate-400">items in wash</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Issued</p>
+                <p className="text-2xl font-bold text-green-400 mt-1">42</p>
+                <p className="text-xs text-slate-400">items out</p>
+              </div>
+              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Low Stock</p>
+                <p className="text-2xl font-bold text-red-400 mt-1">5</p>
+                <p className="text-xs text-slate-400">items to reorder</p>
+              </div>
+            </div>
+            <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+              <h3 className="text-sm font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Issue Kit
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Return Kit
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  Log Laundry
+                </button>
+                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                  View Inventory
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 text-center">Full equipment management coming soon</p>
+          </div>
         )}
         {currentClub && <AiAssistant club={currentClub} />}
 

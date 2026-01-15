@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
 import {
-  Home,
-  Trophy,
-  Users,
+  LayoutDashboard,
+  Inbox,
+  UserCheck,
+  Calendar,
+  Package,
+  Building2,
+  Wallet,
   Settings,
   Menu,
   X,
   Zap,
-  Radio,
   Bell,
-  Briefcase,
-  FileText,
   LogOut,
-  BookOpen
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 import { signOut } from '../services/authService';
@@ -60,21 +60,20 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'match', label: 'Match Hub', icon: Trophy },
-    { id: 'squad', label: 'Squad', icon: Users },
-    { id: 'content', label: 'Content', icon: FileText },
-    { id: 'commercial', label: 'Commercial', icon: Briefcase },
-    { id: 'education', label: 'Learn', icon: BookOpen },
-    { id: 'admin', label: 'Admin', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inbox', label: 'Inbox', icon: Inbox },
+    { id: 'availability', label: 'Availability', icon: UserCheck },
+    { id: 'matchday', label: 'Matchday', icon: Calendar },
+    { id: 'equipment', label: 'Equipment', icon: Package },
+    { id: 'club-ops', label: 'Club Ops', icon: Building2 },
+    { id: 'finance', label: 'Finance', icon: Wallet },
   ];
 
   return (
     <div className="flex h-screen bg-dark-bg text-slate-100 overflow-hidden font-sans selection:bg-green-500 selection:text-black">
 
-      {/* Background Grid Effect */}
-      <div className="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-[0.05] pointer-events-none z-0"></div>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-purple-500 to-rose-500 z-50 shadow-[0_0_20px_rgba(34,197,94,0.5)]"></div>
+      {/* Top accent bar */}
+      <div className="absolute top-0 left-0 w-full h-0.5 bg-green-500 z-50"></div>
 
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
@@ -91,16 +90,12 @@ const Layout: React.FC<LayoutProps> = ({
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Brand Header */}
-        <div className={`p-8 flex items-center gap-4 relative overflow-hidden ${isSidebarCollapsed ? 'md:p-4 md:justify-center' : ''}`}>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-green-500/10 to-transparent opacity-50"></div>
-          <div className="relative z-10 p-2 border border-green-500/30 rounded bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-            <Zap className="text-green-500 animate-pulse" size={24} />
+        <div className={`p-6 flex items-center gap-3 ${isSidebarCollapsed ? 'md:p-4 md:justify-center' : ''}`}>
+          <div className="p-2 border border-green-500/30 rounded bg-green-500/10">
+            <Zap className="text-green-500" size={20} />
           </div>
           {!isSidebarCollapsed && (
-            <div className="relative z-10">
-              <h1 className="text-2xl font-display font-bold tracking-wider text-white leading-none uppercase">Pitch<span className="text-green-500">AI</span></h1>
-              <p className="text-[10px] text-purple-500 tracking-[0.2em] uppercase mt-1 glow-text">Pro Edition v2.0</p>
-            </div>
+            <h1 className="text-xl font-bold text-white">PitchSide</h1>
           )}
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden ml-auto text-slate-400 hover:text-white">
             <X size={20} />
@@ -127,23 +122,16 @@ const Layout: React.FC<LayoutProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 aria-label={item.label}
                 className={`
-                  w-full flex items-center gap-4 px-4 py-4 rounded-xl text-sm font-medium transition-all duration-300 group relative overflow-hidden
+                  w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
                   ${isSidebarCollapsed ? 'md:justify-center md:px-2' : ''}
                   ${isActive
-                    ? 'text-white shadow-[0_0_20px_rgba(34,197,94,0.15)] border border-green-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                    ? 'bg-green-500/10 text-white border-l-2 border-green-500'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }
                 `}
               >
-                {/* Active Background Gradient */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-transparent opacity-100 transition-opacity"></div>
-                )}
-
-                <Icon size={20} className={`relative z-10 transition-colors duration-300 flex-shrink-0 ${isActive ? 'text-green-500 drop-shadow-[0_0_5px_rgba(34,197,94,0.8)]' : 'group-hover:text-green-500'}`} />
-                {!isSidebarCollapsed && <span className="relative z-10 tracking-wide font-display uppercase">{item.label}</span>}
-
-                {isActive && !isSidebarCollapsed && <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>}
+                <Icon size={18} className={`flex-shrink-0 ${isActive ? 'text-green-500' : ''}`} />
+                {!isSidebarCollapsed && <span>{item.label}</span>}
               </button>
             );
           })}
