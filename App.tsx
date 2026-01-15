@@ -451,8 +451,8 @@ const HypeEngine: React.FC<{
     <div className="space-y-6 animate-fade-in relative h-full flex flex-col">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white glow-text">THE <span className="text-green-500">HYPE ENGINE</span></h2>
-          <p className="text-slate-400 font-mono text-xs mt-1">Automated content campaigns for every matchday.</p>
+          <h2 className="text-2xl font-bold text-white">Matchday</h2>
+          <p className="text-slate-400 text-sm mt-1">Fixtures, results, and matchday operations</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -460,7 +460,7 @@ const HypeEngine: React.FC<{
           <button
             onClick={() => setIsFixtureModalOpen(true)}
             data-tour="add-fixture-btn"
-            className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 px-5 py-3 rounded-xl font-display font-bold uppercase text-xs hover:bg-emerald-500/20 transition-all shadow-[0_0_15px_rgba(0,255,136,0.2)] hover:shadow-[0_0_25px_rgba(0,255,136,0.4)]"
+            className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2 rounded-lg font-medium text-sm hover:bg-green-500/20 transition-colors"
           >
             <Plus size={16} /> Schedule Fixture
           </button>
@@ -469,13 +469,13 @@ const HypeEngine: React.FC<{
           <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-green-500 text-black shadow-[0_0_10px_#22c55e]' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
             >
               <Calendar size={14} /> Upcoming Ops
             </button>
             <button
               onClick={() => setActiveTab('archive')}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all flex items-center gap-2 ${activeTab === 'archive' ? 'bg-purple-500 text-white shadow-[0_0_10px_#bc13fe]' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'archive' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
             >
               <Archive size={14} /> Result Archive
             </button>
