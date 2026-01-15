@@ -189,7 +189,7 @@ const WeatherWidget: React.FC = () => {
   )
 }
 
-// --- Dashboard Component (Simplified 4-Block Layout) ---
+// --- Dashboard Component (Task-Based Layout with Match Hub) ---
 const Dashboard: React.FC<{
   fixtures: Fixture[],
   contentItems: ContentItem[],
@@ -197,125 +197,248 @@ const Dashboard: React.FC<{
   onNavigate: (tab: string) => void,
   onRunScout: () => Promise<void>,
   hasCompletedEducation?: boolean
-}> = ({ fixtures, club, onNavigate }) => {
-  const upcoming = fixtures.filter(f => f.status === 'SCHEDULED');
+}> = ({ fixtures, club, contentItems, onNavigate }) => {
+  const upcoming = fixtures.filter(f => f.status === 'SCHEDULED').sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
   const nextMatch = upcoming[0];
+  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
-  // Determine day type based on fixtures
-  const getDayType = () => {
-    if (!nextMatch) return { label: 'Admin Day', action: 'Review tasks' };
-    const matchDate = new Date(nextMatch.date);
-    const today = new Date();
-    const daysUntil = Math.ceil((matchDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysUntil <= 0) return { label: 'Matchday', action: 'Go to Matchday' };
-    if (daysUntil <= 2) return { label: 'Matchday Prep', action: 'Final checks' };
-    return { label: 'Training Day', action: 'Review availability' };
+  const toggleTask = (taskId: string) => {
+    setCompletedTasks(prev =>
+      prev.includes(taskId) ? prev.filter(t => t !== taskId) : [...prev, taskId]
+    );
   };
 
-  const dayType = getDayType();
+  // Calculate days until next match
+  const getDaysUntil = (date: string) => {
+    const matchDate = new Date(date);
+    const today = new Date();
+    return Math.ceil((matchDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
-  // Mock availability data (would come from real data)
-  const availabilityIssues = [
-    { name: 'J. Wilson', status: 'Out', reason: 'Hamstring', color: 'text-red-500' },
-    { name: 'M. Chen', status: 'Doubtful', reason: 'Knock', color: 'text-amber-500' },
-    { name: 'R. Silva', status: 'Doubtful', reason: 'Illness', color: 'text-amber-500' },
+  // Dynamic tasks based on fixtures and state
+  const tasks = [
+    {
+      id: 'availability',
+      label: 'Confirm player availability',
+      sublabel: `${club.players.length} players on roster`,
+      icon: '👥',
+      color: 'border-l-blue-500',
+      navigate: 'availability'
+    },
+    {
+      id: 'injuries',
+      label: 'Update injuries',
+      sublabel: '1 player flagged for assessment',
+      icon: '🏥',
+      color: 'border-l-red-500',
+      navigate: 'availability'
+    },
+    {
+      id: 'prematch',
+      label: 'Generate pre-match content',
+      sublabel: nextMatch ? `vs ${nextMatch.opponent}` : 'No upcoming match',
+      icon: '📝',
+      color: 'border-l-purple-500',
+      navigate: 'matchday'
+    },
+    {
+      id: 'sponsor',
+      label: 'Review sponsor deliverables',
+      sublabel: 'Partnership renewal in 15 days',
+      icon: '💼',
+      color: 'border-l-amber-500',
+      navigate: 'finance'
+    },
   ];
 
-  // Mock inbox items
-  const inboxItems = [
-    { id: '1', text: 'Invoice #1042 awaiting approval', source: 'Finance', time: '2h ago', dot: 'bg-amber-500' },
-    { id: '2', text: 'Kit delivery confirmed for Thursday', source: 'Equipment', time: '4h ago', dot: 'bg-green-500' },
-    { id: '3', text: 'Travel arrangements need confirmation', source: 'Operations', time: '1d ago', dot: 'bg-blue-500' },
+  // Mock alerts (player updates, notifications)
+  const alerts = [
+    { id: '1', player: 'Will Taylor', date: 'Fri, 16 April', status: 'CONFIRMED', statusColor: 'bg-green-500 text-green-500' },
+    { id: '2', player: 'Jake Brooks', date: 'Fri, 16 April', amount: '+£3,000', status: 'COMMIT', statusColor: 'bg-blue-500 text-blue-500' },
+    { id: '3', player: 'Tyler Coles', date: 'Sat, 20 April', amount: '+£1,200', status: 'PENDING', statusColor: 'bg-amber-500 text-amber-500' },
   ];
 
   return (
-    <div className="space-y-4 pb-8 max-w-4xl">
-      {/* Block 1: CONTINUE Button (Primary Action) */}
-      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Today</p>
-        <h2 className="text-2xl font-bold text-white mb-1">{dayType.label}</h2>
-        <p className="text-sm text-slate-400 mb-4">{dayType.action}</p>
-        <button
-          onClick={() => onNavigate(dayType.label === 'Matchday' ? 'matchday' : 'availability')}
-          className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-lg text-lg transition-colors"
-        >
-          Continue
-        </button>
-      </div>
-
-      {/* Block 2: Next Match (Compact) */}
-      <div
-        className="bg-slate-800/50 border border-white/10 rounded-xl p-4 cursor-pointer hover:border-white/20 transition-colors"
-        onClick={() => onNavigate('matchday')}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Next Match</p>
-            <p className="text-lg font-semibold text-white mt-1">
-              {nextMatch ? `vs ${nextMatch.opponent}` : 'No fixtures scheduled'}
-            </p>
-            {nextMatch && (
-              <p className="text-sm text-slate-400">
-                {new Date(nextMatch.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                {' '}&bull;{' '}{nextMatch.venue}
-              </p>
-            )}
-          </div>
-          <ArrowRight className="text-slate-500" size={20} />
-        </div>
-      </div>
-
-      {/* Block 3: Inbox Preview (3 items max) */}
-      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Inbox</p>
-          <button
-            onClick={() => onNavigate('inbox')}
-            className="text-xs text-green-500 hover:text-green-400 transition-colors"
-          >
-            View all
-          </button>
-        </div>
-        <div className="space-y-3">
-          {inboxItems.map(item => (
-            <div key={item.id} className="flex items-start gap-3">
-              <div className={`w-2 h-2 rounded-full mt-1.5 ${item.dot}`}></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white truncate">{item.text}</p>
-                <p className="text-xs text-slate-500">{item.source} &bull; {item.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Block 4: Availability Preview */}
-      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Availability Issues</p>
-          <button
-            onClick={() => onNavigate('availability')}
-            className="text-xs text-green-500 hover:text-green-400 transition-colors"
-          >
-            View squad
-          </button>
-        </div>
-        {availabilityIssues.length > 0 ? (
-          <div className="space-y-2">
-            {availabilityIssues.map((player, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <span className="text-sm text-white">{player.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">{player.reason}</span>
-                  <span className={`text-xs font-medium ${player.color}`}>{player.status}</span>
+    <div className="flex gap-6 pb-8 h-full">
+      {/* Left Column - Tasks & Alerts */}
+      <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-2">
+        {/* Today Section */}
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-6">Today</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tasks.map(task => (
+              <div
+                key={task.id}
+                onClick={() => onNavigate(task.navigate)}
+                className={`bg-slate-800/60 border border-white/10 ${task.color} border-l-4 rounded-xl p-4 cursor-pointer hover:bg-slate-800/80 hover:border-white/20 transition-all group`}
+              >
+                <div className="flex items-start gap-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
+                      completedTasks.includes(task.id)
+                        ? 'bg-green-500 border-green-500 text-black'
+                        : 'border-slate-500 hover:border-green-500'
+                    }`}
+                  >
+                    {completedTasks.includes(task.id) && <span className="text-xs">✓</span>}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${completedTasks.includes(task.id) ? 'text-slate-500 line-through' : 'text-white'}`}>
+                      {task.label}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">{task.sublabel}</p>
+                  </div>
+                  <span className="text-lg opacity-60 group-hover:opacity-100 transition-opacity">{task.icon}</span>
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-slate-400">All players available</p>
-        )}
+        </div>
+
+        {/* Alerts Section */}
+        <div>
+          <h3 className="text-xl font-bold text-white mb-4">Alerts</h3>
+          <div className="space-y-3">
+            {alerts.map(alert => (
+              <div
+                key={alert.id}
+                className="bg-slate-800/60 border border-white/10 rounded-xl p-4 flex items-center justify-between hover:border-white/20 transition-colors cursor-pointer"
+                onClick={() => onNavigate('availability')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${alert.statusColor.split(' ')[0]}`}></div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{alert.player}</p>
+                    <p className="text-xs text-slate-500">{alert.date}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {alert.amount && <span className="text-xs text-slate-400">{alert.amount}</span>}
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
+                    alert.status === 'CONFIRMED' ? 'bg-green-500/10 border-green-500/30 text-green-500' :
+                    alert.status === 'COMMIT' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' :
+                    'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                  }`}>
+                    {alert.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-green-500">{club.players.length}</p>
+            <p className="text-xs text-slate-500 uppercase">Squad Size</p>
+          </div>
+          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-blue-500">{upcoming.length}</p>
+            <p className="text-xs text-slate-500 uppercase">Upcoming</p>
+          </div>
+          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-purple-500">{contentItems.filter(c => c.status === 'DRAFT').length}</p>
+            <p className="text-xs text-slate-500 uppercase">Content Drafts</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Match Hub Preview */}
+      <div className="w-80 lg:w-96 flex-shrink-0">
+        <div className="bg-slate-800/60 border border-white/10 rounded-2xl overflow-hidden sticky top-0">
+          {/* Match Hub Header */}
+          <div className="bg-slate-900/80 px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Match Hub</h3>
+            <button
+              onClick={() => onNavigate('matchday')}
+              className="text-xs text-green-500 hover:text-green-400 transition-colors"
+            >
+              View All →
+            </button>
+          </div>
+
+          {/* Upcoming Matches List */}
+          <div className="p-4 space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+            {upcoming.length > 0 ? upcoming.slice(0, 4).map((fixture, idx) => {
+              const daysUntil = getDaysUntil(fixture.kickoff_time);
+              const hasContent = contentItems.some(c => c.fixture_id === fixture.id);
+
+              return (
+                <div
+                  key={fixture.id}
+                  onClick={() => onNavigate('matchday')}
+                  className={`p-3 rounded-lg cursor-pointer transition-all ${
+                    idx === 0
+                      ? 'bg-green-500/10 border border-green-500/30'
+                      : 'bg-slate-700/30 border border-transparent hover:border-white/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-semibold text-sm">{fixture.opponent}</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                      daysUntil <= 2 ? 'bg-red-500/20 text-red-400' : 'bg-slate-600/50 text-slate-400'
+                    }`}>
+                      {daysUntil <= 0 ? 'TODAY' : daysUntil === 1 ? 'TOMORROW' : `${daysUntil}D`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{fixture.venue}</span>
+                    <span>{fixture.competition}</span>
+                  </div>
+                  {idx === 0 && (
+                    <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${hasContent ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                      <span className="text-[10px] text-slate-400">
+                        {hasContent ? 'Content ready' : 'Content pending'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            }) : (
+              <div className="text-center py-8">
+                <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                <p className="text-xs text-slate-500">No upcoming matches</p>
+              </div>
+            )}
+          </div>
+
+          {/* Match Pack Section (for next match) */}
+          {nextMatch && (
+            <div className="border-t border-white/10 p-4">
+              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Match Pack</h4>
+              <div className="space-y-2">
+                {[
+                  { label: 'Squad confirmed', done: true },
+                  { label: 'Travel booked', done: true },
+                  { label: 'Kit prepared', done: false },
+                  { label: 'Pre-match content', done: contentItems.some(c => c.fixture_id === nextMatch.id && c.type === 'PREVIEW') },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] ${
+                      item.done ? 'bg-green-500 text-black' : 'border border-slate-600'
+                    }`}>
+                      {item.done && '✓'}
+                    </div>
+                    <span className={`text-xs ${item.done ? 'text-slate-400' : 'text-white'}`}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Continue Button */}
+          <div className="p-4 border-t border-white/10">
+            <button
+              onClick={() => onNavigate('matchday')}
+              className="w-full py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              Continue <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1242,6 +1365,21 @@ const AppAuthed: React.FC<{
             players={currentClub.players}
             setPlayers={handleUpdatePlayers}
             club={currentClub}
+          />
+        )}
+        {activeTab === 'content' && currentClub && (
+          <ContentHub
+            club={currentClub}
+            contentItems={contentItems}
+            fixtures={fixtures}
+            onUpdateContent={async (updatedItem) => {
+              await handleUpdateContent(updatedItem);
+            }}
+            onDeleteContent={async (contentId) => {
+              await deleteContentItem(contentId);
+              await refetchContent();
+            }}
+            onRefetchContent={refetchContent}
           />
         )}
         {activeTab === 'finance' && currentClub && (

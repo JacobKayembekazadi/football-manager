@@ -1,19 +1,18 @@
 import React from 'react';
-import { LayoutDashboard, Inbox, UserCheck, Calendar, Package, Building2, Wallet } from 'lucide-react';
+import { LayoutDashboard, Calendar, FileText, UserCheck, Settings } from 'lucide-react';
 
 interface BottomNavProps {
     activeTab: string;
     setActiveTab: (tab: string) => void;
 }
 
+// Mobile nav shows 5 key items for space
 const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'availability', label: 'Availability', icon: UserCheck },
+    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
     { id: 'matchday', label: 'Matchday', icon: Calendar },
-    { id: 'equipment', label: 'Equipment', icon: Package },
-    { id: 'club-ops', label: 'Club Ops', icon: Building2 },
-    { id: 'finance', label: 'Finance', icon: Wallet },
+    { id: 'content', label: 'Content', icon: FileText },
+    { id: 'availability', label: 'Squad', icon: UserCheck },
+    { id: 'club-ops', label: 'Settings', icon: Settings },
 ];
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
