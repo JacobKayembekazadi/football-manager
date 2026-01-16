@@ -444,6 +444,259 @@ const Dashboard: React.FC<{
   );
 };
 
+// --- Templates View Component ---
+const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
+  const [enabledPacks, setEnabledPacks] = useState<string[]>(['matchday-away']);
+  const [selectedPack, setSelectedPack] = useState<string | null>(null);
+
+  const templatePacks = [
+    {
+      id: 'matchday-home',
+      name: 'Matchday Pack (Home)',
+      description: 'Standard home match preparation checklist',
+      tasks: [
+        'Confirm squad availability',
+        'Print / export team sheet',
+        'Kit packed (shirts / shorts / socks)',
+        'Equipment packed (balls / cones / bibs)',
+        'Ref fees / match admin',
+        'Water bottles / ice',
+        'Lineup post scheduled',
+        'Kit poster scheduled (Home)',
+        'Sponsor deliverables checked',
+      ]
+    },
+    {
+      id: 'matchday-away',
+      name: 'Matchday Pack (Away)',
+      description: 'Away match preparation with travel',
+      tasks: [
+        'Confirm squad availability',
+        'Confirm meet time + travel (away)',
+        'Print / export team sheet',
+        'Kit packed (shirts / shorts / socks)',
+        'Equipment packed (balls / cones / bibs)',
+        'Ref fees / match admin',
+        'Water bottles / ice',
+        'Lineup post scheduled',
+        'Sponsor deliverables checked',
+      ]
+    },
+    {
+      id: 'training-night',
+      name: 'Training Night Pack',
+      description: 'Weekly training session prep',
+      tasks: [
+        'Confirm attendance',
+        'Equipment ready (balls / cones / bibs)',
+        'First aid kit checked',
+        'Session plan prepared',
+      ]
+    },
+    {
+      id: 'squad-availability',
+      name: 'Squad Availability Pack',
+      description: 'Player availability tracking',
+      tasks: [
+        'Send availability request',
+        'Chase non-responders',
+        'Update squad list',
+        'Notify manager of issues',
+      ]
+    },
+    {
+      id: 'kit-equipment',
+      name: 'Kit & Equipment Pack',
+      description: 'Equipment management tasks',
+      tasks: [
+        'Kit inventory check',
+        'Laundry status review',
+        'Reorder low stock items',
+        'Issue kit to new players',
+      ]
+    },
+    {
+      id: 'media-pack',
+      name: 'Media Pack (Preview & FT)',
+      description: 'Content and social media tasks',
+      tasks: [
+        'Match preview scheduled (Fri AM)',
+        'Team lineup scheduled (1hr pre-kickoff)',
+        'Match updates scheduled (half-time + 85\')',
+        'Full-time report scheduled',
+        'Opponent graphic (logo)',
+        'Lineup graphic (players)',
+        'Score / MOTM graphic',
+      ]
+    },
+  ];
+
+  const togglePack = (packId: string) => {
+    setEnabledPacks(prev =>
+      prev.includes(packId) ? prev.filter(p => p !== packId) : [...prev, packId]
+    );
+  };
+
+  const nextFixture = fixtures.filter(f => f.status === 'SCHEDULED')[0];
+
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-white">Templates</h2>
+        <p className="text-sm text-slate-400 mt-1">Choose default templates to auto-fill matchday tasks</p>
+      </div>
+
+      <div className="flex gap-6">
+        {/* Left Column - Template List */}
+        <div className="flex-1 space-y-4">
+          {/* Tip Banner */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+            <p className="text-sm text-amber-400">
+              <span className="font-semibold">Tip:</span> Choose default templates to auto-fill. Tasks will be created automatically when you schedule a fixture.
+            </p>
+          </div>
+
+          {/* Templates Section */}
+          <div className="bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 bg-slate-900/50">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Templates</h3>
+            </div>
+
+            <div className="divide-y divide-white/5">
+              {templatePacks.map(pack => (
+                <div
+                  key={pack.id}
+                  className={`p-4 cursor-pointer transition-colors ${
+                    selectedPack === pack.id ? 'bg-slate-700/50' : 'hover:bg-slate-800/80'
+                  }`}
+                  onClick={() => setSelectedPack(selectedPack === pack.id ? null : pack.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); togglePack(pack.id); }}
+                        className={`w-10 h-6 rounded-full transition-colors relative ${
+                          enabledPacks.includes(pack.id) ? 'bg-green-500' : 'bg-slate-600'
+                        }`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                          enabledPacks.includes(pack.id) ? 'left-5' : 'left-1'
+                        }`} />
+                      </button>
+                      <div>
+                        <p className="text-sm font-medium text-white">{pack.name}</p>
+                        <p className="text-xs text-slate-500">{pack.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {enabledPacks.includes(pack.id) && (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-bold uppercase rounded">
+                          ON
+                        </span>
+                      )}
+                      <span className="text-slate-500">
+                        {selectedPack === pack.id ? '▼' : '▶'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Expanded Tasks */}
+                  {selectedPack === pack.id && (
+                    <div className="mt-4 pl-12 space-y-2">
+                      <p className="text-[10px] text-green-500 font-mono uppercase mb-2">
+                        * Tasks auto-fill after you select this template →
+                      </p>
+                      {pack.tasks.map((task, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded border border-slate-600 flex items-center justify-center">
+                            {/* Empty checkbox */}
+                          </div>
+                          <span className="text-sm text-slate-300">{task}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Preview & Add */}
+        <div className="w-80 lg:w-96 space-y-4">
+          {/* Default Pack Info */}
+          <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Active Templates</h4>
+            <div className="space-y-2">
+              {enabledPacks.length > 0 ? (
+                enabledPacks.map(packId => {
+                  const pack = templatePacks.find(p => p.id === packId);
+                  return pack ? (
+                    <div key={packId} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                      <span className="text-sm text-white">{pack.name}</span>
+                      <span className="text-[10px] text-green-400 font-bold">DEFAULT</span>
+                    </div>
+                  ) : null;
+                })
+              ) : (
+                <p className="text-sm text-slate-500">No templates enabled</p>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              ✓ Auto-create tasks for each fixture
+            </p>
+          </div>
+
+          {/* Starter Packs */}
+          <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Starter Packs</h4>
+            <div className="space-y-2">
+              {templatePacks.filter(p => !enabledPacks.includes(p.id)).slice(0, 4).map(pack => (
+                <div key={pack.id} className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">{pack.name}</span>
+                  <button
+                    onClick={() => togglePack(pack.id)}
+                    className="px-3 py-1 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-black text-xs font-bold rounded transition-colors"
+                  >
+                    + ADD
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Next Fixture Preview */}
+          {nextFixture && (
+            <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
+              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Next Fixture Preview</h4>
+              <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
+                <p className="text-sm font-semibold text-white">vs {nextFixture.opponent}</p>
+                <p className="text-xs text-slate-500">
+                  {new Date(nextFixture.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  {' • '}{nextFixture.venue}
+                </p>
+              </div>
+              <p className="text-xs text-slate-400">
+                {enabledPacks.length > 0 ? (
+                  <>
+                    <span className="text-green-400">{enabledPacks.reduce((sum, id) => {
+                      const pack = templatePacks.find(p => p.id === id);
+                      return sum + (pack?.tasks.length || 0);
+                    }, 0)} tasks</span> will be auto-created from enabled templates
+                  </>
+                ) : (
+                  'Enable templates to auto-create tasks'
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- The Hype Engine Component ---
 const HypeEngine: React.FC<{
   fixtures: Fixture[],
@@ -1473,6 +1726,9 @@ const AppAuthed: React.FC<{
             </div>
             <p className="text-xs text-slate-600 text-center">Full equipment management coming soon</p>
           </div>
+        )}
+        {activeTab === 'templates' && currentClub && (
+          <TemplatesView fixtures={fixtures} />
         )}
         {currentClub && <AiAssistant club={currentClub} />}
 
