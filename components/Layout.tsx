@@ -16,6 +16,7 @@ import {
   LogOut,
   Radio,
   FileText,
+  ClipboardList,
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 import { signOut } from '../services/authService';
@@ -69,6 +70,7 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'equipment', label: 'Equipment', icon: Package },
     { id: 'club-ops', label: 'Club Ops', icon: Building2 },
+    { id: 'templates', label: 'Templates', icon: ClipboardList },
     { id: 'finance', label: 'Finance', icon: Wallet },
   ];
 
