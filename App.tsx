@@ -15,6 +15,8 @@ import SponsorNexus from './components/SponsorNexus';
 import CommsArray from './components/CommsArray';
 import ContentHub from './components/ContentHub';
 import SettingsView from './components/SettingsView';
+import OperationsHub from './components/OperationsHub';
+import FormationBuilder from './components/FormationBuilder';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import ImageGeneratorModal from './components/ImageGeneratorModal';
@@ -1850,6 +1852,18 @@ const AppAuthed: React.FC<{
         )}
         {activeTab === 'templates' && currentClub && (
           <TemplatesView fixtures={fixtures} clubId={currentClub.id} />
+        )}
+        {activeTab === 'operations' && currentClub && (
+          <OperationsHub
+            club={currentClub}
+            fixtures={fixtures}
+          />
+        )}
+        {activeTab === 'formation' && currentClub && (
+          <FormationBuilder
+            club={currentClub}
+            fixtures={fixtures}
+          />
         )}
         {currentClub && <AiAssistant club={currentClub} />}
 

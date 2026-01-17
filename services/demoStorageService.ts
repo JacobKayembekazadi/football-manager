@@ -13,6 +13,10 @@ const STORAGE_KEYS = {
   EQUIPMENT_LAUNDRY: 'pitchside_demo_equipment_laundry',
   TEMPLATE_PACKS_ENABLED: 'pitchside_demo_template_packs_enabled',
   CLUB_PROFILE: 'pitchside_demo_club_profile',
+  BROADCASTS: 'pitchside_demo_broadcasts',
+  TRAINING_SESSIONS: 'pitchside_demo_training_sessions',
+  EXPENSES: 'pitchside_demo_expenses',
+  OPPOSITION_NOTES: 'pitchside_demo_opposition_notes',
 } as const;
 
 // Generic helpers
@@ -451,4 +455,278 @@ export function saveDemoClubProfile(profile: DemoClubProfile): DemoClubProfile {
   };
   setItem(STORAGE_KEYS.CLUB_PROFILE, profiles);
   return profiles[profile.club_id];
+}
+
+// ============================================================================
+// Squad Broadcasts
+// ============================================================================
+
+export type BroadcastChannel = 'all' | 'available' | 'unavailable' | 'no_response' | 'custom';
+
+export interface Broadcast {
+  id: string;
+  club_id: string;
+  message: string;
+  channel: BroadcastChannel;
+  recipient_ids: string[]; // player IDs
+  fixture_id?: string; // optional link to fixture
+  sent_at: string;
+  created_by?: string;
+}
+
+export function getDemoBroadcasts(clubId: string): Broadcast[] {
+  const all = getItem<Broadcast[]>(STORAGE_KEYS.BROADCASTS, []);
+  return all.filter(b => b.club_id === clubId).sort((a, b) =>
+    new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime()
+  );
+}
+
+export function saveDemoBroadcast(broadcast: Omit<Broadcast, 'id' | 'sent_at'>): Broadcast {
+  const all = getItem<Broadcast[]>(STORAGE_KEYS.BROADCASTS, []);
+  const newBroadcast: Broadcast = {
+    ...broadcast,
+    id: generateDemoId(),
+    sent_at: new Date().toISOString(),
+  };
+  all.push(newBroadcast);
+  setItem(STORAGE_KEYS.BROADCASTS, all);
+  return newBroadcast;
+}
+
+// ============================================================================
+// Training Sessions
+// ============================================================================
+
+export type TrainingType = 'regular' | 'match_prep' | 'recovery' | 'tactical' | 'fitness';
+
+export interface TrainingSession {
+  id: string;
+  club_id: string;
+  title: string;
+  type: TrainingType;
+  date: string; // ISO date
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
+  location: string;
+  notes?: string;
+  fixture_id?: string; // if match prep
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface TrainingAttendance {
+  id: string;
+  session_id: string;
+  player_id: string;
+  status: 'attending' | 'not_attending' | 'maybe' | 'no_response';
+  responded_at?: string;
+  note?: string;
+}
+
+export function getDemoTrainingSessions(clubId: string): TrainingSession[] {
+  const all = getItem<TrainingSession[]>(STORAGE_KEYS.TRAINING_SESSIONS, []);
+  return all.filter(s => s.club_id === clubId).sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+}
+
+export function saveDemoTrainingSession(session: Omit<TrainingSession, 'id' | 'created_at'>): TrainingSession {
+  const all = getItem<TrainingSession[]>(STORAGE_KEYS.TRAINING_SESSIONS, []);
+  const newSession: TrainingSession = {
+    ...session,
+    id: generateDemoId(),
+    created_at: new Date().toISOString(),
+  };
+  all.push(newSession);
+  setItem(STORAGE_KEYS.TRAINING_SESSIONS, all);
+  return newSession;
+}
+
+export function updateDemoTrainingSession(sessionId: string, updates: Partial<TrainingSession>): TrainingSession | null {
+  const all = getItem<TrainingSession[]>(STORAGE_KEYS.TRAINING_SESSIONS, []);
+  const idx = all.findIndex(s => s.id === sessionId);
+  if (idx < 0) return null;
+  all[idx] = { ...all[idx], ...updates, updated_at: new Date().toISOString() };
+  setItem(STORAGE_KEYS.TRAINING_SESSIONS, all);
+  return all[idx];
+}
+
+export function deleteDemoTrainingSession(sessionId: string): void {
+  const all = getItem<TrainingSession[]>(STORAGE_KEYS.TRAINING_SESSIONS, []);
+  setItem(STORAGE_KEYS.TRAINING_SESSIONS, all.filter(s => s.id !== sessionId));
+}
+
+export function getDemoTrainingAttendance(sessionId: string): TrainingAttendance[] {
+  const key = `pitchside_demo_training_attendance_${sessionId}`;
+  return getItem<TrainingAttendance[]>(key, []);
+}
+
+export function setDemoTrainingAttendance(
+  sessionId: string,
+  playerId: string,
+  status: TrainingAttendance['status'],
+  note?: string
+): TrainingAttendance {
+  const key = `pitchside_demo_training_attendance_${sessionId}`;
+  const all = getItem<TrainingAttendance[]>(key, []);
+  const existing = all.findIndex(a => a.player_id === playerId);
+
+  const attendance: TrainingAttendance = {
+    id: existing >= 0 ? all[existing].id : generateDemoId(),
+    session_id: sessionId,
+    player_id: playerId,
+    status,
+    responded_at: new Date().toISOString(),
+    note,
+  };
+
+  if (existing >= 0) {
+    all[existing] = attendance;
+  } else {
+    all.push(attendance);
+  }
+
+  setItem(key, all);
+  return attendance;
+}
+
+// ============================================================================
+// Quick Expenses
+// ============================================================================
+
+export type ExpenseCategory = 'match_fees' | 'equipment' | 'travel' | 'facilities' | 'medical' | 'other';
+export type ExpenseType = 'income' | 'expense';
+
+export interface Expense {
+  id: string;
+  club_id: string;
+  type: ExpenseType;
+  category: ExpenseCategory;
+  amount: number;
+  description: string;
+  date: string;
+  player_id?: string; // if related to a player (e.g., match fee)
+  fixture_id?: string; // if related to a fixture
+  created_at: string;
+}
+
+export function getDemoExpenses(clubId: string): Expense[] {
+  const all = getItem<Expense[]>(STORAGE_KEYS.EXPENSES, []);
+  return all.filter(e => e.club_id === clubId).sort((a, b) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+}
+
+export function saveDemoExpense(expense: Omit<Expense, 'id' | 'created_at'>): Expense {
+  const all = getItem<Expense[]>(STORAGE_KEYS.EXPENSES, []);
+  const newExpense: Expense = {
+    ...expense,
+    id: generateDemoId(),
+    created_at: new Date().toISOString(),
+  };
+  all.push(newExpense);
+  setItem(STORAGE_KEYS.EXPENSES, all);
+  return newExpense;
+}
+
+export function deleteDemoExpense(expenseId: string): void {
+  const all = getItem<Expense[]>(STORAGE_KEYS.EXPENSES, []);
+  setItem(STORAGE_KEYS.EXPENSES, all.filter(e => e.id !== expenseId));
+}
+
+export function getDemoExpensesSummary(clubId: string): {
+  totalIncome: number;
+  totalExpenses: number;
+  balance: number;
+  byCategory: Record<ExpenseCategory, number>;
+} {
+  const expenses = getDemoExpenses(clubId);
+
+  const totalIncome = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = expenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+
+  const byCategory: Record<ExpenseCategory, number> = {
+    match_fees: 0,
+    equipment: 0,
+    travel: 0,
+    facilities: 0,
+    medical: 0,
+    other: 0,
+  };
+
+  expenses.forEach(e => {
+    if (e.type === 'expense') {
+      byCategory[e.category] += e.amount;
+    }
+  });
+
+  return {
+    totalIncome,
+    totalExpenses,
+    balance: totalIncome - totalExpenses,
+    byCategory,
+  };
+}
+
+// ============================================================================
+// Opposition Notes (Scouting)
+// ============================================================================
+
+export interface OppositionNote {
+  id: string;
+  club_id: string;
+  opponent_name: string;
+  fixture_id?: string;
+  formation?: string;
+  key_players?: string;
+  strengths?: string;
+  weaknesses?: string;
+  tactics?: string;
+  notes?: string;
+  last_result?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export function getDemoOppositionNotes(clubId: string): OppositionNote[] {
+  const all = getItem<OppositionNote[]>(STORAGE_KEYS.OPPOSITION_NOTES, []);
+  return all.filter(n => n.club_id === clubId).sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+export function getDemoOppositionNoteByOpponent(clubId: string, opponentName: string): OppositionNote | null {
+  const all = getDemoOppositionNotes(clubId);
+  return all.find(n => n.opponent_name.toLowerCase() === opponentName.toLowerCase()) || null;
+}
+
+export function saveDemoOppositionNote(note: Omit<OppositionNote, 'id' | 'created_at'>): OppositionNote {
+  const all = getItem<OppositionNote[]>(STORAGE_KEYS.OPPOSITION_NOTES, []);
+
+  // Check if note for this opponent already exists
+  const existingIdx = all.findIndex(n =>
+    n.club_id === note.club_id &&
+    n.opponent_name.toLowerCase() === note.opponent_name.toLowerCase()
+  );
+
+  const newNote: OppositionNote = {
+    ...note,
+    id: existingIdx >= 0 ? all[existingIdx].id : generateDemoId(),
+    created_at: existingIdx >= 0 ? all[existingIdx].created_at : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existingIdx >= 0) {
+    all[existingIdx] = newNote;
+  } else {
+    all.push(newNote);
+  }
+
+  setItem(STORAGE_KEYS.OPPOSITION_NOTES, all);
+  return newNote;
+}
+
+export function deleteDemoOppositionNote(noteId: string): void {
+  const all = getItem<OppositionNote[]>(STORAGE_KEYS.OPPOSITION_NOTES, []);
+  setItem(STORAGE_KEYS.OPPOSITION_NOTES, all.filter(n => n.id !== noteId));
 }

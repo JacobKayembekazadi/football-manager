@@ -17,6 +17,8 @@ import {
   LogOut,
   FileText,
   ClipboardList,
+  Radio,
+  Shirt,
 } from 'lucide-react';
 import { MOCK_CLUB } from '../types';
 import { signOut } from '../services/authService';
@@ -68,6 +70,8 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'availability', label: 'Availability', icon: UserCheck },
     { id: 'squad', label: 'Squad', icon: Users },
     { id: 'matchday', label: 'Matchday', icon: Calendar },
+    { id: 'formation', label: 'Formation', icon: Shirt },
+    { id: 'operations', label: 'Operations', icon: Radio },
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'equipment', label: 'Equipment', icon: Package },
     { id: 'templates', label: 'Templates', icon: ClipboardList },

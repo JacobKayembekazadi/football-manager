@@ -9,6 +9,14 @@ export interface PlayerStats {
   physical: number;
 }
 
+// Emergency Contact for player safety
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+  email?: string;
+}
+
 // ============================================================================
 // Multi-tenant (Org / Membership)
 // ============================================================================
@@ -44,6 +52,13 @@ export interface Player {
   highlight_uri?: string; // URL for the generated video
   analysis?: string; // AI generated form summary
   narrative_tags?: string[]; // Marketing/branding tags (e.g., "Veteran", "Fan Favorite", "Top Scorer")
+  // Emergency contact for player safety
+  emergency_contact?: EmergencyContact;
+  // Optional personal info
+  phone?: string;
+  email?: string;
+  date_of_birth?: string;
+  medical_notes?: string;
 }
 
 export interface Club {
