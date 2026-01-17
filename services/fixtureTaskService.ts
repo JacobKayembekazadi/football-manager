@@ -6,6 +6,15 @@
 
 import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
 import { FixtureTask, TemplatePack, TemplateTask, DEFAULT_TEMPLATE_PACKS } from '../types';
+import {
+  getDemoFixtureTasks,
+  saveDemoFixtureTask,
+  deleteDemoFixtureTask,
+  generateDemoTasksFromTemplates,
+  getDemoEnabledTemplatePacks,
+  toggleDemoTemplatePack,
+  generateDemoId,
+} from './demoStorageService';
 
 // ============================================================================
 // Template Packs
@@ -16,11 +25,13 @@ import { FixtureTask, TemplatePack, TemplateTask, DEFAULT_TEMPLATE_PACKS } from 
  */
 export const getTemplatePacks = async (clubId: string): Promise<TemplatePack[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    // Return mock data for demo mode
+    // Return mock data for demo mode with enabled state from localStorage
+    const enabledIds = getDemoEnabledTemplatePacks();
     return DEFAULT_TEMPLATE_PACKS.map((pack, i) => ({
       ...pack,
       id: `demo-pack-${i}`,
       club_id: clubId,
+      is_enabled: enabledIds.includes(`demo-pack-${i}`),
     }));
   }
 
@@ -75,7 +86,19 @@ export const updateTemplatePack = async (
   updates: Partial<Omit<TemplatePack, 'id' | 'club_id'>>
 ): Promise<TemplatePack> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: toggle enabled state in localStorage
+    if (updates.is_enabled !== undefined) {
+      toggleDemoTemplatePack(packId);
+    }
+    // Return updated pack
+    const idx = parseInt(packId.replace('demo-pack-', ''));
+    const enabledIds = getDemoEnabledTemplatePacks();
+    return {
+      ...DEFAULT_TEMPLATE_PACKS[idx],
+      id: packId,
+      club_id: 'demo',
+      is_enabled: enabledIds.includes(packId),
+    };
   }
 
   const { data, error } = await supabase
@@ -157,7 +180,7 @@ export const deleteTemplatePack = async (packId: string): Promise<void> => {
  */
 export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return getDemoFixtureTasks(fixtureId);
   }
 
   const { data, error } = await supabase
@@ -178,7 +201,12 @@ export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]>
  * Get all tasks for multiple fixtures
  */
 export const getTasksForFixtures = async (fixtureIds: string[]): Promise<FixtureTask[]> => {
-  if (!supabase || !isSupabaseConfigured() || fixtureIds.length === 0) {
+  if (!supabase || !isSupabaseConfigured()) {
+    // Demo mode: collect tasks for all requested fixtures
+    return fixtureIds.flatMap(id => getDemoFixtureTasks(id));
+  }
+
+  if (fixtureIds.length === 0) {
     return [];
   }
 
@@ -205,7 +233,7 @@ export const generateTasksFromTemplates = async (
   venue: 'Home' | 'Away'
 ): Promise<FixtureTask[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return generateDemoTasksFromTemplates(clubId, fixtureId, venue);
   }
 
   // Get enabled template packs
@@ -270,7 +298,23 @@ export const addFixtureTask = async (
   label: string
 ): Promise<FixtureTask> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode
+    const existing = getDemoFixtureTasks(fixtureId);
+    const nextOrder = existing.length > 0
+      ? Math.max(...existing.map(t => t.sort_order)) + 1
+      : 0;
+
+    const task: FixtureTask = {
+      id: generateDemoId(),
+      club_id: clubId,
+      fixture_id: fixtureId,
+      label,
+      is_completed: false,
+      sort_order: nextOrder,
+      created_at: new Date().toISOString(),
+    };
+
+    return saveDemoFixtureTask(task);
   }
 
   // Get current max sort_order
@@ -312,7 +356,25 @@ export const toggleTaskCompletion = async (
   userId?: string
 ): Promise<FixtureTask> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: find and update the task
+    // We need to search all fixtures for this task
+    const allTasksKey = 'pitchside_demo_fixture_tasks';
+    const allTasks: FixtureTask[] = JSON.parse(localStorage.getItem(allTasksKey) || '[]');
+    const taskIndex = allTasks.findIndex(t => t.id === taskId);
+
+    if (taskIndex >= 0) {
+      allTasks[taskIndex] = {
+        ...allTasks[taskIndex],
+        is_completed: isCompleted,
+        completed_by: isCompleted ? userId : undefined,
+        completed_at: isCompleted ? new Date().toISOString() : undefined,
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem(allTasksKey, JSON.stringify(allTasks));
+      return allTasks[taskIndex];
+    }
+
+    throw new Error('Task not found');
   }
 
   const { data, error } = await supabase
@@ -339,7 +401,8 @@ export const toggleTaskCompletion = async (
  */
 export const deleteFixtureTask = async (taskId: string): Promise<void> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    deleteDemoFixtureTask(taskId);
+    return;
   }
 
   const { error } = await supabase
@@ -361,7 +424,22 @@ export const updateFixtureTask = async (
   updates: { label?: string; sort_order?: number }
 ): Promise<FixtureTask> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode
+    const allTasksKey = 'pitchside_demo_fixture_tasks';
+    const allTasks: FixtureTask[] = JSON.parse(localStorage.getItem(allTasksKey) || '[]');
+    const taskIndex = allTasks.findIndex(t => t.id === taskId);
+
+    if (taskIndex >= 0) {
+      allTasks[taskIndex] = {
+        ...allTasks[taskIndex],
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem(allTasksKey, JSON.stringify(allTasks));
+      return allTasks[taskIndex];
+    }
+
+    throw new Error('Task not found');
   }
 
   const { data, error } = await supabase

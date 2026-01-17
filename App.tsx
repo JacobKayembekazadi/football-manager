@@ -29,8 +29,10 @@ import {
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
   Sponsor,
   INITIAL_FIXTURES, INITIAL_CONTENT, INITIAL_SPONSORS,
-  ContentGenStatus
+  ContentGenStatus,
+  TemplatePack,
 } from './types';
+import { getTemplatePacks, updateTemplatePack } from './services/fixtureTaskService';
 import { generateContent, generateOpponentReport, suggestScorers, generateViralIdeas } from './services/geminiService';
 import { scheduleContentSequence } from './services/contentSequenceService';
 import { useSupabaseQuery } from './hooks/useSupabaseQuery';
@@ -430,98 +432,43 @@ const Dashboard: React.FC<{
 };
 
 // --- Templates View Component ---
-const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
-  const [enabledPacks, setEnabledPacks] = useState<string[]>(['matchday-away']);
+const TemplatesView: React.FC<{ fixtures: Fixture[]; clubId: string }> = ({ fixtures, clubId }) => {
+  const [templatePacks, setTemplatePacks] = useState<TemplatePack[]>([]);
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const templatePacks = [
-    {
-      id: 'matchday-home',
-      name: 'Matchday Pack (Home)',
-      description: 'Standard home match preparation checklist',
-      tasks: [
-        'Confirm squad availability',
-        'Print / export team sheet',
-        'Kit packed (shirts / shorts / socks)',
-        'Equipment packed (balls / cones / bibs)',
-        'Ref fees / match admin',
-        'Water bottles / ice',
-        'Lineup post scheduled',
-        'Kit poster scheduled (Home)',
-        'Sponsor deliverables checked',
-      ]
-    },
-    {
-      id: 'matchday-away',
-      name: 'Matchday Pack (Away)',
-      description: 'Away match preparation with travel',
-      tasks: [
-        'Confirm squad availability',
-        'Confirm meet time + travel (away)',
-        'Print / export team sheet',
-        'Kit packed (shirts / shorts / socks)',
-        'Equipment packed (balls / cones / bibs)',
-        'Ref fees / match admin',
-        'Water bottles / ice',
-        'Lineup post scheduled',
-        'Sponsor deliverables checked',
-      ]
-    },
-    {
-      id: 'training-night',
-      name: 'Training Night Pack',
-      description: 'Weekly training session prep',
-      tasks: [
-        'Confirm attendance',
-        'Equipment ready (balls / cones / bibs)',
-        'First aid kit checked',
-        'Session plan prepared',
-      ]
-    },
-    {
-      id: 'squad-availability',
-      name: 'Squad Availability Pack',
-      description: 'Player availability tracking',
-      tasks: [
-        'Send availability request',
-        'Chase non-responders',
-        'Update squad list',
-        'Notify manager of issues',
-      ]
-    },
-    {
-      id: 'kit-equipment',
-      name: 'Kit & Equipment Pack',
-      description: 'Equipment management tasks',
-      tasks: [
-        'Kit inventory check',
-        'Laundry status review',
-        'Reorder low stock items',
-        'Issue kit to new players',
-      ]
-    },
-    {
-      id: 'media-pack',
-      name: 'Media Pack (Preview & FT)',
-      description: 'Content and social media tasks',
-      tasks: [
-        'Match preview scheduled (Fri AM)',
-        'Team lineup scheduled (1hr pre-kickoff)',
-        'Match updates scheduled (half-time + 85\')',
-        'Full-time report scheduled',
-        'Opponent graphic (logo)',
-        'Lineup graphic (players)',
-        'Score / MOTM graphic',
-      ]
-    },
-  ];
+  // Load template packs on mount
+  useEffect(() => {
+    loadTemplatePacks();
+  }, [clubId]);
 
-  const togglePack = (packId: string) => {
-    setEnabledPacks(prev =>
-      prev.includes(packId) ? prev.filter(p => p !== packId) : [...prev, packId]
-    );
+  const loadTemplatePacks = async () => {
+    try {
+      const packs = await getTemplatePacks(clubId);
+      setTemplatePacks(packs);
+    } catch (error) {
+      console.error('Error loading template packs:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const togglePack = async (packId: string) => {
+    const pack = templatePacks.find(p => p.id === packId);
+    if (!pack) return;
+
+    try {
+      await updateTemplatePack(packId, { is_enabled: !pack.is_enabled });
+      // Update local state
+      setTemplatePacks(prev =>
+        prev.map(p => p.id === packId ? { ...p, is_enabled: !p.is_enabled } : p)
+      );
+    } catch (error) {
+      console.error('Error toggling template pack:', error);
+    }
+  };
+
+  const enabledPacks = templatePacks.filter(p => p.is_enabled);
   const nextFixture = fixtures.filter(f => f.status === 'SCHEDULED')[0];
 
   return (
@@ -562,11 +509,11 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
                       <button
                         onClick={(e) => { e.stopPropagation(); togglePack(pack.id); }}
                         className={`w-10 h-6 rounded-full transition-colors relative ${
-                          enabledPacks.includes(pack.id) ? 'bg-green-500' : 'bg-slate-600'
+                          pack.is_enabled ? 'bg-green-500' : 'bg-slate-600'
                         }`}
                       >
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          enabledPacks.includes(pack.id) ? 'left-5' : 'left-1'
+                          pack.is_enabled ? 'left-5' : 'left-1'
                         }`} />
                       </button>
                       <div>
@@ -575,7 +522,7 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {enabledPacks.includes(pack.id) && (
+                      {pack.is_enabled && (
                         <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-bold uppercase rounded">
                           ON
                         </span>
@@ -590,14 +537,14 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
                   {selectedPack === pack.id && (
                     <div className="mt-4 pl-12 space-y-2">
                       <p className="text-[10px] text-green-500 font-mono uppercase mb-2">
-                        * Tasks auto-fill after you select this template →
+                        * Tasks auto-fill after you select this template
                       </p>
                       {pack.tasks.map((task, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded border border-slate-600 flex items-center justify-center">
                             {/* Empty checkbox */}
                           </div>
-                          <span className="text-sm text-slate-300">{task}</span>
+                          <span className="text-sm text-slate-300">{task.label}</span>
                         </div>
                       ))}
                     </div>
@@ -615,15 +562,12 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Active Templates</h4>
             <div className="space-y-2">
               {enabledPacks.length > 0 ? (
-                enabledPacks.map(packId => {
-                  const pack = templatePacks.find(p => p.id === packId);
-                  return pack ? (
-                    <div key={packId} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-2">
-                      <span className="text-sm text-white">{pack.name}</span>
-                      <span className="text-[10px] text-green-400 font-bold">DEFAULT</span>
-                    </div>
-                  ) : null;
-                })
+                enabledPacks.map(pack => (
+                  <div key={pack.id} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                    <span className="text-sm text-white">{pack.name}</span>
+                    <span className="text-[10px] text-green-400 font-bold">DEFAULT</span>
+                  </div>
+                ))
               ) : (
                 <p className="text-sm text-slate-500">No templates enabled</p>
               )}
@@ -637,7 +581,7 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
           <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Starter Packs</h4>
             <div className="space-y-2">
-              {templatePacks.filter(p => !enabledPacks.includes(p.id)).slice(0, 4).map(pack => (
+              {templatePacks.filter(p => !p.is_enabled).slice(0, 4).map(pack => (
                 <div key={pack.id} className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">{pack.name}</span>
                   <button
@@ -665,9 +609,8 @@ const TemplatesView: React.FC<{ fixtures: Fixture[] }> = ({ fixtures }) => {
               <p className="text-xs text-slate-400">
                 {enabledPacks.length > 0 ? (
                   <>
-                    <span className="text-green-400">{enabledPacks.reduce((sum, id) => {
-                      const pack = templatePacks.find(p => p.id === id);
-                      return sum + (pack?.tasks.length || 0);
+                    <span className="text-green-400">{enabledPacks.reduce((sum, pack) => {
+                      return sum + (pack.tasks?.length || 0);
                     }, 0)} tasks</span> will be auto-created from enabled templates
                   </>
                 ) : (
@@ -1811,7 +1754,7 @@ const AppAuthed: React.FC<{
           />
         )}
         {activeTab === 'templates' && currentClub && (
-          <TemplatesView fixtures={fixtures} />
+          <TemplatesView fixtures={fixtures} clubId={currentClub.id} />
         )}
         {currentClub && <AiAssistant club={currentClub} />}
 

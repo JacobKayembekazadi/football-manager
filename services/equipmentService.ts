@@ -15,6 +15,19 @@ import {
   LaundryStatus,
   Player,
 } from '../types';
+import {
+  getDemoEquipmentItems,
+  saveDemoEquipmentItem,
+  deleteDemoEquipmentItem,
+  getDemoEquipmentAssignments,
+  issueDemoEquipment,
+  returnDemoEquipment,
+  getDemoActiveLaundry,
+  sendDemoToLaundry,
+  returnDemoFromLaundry,
+  getDemoInventorySummary,
+  generateDemoId,
+} from './demoStorageService';
 
 // Extended types with joins
 export interface EquipmentAssignmentWithDetails extends EquipmentAssignment {
@@ -31,7 +44,7 @@ export interface EquipmentAssignmentWithDetails extends EquipmentAssignment {
  */
 export const getEquipmentItems = async (clubId: string): Promise<EquipmentItem[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return getDemoEquipmentItems(clubId);
   }
 
   const { data, error } = await supabase
@@ -57,7 +70,8 @@ export const getEquipmentByCategory = async (
   category: EquipmentCategory
 ): Promise<EquipmentItem[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const items = getDemoEquipmentItems(clubId);
+    return items.filter(i => i.category === category);
   }
 
   const { data, error } = await supabase
@@ -80,14 +94,9 @@ export const getEquipmentByCategory = async (
  */
 export const getLowStockItems = async (clubId: string): Promise<EquipmentItem[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const items = getDemoEquipmentItems(clubId);
+    return items.filter(item => item.quantity_available <= item.min_stock);
   }
-
-  const { data, error } = await supabase
-    .from(TABLES.EQUIPMENT_ITEMS)
-    .select('*')
-    .eq('club_id', clubId)
-    .lte('quantity_available', supabase.rpc('equipment_min_stock_check'));
 
   // Fallback: get all and filter client-side
   const allItems = await getEquipmentItems(clubId);
@@ -102,7 +111,12 @@ export const createEquipmentItem = async (
   item: Omit<EquipmentItem, 'id' | 'club_id'>
 ): Promise<EquipmentItem> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    const newItem: EquipmentItem = {
+      ...item,
+      id: generateDemoId(),
+      club_id: clubId,
+    };
+    return saveDemoEquipmentItem(newItem);
   }
 
   const { data, error } = await supabase
@@ -137,7 +151,16 @@ export const updateEquipmentItem = async (
   updates: Partial<Omit<EquipmentItem, 'id' | 'club_id'>>
 ): Promise<EquipmentItem> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: get item, update it, save it
+    const allKey = 'pitchside_demo_equipment_items';
+    const items: EquipmentItem[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+    const idx = items.findIndex(i => i.id === itemId);
+    if (idx >= 0) {
+      items[idx] = { ...items[idx], ...updates, updated_at: new Date().toISOString() };
+      localStorage.setItem(allKey, JSON.stringify(items));
+      return items[idx];
+    }
+    throw new Error('Item not found');
   }
 
   const { data, error } = await supabase
@@ -160,7 +183,8 @@ export const updateEquipmentItem = async (
  */
 export const deleteEquipmentItem = async (itemId: string): Promise<void> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    deleteDemoEquipmentItem(itemId);
+    return;
   }
 
   const { error } = await supabase
@@ -187,6 +211,10 @@ export const getInventorySummary = async (
   low_stock: number;
   in_laundry: number;
 }> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return getDemoInventorySummary(clubId);
+  }
+
   const items = await getEquipmentItems(clubId);
   const laundry = await getActiveLaundry(clubId);
 
@@ -219,7 +247,13 @@ export const getActiveAssignments = async (
   clubId: string
 ): Promise<EquipmentAssignmentWithDetails[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const assignments = getDemoEquipmentAssignments(clubId);
+    // Enrich with item details
+    const items = getDemoEquipmentItems(clubId);
+    return assignments.map(a => ({
+      ...a,
+      item: items.find(i => i.id === a.item_id),
+    }));
   }
 
   const { data, error } = await supabase
@@ -252,7 +286,14 @@ export const getPlayerAssignments = async (
   playerId: string
 ): Promise<EquipmentAssignmentWithDetails[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const allKey = 'pitchside_demo_equipment_assignments';
+    const all: EquipmentAssignment[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+    const playerAssignments = all.filter(a => a.player_id === playerId && !a.returned_at);
+    const items = getDemoEquipmentItems('demo');
+    return playerAssignments.map(a => ({
+      ...a,
+      item: items.find(i => i.id === a.item_id),
+    }));
   }
 
   const { data, error } = await supabase
@@ -287,7 +328,7 @@ export const issueEquipment = async (
   notes?: string
 ): Promise<EquipmentAssignment> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    return issueDemoEquipment(clubId, itemId, playerId, quantity, notes);
   }
 
   // First, check available quantity
@@ -336,7 +377,9 @@ export const returnEquipment = async (
   assignmentId: string
 ): Promise<EquipmentAssignment> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    const result = returnDemoEquipment(assignmentId);
+    if (!result) throw new Error('Assignment not found');
+    return result;
   }
 
   // Get assignment details
@@ -387,7 +430,7 @@ export const returnEquipment = async (
  */
 export const getActiveLaundry = async (clubId: string): Promise<EquipmentLaundry[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return getDemoActiveLaundry(clubId);
   }
 
   const { data, error } = await supabase
@@ -413,7 +456,9 @@ export const getLaundryHistory = async (
   limit: number = 20
 ): Promise<EquipmentLaundry[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const allKey = 'pitchside_demo_equipment_laundry';
+    const all: EquipmentLaundry[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+    return all.filter(l => l.club_id === clubId).slice(0, limit);
   }
 
   const { data, error } = await supabase
@@ -440,7 +485,7 @@ export const sendToLaundry = async (
   notes?: string
 ): Promise<EquipmentLaundry> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    return sendDemoToLaundry(clubId, items, notes);
   }
 
   const { data, error } = await supabase
@@ -467,7 +512,9 @@ export const sendToLaundry = async (
  */
 export const returnFromLaundry = async (laundryId: string): Promise<EquipmentLaundry> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    const result = returnDemoFromLaundry(laundryId);
+    if (!result) throw new Error('Laundry batch not found');
+    return result;
   }
 
   const { data, error } = await supabase

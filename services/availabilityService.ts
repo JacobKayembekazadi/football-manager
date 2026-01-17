@@ -6,6 +6,11 @@
 
 import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
 import { PlayerAvailability, AvailabilityStatus, Player } from '../types';
+import {
+  getDemoAvailability,
+  initializeDemoAvailability,
+  setDemoPlayerAvailability,
+} from './demoStorageService';
 
 // Extended type with player info
 export interface PlayerAvailabilityWithPlayer extends PlayerAvailability {
@@ -19,7 +24,7 @@ export const getAvailabilityForFixture = async (
   fixtureId: string
 ): Promise<PlayerAvailability[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return getDemoAvailability(fixtureId);
   }
 
   const { data, error } = await supabase
@@ -42,7 +47,7 @@ export const getAvailabilityWithPlayers = async (
   fixtureId: string
 ): Promise<PlayerAvailabilityWithPlayer[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    return getDemoAvailability(fixtureId);
   }
 
   const { data, error } = await supabase
@@ -97,7 +102,11 @@ export const initializeAvailability = async (
   fixtureId: string,
   playerIds: string[]
 ): Promise<PlayerAvailability[]> => {
-  if (!supabase || !isSupabaseConfigured() || playerIds.length === 0) {
+  if (!supabase || !isSupabaseConfigured()) {
+    return initializeDemoAvailability(clubId, fixtureId, playerIds);
+  }
+
+  if (playerIds.length === 0) {
     return [];
   }
 
@@ -146,7 +155,7 @@ export const setPlayerAvailability = async (
   markedBy?: string
 ): Promise<PlayerAvailability> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    return setDemoPlayerAvailability(clubId, fixtureId, playerId, status, note);
   }
 
   // Upsert - create or update
@@ -183,7 +192,16 @@ export const bulkSetAvailability = async (
   updates: Array<{ playerId: string; status: AvailabilityStatus; note?: string }>,
   markedBy?: string
 ): Promise<PlayerAvailability[]> => {
-  if (!supabase || !isSupabaseConfigured() || updates.length === 0) {
+  if (!supabase || !isSupabaseConfigured()) {
+    // Demo mode: update each player individually
+    return Promise.all(
+      updates.map(u =>
+        setDemoPlayerAvailability(clubId, fixtureId, u.playerId, u.status, u.note)
+      )
+    );
+  }
+
+  if (updates.length === 0) {
     return [];
   }
 
@@ -217,7 +235,12 @@ export const bulkSetAvailability = async (
  */
 export const clearAvailability = async (fixtureId: string): Promise<void> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: remove all availability for this fixture
+    const allKey = 'pitchside_demo_availability';
+    const all: PlayerAvailability[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+    const filtered = all.filter(a => a.fixture_id !== fixtureId);
+    localStorage.setItem(allKey, JSON.stringify(filtered));
+    return;
   }
 
   const { error } = await supabase
@@ -236,7 +259,8 @@ export const clearAvailability = async (fixtureId: string): Promise<void> => {
  */
 export const getNonResponders = async (fixtureId: string): Promise<PlayerAvailability[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    const all = getDemoAvailability(fixtureId);
+    return all.filter(a => a.status === 'no_response');
   }
 
   const { data, error } = await supabase
