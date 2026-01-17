@@ -282,8 +282,8 @@ const EquipmentView: React.FC<EquipmentViewProps> = ({ club, fixtures = [] }) =>
             </div>
 
             {/* Player Kit Table */}
-            <div className="bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
-              <table className="w-full">
+            <div className="bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden overflow-x-auto">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left text-xs font-bold text-slate-400 uppercase p-4">Player</th>

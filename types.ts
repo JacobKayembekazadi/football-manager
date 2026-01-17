@@ -179,6 +179,7 @@ export interface Sponsor {
 // Helper to create dates relative to "now"
 const daysAgo = (days: number) => new Date(Date.now() - 86400000 * days).toISOString();
 const daysFromNow = (days: number) => new Date(Date.now() + 86400000 * days).toISOString();
+const hoursFromNow = (hours: number) => new Date(Date.now() + 3600000 * hours).toISOString();
 
 // --- SQUAD (18 Players with Season Stats & Analysis) ---
 export const INITIAL_PLAYERS: Player[] = [
@@ -601,14 +602,14 @@ export const INITIAL_FIXTURES: Fixture[] = [
   },
   
   // === UPCOMING MATCHES ===
-  // Matchweek 15
+  // Matchweek 15 - TODAY'S MATCH
   {
     id: generateDemoUUID('fixture', 15),
     club_id: DEMO_UUIDS.club,
     opponent: 'Phoenix Rising',
-    kickoff_time: daysFromNow(3), // Dec 14 - Saturday 3pm
+    kickoff_time: hoursFromNow(3), // TODAY - 3 hours from now
     status: 'SCHEDULED',
-    venue: 'Away',
+    venue: 'Home',
     competition: 'Cyber League',
     attendance: 38000,
   },
