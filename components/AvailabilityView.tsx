@@ -254,7 +254,7 @@ const AvailabilityView: React.FC<AvailabilityViewProps> = ({
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
             {(Object.keys(statusConfig) as AvailabilityStatus[]).map(status => (
               <div
                 key={status}

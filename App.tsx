@@ -659,9 +659,9 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
   // NORMAL DASHBOARD VIEW
   // ============================================================================
   return (
-    <div className="flex gap-6 pb-8 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 pb-20 lg:pb-8 h-full">
       {/* Left Column - Tasks & Alerts */}
-      <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-2">
+      <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar lg:pr-2">
         {/* Match Day Mode Banner - shows when match is today or tomorrow */}
         {isMatchDay && nextMatch && (
           <button
@@ -802,7 +802,8 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
       </div>
 
       {/* Right Column - Match Hub Preview */}
-      <div className="w-80 lg:w-96 flex-shrink-0">
+      {/* Right Column - Match Hub Preview (hidden on mobile) */}
+      <div className="hidden lg:block w-80 lg:w-96 flex-shrink-0">
         <div className="bg-slate-800/60 border border-white/10 rounded-2xl overflow-hidden sticky top-0">
           {/* Match Hub Header */}
           <div className="bg-slate-900/80 px-4 py-3 border-b border-white/10 flex items-center justify-between">
