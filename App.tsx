@@ -6,6 +6,9 @@ import ContentEditorModal from './components/ContentEditorModal';
 import AutoPublisher from './components/AutoPublisher';
 import ViralScout from './components/ViralScout';
 import SquadView from './components/SquadView';
+import AvailabilityView from './components/AvailabilityView';
+import EquipmentView from './components/EquipmentView';
+import FixtureTasks from './components/FixtureTasks';
 import AiAssistant from './components/AiAssistant';
 import MatchReportModal from './components/MatchReportModal';
 import SponsorNexus from './components/SponsorNexus';
@@ -75,7 +78,8 @@ import {
   Palette,
   Quote,
   Sliders,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ClipboardList,
 } from 'lucide-react';
 
 // --- Sub-Components for Dashboard ---
@@ -697,6 +701,7 @@ const HypeEngine: React.FC<{
   const [isFixtureModalOpen, setIsFixtureModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedContentFixture, setExpandedContentFixture] = useState<string | null>(null);
+  const [expandedTasksFixture, setExpandedTasksFixture] = useState<string | null>(null);
   const [selectedContentItem, setSelectedContentItem] = useState<ContentItem | null>(null);
   const [isMatchdayMode, setIsMatchdayMode] = useState(false);
 
@@ -1062,17 +1067,24 @@ const HypeEngine: React.FC<{
                         <button
                           onClick={() => handleDeleteFixture(fixture.id)}
                           disabled={deletingId === fixture.id}
-                          className="w-full py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1 disabled:opacity-50"
+                          className="w-full py-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {deletingId === fixture.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
-                          Delete Fixture
+                          {deletingId === fixture.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          Delete
                         </button>
                         <button
                           onClick={() => setExpandedContentFixture(expandedContentFixture === fixture.id ? null : fixture.id)}
-                          className="w-full py-1.5 text-purple-500/60 hover:text-purple-500 hover:bg-purple-500/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1"
+                          className="w-full py-2 bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2"
                         >
-                          <FileText size={10} />
+                          <FileText size={12} />
                           {expandedContentFixture === fixture.id ? 'Hide' : 'View'} Content
+                        </button>
+                        <button
+                          onClick={() => setExpandedTasksFixture(expandedTasksFixture === fixture.id ? null : fixture.id)}
+                          className="w-full py-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+                        >
+                          <ClipboardList size={12} />
+                          {expandedTasksFixture === fixture.id ? 'Hide' : 'View'} Tasks
                         </button>
                       </div>
                     )}
@@ -1102,16 +1114,26 @@ const HypeEngine: React.FC<{
                         ))}
                       {contentItems.filter(c => c.fixture_id === fixture.id).length === 0 && (
                         <div className="col-span-3 p-8 text-center border border-dashed border-white/10 rounded-xl">
-                          <p className="text-slate-500 font-mono text-sm mb-2">No content generated yet</p>
+                          <p className="text-slate-500 text-sm mb-4">No content generated yet</p>
                           <button
                             onClick={() => handleHypeGeneration(fixture)}
-                            className="text-xs text-green-500 hover:text-green-500/80 font-mono uppercase"
+                            className="px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-500 hover:bg-green-500/20 text-xs rounded-lg transition-all"
                           >
-                            Generate Hype Pack →
+                            Generate Hype Pack
                           </button>
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Fixture Tasks Section */}
+                {expandedTasksFixture === fixture.id && (
+                  <div className="bg-black/40 border-t border-amber-500/30 p-6">
+                    <FixtureTasks
+                      fixture={fixture}
+                      clubId={club.id}
+                    />
                   </div>
                 )}
 
@@ -1712,6 +1734,12 @@ const AppAuthed: React.FC<{
           />
         )}
         {activeTab === 'availability' && currentClub && (
+          <AvailabilityView
+            club={currentClub}
+            fixtures={fixtures}
+          />
+        )}
+        {activeTab === 'squad' && currentClub && (
           <SquadView
             players={currentClub.players}
             setPlayers={handleUpdatePlayers}
@@ -1736,7 +1764,7 @@ const AppAuthed: React.FC<{
         {activeTab === 'finance' && currentClub && (
           <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
         )}
-        {activeTab === 'club-ops' && currentClub && (
+        {activeTab === 'settings' && currentClub && (
           <SettingsView club={currentClub} />
         )}
         {activeTab === 'inbox' && currentClub && (
@@ -1778,52 +1806,9 @@ const AppAuthed: React.FC<{
           </div>
         )}
         {activeTab === 'equipment' && currentClub && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Equipment</h2>
-              <p className="text-sm text-slate-400 mt-1">Kit inventory, laundry, and issue tracking</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Inventory</p>
-                <p className="text-2xl font-bold text-white mt-1">148</p>
-                <p className="text-xs text-slate-400">items in stock</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Laundry</p>
-                <p className="text-2xl font-bold text-amber-400 mt-1">23</p>
-                <p className="text-xs text-slate-400">items in wash</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Issued</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">42</p>
-                <p className="text-xs text-slate-400">items out</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Low Stock</p>
-                <p className="text-2xl font-bold text-red-400 mt-1">5</p>
-                <p className="text-xs text-slate-400">items to reorder</p>
-              </div>
-            </div>
-            <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-              <h3 className="text-sm font-semibold text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Issue Kit
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Return Kit
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Log Laundry
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  View Inventory
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 text-center">Full equipment management coming soon</p>
-          </div>
+          <EquipmentView
+            club={currentClub}
+          />
         )}
         {activeTab === 'templates' && currentClub && (
           <TemplatesView fixtures={fixtures} />

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Inbox,
   UserCheck,
+  Users,
   Calendar,
   Package,
   Building2,
@@ -65,12 +66,12 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inbox', label: 'Inbox', icon: Inbox },
     { id: 'availability', label: 'Availability', icon: UserCheck },
+    { id: 'squad', label: 'Squad', icon: Users },
     { id: 'matchday', label: 'Matchday', icon: Calendar },
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'equipment', label: 'Equipment', icon: Package },
-    { id: 'club-ops', label: 'Club Ops', icon: Building2 },
     { id: 'templates', label: 'Templates', icon: ClipboardList },
-    { id: 'finance', label: 'Finance', icon: Wallet },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (

@@ -72,5 +72,12 @@ export const TABLES = {
   AI_USAGE_EVENTS: 'ai_usage_events',
   USER_ONBOARDING_STATE: 'user_onboarding_state',
   FAN_SENTIMENT_SNAPSHOTS: 'fan_sentiment_snapshots',
+  // New tables for ops features
+  TEMPLATE_PACKS: 'template_packs',
+  FIXTURE_TASKS: 'fixture_tasks',
+  PLAYER_AVAILABILITY: 'player_availability',
+  EQUIPMENT_ITEMS: 'equipment_items',
+  EQUIPMENT_ASSIGNMENTS: 'equipment_assignments',
+  EQUIPMENT_LAUNDRY: 'equipment_laundry',
 } as const;
 

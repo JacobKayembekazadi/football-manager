@@ -815,3 +815,269 @@ FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "fan_sentiment_snapshots_update_service" ON fan_sentiment_snapshots
 FOR UPDATE USING (true) WITH CHECK (true);
+
+-- ============================================================================
+-- Template Packs (reusable task templates)
+-- ============================================================================
+
+CREATE TABLE template_packs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  is_enabled BOOLEAN DEFAULT FALSE,
+  tasks JSONB NOT NULL DEFAULT '[]'::jsonb, -- array of {label: string, sort_order: number}
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_template_packs_club ON template_packs(club_id);
+CREATE INDEX idx_template_packs_org ON template_packs(org_id);
+
+CREATE TRIGGER update_template_packs_updated_at
+BEFORE UPDATE ON template_packs
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_template_packs_org_id
+BEFORE INSERT OR UPDATE OF club_id ON template_packs
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE template_packs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "template_packs_select_member" ON template_packs
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "template_packs_insert_editor" ON template_packs
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "template_packs_update_editor" ON template_packs
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "template_packs_delete_admin" ON template_packs
+FOR DELETE USING (is_org_admin(org_id));
+
+-- ============================================================================
+-- Fixture Tasks (per-fixture checklist items)
+-- ============================================================================
+
+CREATE TABLE fixture_tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  fixture_id UUID NOT NULL REFERENCES fixtures(id) ON DELETE CASCADE,
+  template_pack_id UUID REFERENCES template_packs(id) ON DELETE SET NULL,
+  label TEXT NOT NULL,
+  is_completed BOOLEAN DEFAULT FALSE,
+  completed_by UUID, -- auth.users.id
+  completed_at TIMESTAMPTZ,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_fixture_tasks_fixture ON fixture_tasks(fixture_id);
+CREATE INDEX idx_fixture_tasks_club ON fixture_tasks(club_id);
+CREATE INDEX idx_fixture_tasks_org ON fixture_tasks(org_id);
+
+CREATE TRIGGER update_fixture_tasks_updated_at
+BEFORE UPDATE ON fixture_tasks
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_fixture_tasks_org_id
+BEFORE INSERT OR UPDATE OF club_id ON fixture_tasks
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE fixture_tasks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "fixture_tasks_select_member" ON fixture_tasks
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "fixture_tasks_insert_editor" ON fixture_tasks
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "fixture_tasks_update_editor" ON fixture_tasks
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "fixture_tasks_delete_admin" ON fixture_tasks
+FOR DELETE USING (is_org_admin(org_id));
+
+-- ============================================================================
+-- Player Availability (per-fixture player status)
+-- ============================================================================
+
+CREATE TABLE player_availability (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  fixture_id UUID NOT NULL REFERENCES fixtures(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('available', 'unavailable', 'maybe', 'injured', 'no_response')) DEFAULT 'no_response',
+  response_note TEXT, -- "Working late", "Holiday", etc.
+  responded_at TIMESTAMPTZ,
+  marked_by UUID, -- admin who marked this
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(player_id, fixture_id)
+);
+
+CREATE INDEX idx_player_availability_fixture ON player_availability(fixture_id);
+CREATE INDEX idx_player_availability_player ON player_availability(player_id);
+CREATE INDEX idx_player_availability_club ON player_availability(club_id);
+CREATE INDEX idx_player_availability_org ON player_availability(org_id);
+
+CREATE TRIGGER update_player_availability_updated_at
+BEFORE UPDATE ON player_availability
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_player_availability_org_id
+BEFORE INSERT OR UPDATE OF club_id ON player_availability
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE player_availability ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "player_availability_select_member" ON player_availability
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "player_availability_insert_editor" ON player_availability
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "player_availability_update_editor" ON player_availability
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "player_availability_delete_admin" ON player_availability
+FOR DELETE USING (is_org_admin(org_id));
+
+-- ============================================================================
+-- Equipment Items (inventory)
+-- ============================================================================
+
+CREATE TABLE equipment_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  name TEXT NOT NULL, -- "Home Shirt #7", "Training Bib", "Match Ball"
+  category TEXT NOT NULL CHECK (category IN ('kit', 'training', 'medical', 'other')),
+  size TEXT, -- "S", "M", "L", "XL" or NULL for non-sized items
+  quantity_total INTEGER NOT NULL DEFAULT 1,
+  quantity_available INTEGER NOT NULL DEFAULT 1,
+  min_stock INTEGER DEFAULT 0, -- for low stock alerts
+  condition TEXT CHECK (condition IN ('new', 'good', 'fair', 'poor')) DEFAULT 'good',
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_equipment_items_club ON equipment_items(club_id);
+CREATE INDEX idx_equipment_items_org ON equipment_items(org_id);
+CREATE INDEX idx_equipment_items_category ON equipment_items(category);
+
+CREATE TRIGGER update_equipment_items_updated_at
+BEFORE UPDATE ON equipment_items
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_equipment_items_org_id
+BEFORE INSERT OR UPDATE OF club_id ON equipment_items
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE equipment_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "equipment_items_select_member" ON equipment_items
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "equipment_items_insert_editor" ON equipment_items
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_items_update_editor" ON equipment_items
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_items_delete_admin" ON equipment_items
+FOR DELETE USING (is_org_admin(org_id));
+
+-- ============================================================================
+-- Equipment Assignments (kit issued to players)
+-- ============================================================================
+
+CREATE TABLE equipment_assignments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  item_id UUID NOT NULL REFERENCES equipment_items(id) ON DELETE CASCADE,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  issued_at TIMESTAMPTZ DEFAULT NOW(),
+  returned_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_equipment_assignments_item ON equipment_assignments(item_id);
+CREATE INDEX idx_equipment_assignments_player ON equipment_assignments(player_id);
+CREATE INDEX idx_equipment_assignments_club ON equipment_assignments(club_id);
+CREATE INDEX idx_equipment_assignments_org ON equipment_assignments(org_id);
+
+CREATE TRIGGER update_equipment_assignments_updated_at
+BEFORE UPDATE ON equipment_assignments
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_equipment_assignments_org_id
+BEFORE INSERT OR UPDATE OF club_id ON equipment_assignments
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE equipment_assignments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "equipment_assignments_select_member" ON equipment_assignments
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "equipment_assignments_insert_editor" ON equipment_assignments
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_assignments_update_editor" ON equipment_assignments
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_assignments_delete_admin" ON equipment_assignments
+FOR DELETE USING (is_org_admin(org_id));
+
+-- ============================================================================
+-- Equipment Laundry (tracking items in wash)
+-- ============================================================================
+
+CREATE TABLE equipment_laundry (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb, -- array of {item_id, quantity}
+  status TEXT NOT NULL CHECK (status IN ('sent', 'returned')) DEFAULT 'sent',
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  returned_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_equipment_laundry_club ON equipment_laundry(club_id);
+CREATE INDEX idx_equipment_laundry_org ON equipment_laundry(org_id);
+CREATE INDEX idx_equipment_laundry_status ON equipment_laundry(status);
+
+CREATE TRIGGER update_equipment_laundry_updated_at
+BEFORE UPDATE ON equipment_laundry
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_equipment_laundry_org_id
+BEFORE INSERT OR UPDATE OF club_id ON equipment_laundry
+FOR EACH ROW EXECUTE FUNCTION set_org_id_from_club();
+
+ALTER TABLE equipment_laundry ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "equipment_laundry_select_member" ON equipment_laundry
+FOR SELECT USING (is_org_member(org_id));
+
+CREATE POLICY "equipment_laundry_insert_editor" ON equipment_laundry
+FOR INSERT WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_laundry_update_editor" ON equipment_laundry
+FOR UPDATE USING (is_org_editor(org_id)) WITH CHECK (is_org_editor(org_id));
+
+CREATE POLICY "equipment_laundry_delete_admin" ON equipment_laundry
+FOR DELETE USING (is_org_admin(org_id));
