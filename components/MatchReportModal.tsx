@@ -53,7 +53,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
         <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose}></div>
         
-        <div className="relative w-full max-w-5xl h-[95vh] md:h-[90vh] bg-[#050505] rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(0,243,255,0.1)] flex flex-col">
+        <div className="relative w-full max-w-5xl h-[95vh] md:h-[90vh] bg-[#050505] rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(0,243,255,0.1)] flex flex-col animate-scale-in">
 
             {/* Header / Hero */}
             <div className="relative h-40 md:h-64 overflow-hidden border-b border-white/10 flex items-center justify-center shrink-0">

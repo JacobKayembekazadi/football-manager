@@ -5,6 +5,7 @@ import PlayerCard from './PlayerCard';
 import TacticsBoard from './TacticsBoard';
 import RadarChart from './RadarChart';
 import PlayerFormModal from './PlayerFormModal';
+import EmptyState, { EMPTY_STATE_PRESETS } from './EmptyState';
 import { useToast } from './Toast';
 import { generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
 import { createPlayer, updatePlayer, deletePlayer } from '../services/playerService';
@@ -365,22 +366,24 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
                 ))}
             </div>
             {sortedPlayers.length === 0 && safePlayers.length === 0 && (
-                <div className="glass-card p-12 rounded-2xl text-center border border-dashed border-white/10">
-                    <User className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400 font-mono mb-4">No players in your squad yet</p>
-                    <button 
-                        onClick={handleAddPlayer}
-                        data-tour="add-player-btn"
-                        className="inline-flex items-center gap-2 bg-green-500 text-black px-6 py-3 rounded-lg font-display font-bold uppercase text-sm hover:shadow-[0_0_20px_rgba(34,197,94,0.35)] transition-all"
-                    >
-                        <Plus size={16} /> Add Your First Player
-                    </button>
+                <div className="glass-card rounded-2xl border border-dashed border-white/10" data-tour="add-player-btn">
+                    <EmptyState
+                        {...EMPTY_STATE_PRESETS.players}
+                        action={{
+                            label: 'Add Your First Player',
+                            onClick: handleAddPlayer,
+                        }}
+                    />
                 </div>
             )}
             {sortedPlayers.length === 0 && safePlayers.length > 0 && (
-                <div className="glass-card p-12 rounded-2xl text-center border border-dashed border-white/10">
-                    <Search className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-500 font-mono">No players match your current filter.</p>
+                <div className="glass-card rounded-2xl border border-dashed border-white/10">
+                    <EmptyState
+                        icon={Search}
+                        title="No players match your filter"
+                        description="Try adjusting your search or filters"
+                        variant="compact"
+                    />
                 </div>
             )}
         </div>

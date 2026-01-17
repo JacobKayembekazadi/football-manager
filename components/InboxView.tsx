@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import EmptyState, { EMPTY_STATE_PRESETS } from './EmptyState';
 import {
   Bell,
   Check,
@@ -272,14 +273,13 @@ const InboxView: React.FC<InboxViewProps> = ({ club, fixtures, onNavigate }) => 
           <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
-          <Bell className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400">No notifications</p>
-          <p className="text-xs text-slate-500 mt-1">
-            {selectedCategory !== 'all'
+        <div className="border border-dashed border-white/10 rounded-xl">
+          <EmptyState
+            {...EMPTY_STATE_PRESETS.notifications}
+            description={selectedCategory !== 'all'
               ? 'Try selecting a different category'
-              : 'You\'re all caught up!'}
-          </p>
+              : 'No new notifications to show'}
+          />
         </div>
       ) : (
         <div className="space-y-6">

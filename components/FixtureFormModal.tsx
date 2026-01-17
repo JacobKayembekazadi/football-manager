@@ -229,7 +229,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(34,197,94,0.1)] overflow-hidden animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(34,197,94,0.1)] overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
         {/* Header gradient */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-purple-500 to-amber-500" aria-hidden="true" />
 

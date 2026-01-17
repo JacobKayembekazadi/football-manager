@@ -26,7 +26,8 @@ import FixtureFormModal from './components/FixtureFormModal';
 import InboxView from './components/InboxView';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
+import QuickActionFAB from './components/QuickActionFAB';
 import { handleError } from './utils/errorHandler';
 import {
   Fixture, ContentItem, Club, MOCK_CLUB, MatchStats,
@@ -176,6 +177,7 @@ const Dashboard: React.FC<{
   onRunScout: () => Promise<void>,
   hasCompletedEducation?: boolean
 }> = ({ fixtures, club, contentItems, onNavigate }) => {
+  const { success: showSuccess, info: showInfo } = useToast();
   const upcoming = fixtures.filter(f => f.status === 'SCHEDULED').sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
   const nextMatch = upcoming[0];
   const [fixtureTasks, setFixtureTasks] = useState<any[]>([]);
@@ -272,6 +274,9 @@ const Dashboard: React.FC<{
       setFixtureTasks(prev =>
         prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
       );
+      if (newStatus === 'done') {
+        showSuccess(`"${task.label}" completed!`);
+      }
     } catch (error) {
       console.error('Error updating task:', error);
     }
@@ -388,14 +393,15 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
     if (navigator.share) {
       try {
         await navigator.share({ text });
+        showSuccess('Team sheet shared!');
       } catch (e) {
         // Fallback to clipboard
         navigator.clipboard.writeText(text);
-        alert('Team sheet copied to clipboard!');
+        showInfo('Team sheet copied to clipboard!');
       }
     } else {
       navigator.clipboard.writeText(text);
-      alert('Team sheet copied to clipboard!');
+      showInfo('Team sheet copied to clipboard!');
     }
   };
 
@@ -666,7 +672,7 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
         {isMatchDay && nextMatch && (
           <button
             onClick={() => setIsMatchdayMode(true)}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-black rounded-2xl p-5 flex items-center justify-between transition-all hover:scale-[1.01] shadow-lg shadow-green-500/20"
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-black rounded-2xl p-5 flex items-center justify-between transition-all hover:scale-[1.01] animate-glow animate-scale-in"
           >
             <div className="flex items-center gap-4">
               <span className="text-4xl">⚡</span>
@@ -931,6 +937,13 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
           </div>
         </div>
       </div>
+
+      {/* Quick Action FAB - Mobile only */}
+      <QuickActionFAB
+        onNavigate={onNavigate}
+        hasMatchToday={isMatchDay}
+        onMatchdayMode={() => setIsMatchdayMode(true)}
+      />
     </div>
   );
 };
@@ -1833,6 +1846,7 @@ const AppAuthed: React.FC<{
   const [generateStatus, setGenerateStatus] = useState<ContentGenStatus>('idle');
   const [isDemoDataActive, setIsDemoDataActive] = useState(false);
   const [isCheckingData, setIsCheckingData] = useState(true);
+  const { error: showError } = useToast();
 
   const CLUB_ID = clubId;
 
@@ -2016,7 +2030,7 @@ const AppAuthed: React.FC<{
       setTimeout(() => setGenerateStatus('idle'), 2000);
     } catch (error) {
       const errorMessage = handleError(error, 'runWeeklyScout');
-      alert(errorMessage);
+      showError(errorMessage);
       setGenerateStatus('error');
       setTimeout(() => setGenerateStatus('idle'), 3000);
     }
@@ -2035,7 +2049,7 @@ const AppAuthed: React.FC<{
       }, 2000);
     } catch (error) {
       const errorMessage = handleError(error, 'runHypeProtocol');
-      alert(errorMessage);
+      showError(errorMessage);
     }
   };
 
@@ -2084,7 +2098,7 @@ const AppAuthed: React.FC<{
       await Promise.all([refetchFixtures(), refetchContent()]);
     } catch (error) {
       const errorMessage = handleError(error, 'handleMatchReportGeneration');
-      alert(errorMessage);
+      showError(errorMessage);
     }
   };
 
