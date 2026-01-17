@@ -2192,7 +2192,7 @@ const AppAuthed: React.FC<{
           <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
         )}
         {activeTab === 'settings' && currentClub && (
-          <SettingsView club={currentClub} />
+          <SettingsView club={currentClub} onLogout={() => {}} />
         )}
         {activeTab === 'inbox' && currentClub && (
           <InboxView

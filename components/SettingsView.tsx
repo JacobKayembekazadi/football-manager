@@ -4,12 +4,13 @@ import type { Club } from '../types';
 import {
   BarChart3, Image as ImageIcon, MessageSquare, TrendingUp, Activity, Zap, Database, Trash2, RefreshCw,
   Mic, Globe, Palette, CheckCircle, XCircle, Clock, Wifi, Download, FileText, Users, Trophy,
-  Plus, ArrowRight, Command, Briefcase, Radio, AlertTriangle, Shield, Sparkles
+  Plus, ArrowRight, Command, Briefcase, Radio, AlertTriangle, Shield, Sparkles, LogOut
 } from 'lucide-react';
 import { seedDemoData, clearDemoData } from '../services/mockDataService';
 import { hasDemoData } from '../services/dataPresenceService';
 import { Skeleton, StatCardSkeleton } from './Skeleton';
 import { getDemoClubProfile, saveDemoClubProfile, DemoClubProfile } from '../services/demoStorageService';
+import { signOut } from '../services/authService';
 
 // AI Tone options
 const AI_TONES = [
@@ -36,12 +37,13 @@ const COLOR_PRESETS = [
 
 interface SettingsViewProps {
   club: Club;
+  onLogout?: () => void;
 }
 
 type OrgMode = 'managed' | 'byok' | 'hybrid';
 type ClubMode = 'inherit' | 'byok';
 
-const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ club, onLogout }) => {
   const orgId = club.org_id;
   const clubId = club.id;
 
@@ -1165,6 +1167,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Account Section - Logout for mobile */}
+      <div className="glass-card p-6 rounded-2xl border border-white/10 md:hidden">
+        <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2 mb-4">
+          <LogOut size={18} className="text-red-400" />
+          Account
+        </h3>
+        <button
+          onClick={async () => {
+            await signOut();
+            if (onLogout) onLogout();
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 transition-colors"
+        >
+          <LogOut size={18} />
+          <span className="font-bold">Sign Out</span>
+        </button>
       </div>
     </div>
   );
