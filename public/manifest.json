@@ -1,0 +1,37 @@
+{
+  "name": "PitchSide - Football Manager",
+  "short_name": "PitchSide",
+  "description": "Grassroots football club management made simple",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030303",
+  "theme_color": "#22c55e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/?tab=dashboard",
+      "description": "Go to Dashboard"
+    },
+    {
+      "name": "Match Day",
+      "url": "/?tab=matchday",
+      "description": "View fixtures"
+    }
+  ]
+}

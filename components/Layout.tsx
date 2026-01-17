@@ -7,11 +7,7 @@ import {
   Users,
   Calendar,
   Package,
-  Building2,
-  Wallet,
   Settings,
-  Menu,
-  X,
   Zap,
   Bell,
   LogOut,
@@ -49,7 +45,6 @@ const Layout: React.FC<LayoutProps> = ({
   workspaceLabel,
   onLogout,
 }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -78,25 +73,19 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
+  // Get current page label for mobile header
+  const currentPageLabel = navItems.find(n => n.id === activeTab)?.label || 'Dashboard';
+
   return (
     <div className="flex h-screen bg-dark-bg text-slate-100 overflow-hidden font-sans selection:bg-green-500 selection:text-black">
 
       {/* Top accent bar */}
       <div className="absolute top-0 left-0 w-full h-0.5 bg-green-500 z-50"></div>
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Glass Sidebar */}
+      {/* Glass Sidebar - Desktop Only */}
       <aside className={`
-        fixed md:relative z-50 h-full glass-panel border-r-0 border-r-glass-border flex flex-col transition-all duration-300 ease-in-out
+        hidden md:flex md:relative z-50 h-full glass-panel border-r-0 border-r-glass-border flex-col transition-all duration-300 ease-in-out
         ${isSidebarCollapsed ? 'md:w-20' : 'w-72'}
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Brand Header */}
         <div className={`p-6 flex items-center gap-3 ${isSidebarCollapsed ? 'md:p-4 md:justify-center' : ''}`}>
@@ -106,9 +95,6 @@ const Layout: React.FC<LayoutProps> = ({
           {!isSidebarCollapsed && (
             <h1 className="text-xl font-bold text-white">PitchSide</h1>
           )}
-          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden ml-auto text-slate-400 hover:text-white">
-            <X size={20} />
-          </button>
         </div>
 
         {/* Navigation */}
@@ -123,10 +109,7 @@ const Layout: React.FC<LayoutProps> = ({
               <button
                 key={item.id}
                 data-tour={`sidebar-${item.id}`}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
+                onClick={() => setActiveTab(item.id)}
                 title={isSidebarCollapsed ? item.label : undefined}
                 aria-current={isActive ? 'page' : undefined}
                 aria-label={item.label}
@@ -198,22 +181,24 @@ const Layout: React.FC<LayoutProps> = ({
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
 
-        {/* Top HUD Bar */}
-        <header className="h-20 glass-panel border-b border-glass-border flex items-center justify-between px-8 z-20 sticky top-0">
-          <div className="flex items-center gap-4 md:hidden">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-lg">
-              <Menu size={24} />
-            </button>
-            <span className="font-display font-bold text-xl tracking-wider">PITCH<span className="text-green-500">AI</span></span>
+        {/* Top HUD Bar - Simplified on Mobile */}
+        <header className="h-14 md:h-20 glass-panel border-b border-glass-border flex items-center justify-between px-4 md:px-8 z-20 sticky top-0">
+          {/* Mobile: Page title */}
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="p-1.5 border border-green-500/30 rounded bg-green-500/10">
+              <Zap className="text-green-500" size={16} />
+            </div>
+            <h2 className="text-lg font-bold text-white">{currentPageLabel}</h2>
           </div>
 
+          {/* Desktop: Page title */}
           <div className="hidden md:flex flex-col">
             <h2 className="text-2xl font-display font-bold text-white tracking-wide">
-              {navItems.find(n => n.id === activeTab)?.label}
+              {currentPageLabel}
             </h2>
           </div>
 
-          <div className="flex items-center gap-6 relative">
+          <div className="flex items-center gap-3 md:gap-6 relative">
             {onSwitchWorkspace && (
               <button
                 onClick={onSwitchWorkspace}
@@ -226,7 +211,7 @@ const Layout: React.FC<LayoutProps> = ({
               </button>
             )}
 
-            {/* Logout Button */}
+            {/* Logout Button - Desktop only */}
             <button
               onClick={async () => {
                 await signOut();
@@ -243,11 +228,11 @@ const Layout: React.FC<LayoutProps> = ({
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative transition-colors ${showNotifications ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`relative p-2 transition-colors ${showNotifications ? 'text-white' : 'text-slate-400 hover:text-white'}`}
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_10px_#f43f5e] animate-pulse"></span>
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_10px_#f43f5e] animate-pulse"></span>
                 )}
               </button>
 
@@ -255,15 +240,15 @@ const Layout: React.FC<LayoutProps> = ({
               {showNotifications && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 top-12 w-80 bg-[#050505]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] z-50 overflow-hidden animate-slide-up">
-                    <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                  <div className="absolute right-0 top-12 w-72 md:w-80 bg-[#050505]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] z-50 overflow-hidden animate-slide-up">
+                    <div className="p-3 md:p-4 border-b border-white/10 flex items-center justify-between">
                       <span className="text-sm font-bold text-white">Notifications</span>
                       <button onClick={markAllRead} className="text-xs text-green-500 hover:text-white transition-colors">Mark all read</button>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.length > 0 ? (
                         notifications.map(n => (
-                          <div key={n.id} className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${!n.isRead ? 'bg-white/[0.02]' : ''}`}>
+                          <div key={n.id} className={`p-3 md:p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${!n.isRead ? 'bg-white/[0.02]' : ''}`}>
                             <div className="flex gap-3">
                               <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${n.type === 'success' ? 'bg-emerald-500' : n.type === 'alert' ? 'bg-rose-500' : 'bg-green-500'}`}></div>
                               <div>

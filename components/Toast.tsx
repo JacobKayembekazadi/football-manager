@@ -110,7 +110,7 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      className="fixed bottom-24 md:bottom-4 left-4 right-4 md:left-auto md:right-4 z-[100] flex flex-col gap-2 max-w-sm w-auto md:w-full pointer-events-none"
       aria-label="Notifications"
     >
       {toasts.map(toast => (
