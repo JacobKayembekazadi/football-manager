@@ -35,7 +35,7 @@ import {
   ContentGenStatus,
   TemplatePack,
 } from './types';
-import { getTemplatePacks, updateTemplatePack } from './services/fixtureTaskService';
+import { getTemplatePacks, updateTemplatePack, generateTasksFromTemplates } from './services/fixtureTaskService';
 import { generateContent, generateOpponentReport, suggestScorers, generateViralIdeas } from './services/geminiService';
 import { scheduleContentSequence } from './services/contentSequenceService';
 import { useSupabaseQuery } from './hooks/useSupabaseQuery';
@@ -183,7 +183,7 @@ const Dashboard: React.FC<{
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [quickStats, setQuickStats] = useState({ pendingTasks: 0, lowStockItems: 0 });
 
-  // Load fixture tasks for the next match
+  // Load fixture tasks for the next match (auto-generate from templates if none exist)
   useEffect(() => {
     const loadData = async () => {
       if (!nextMatch) {
@@ -193,8 +193,18 @@ const Dashboard: React.FC<{
 
       try {
         // Load fixture tasks
-        const { getFixtureTasksForFixture } = await import('./services/fixtureTaskService');
-        const tasks = await getFixtureTasksForFixture(club.id, nextMatch.id);
+        const { getFixtureTasksForFixture, generateTasksFromTemplates } = await import('./services/fixtureTaskService');
+        let tasks = await getFixtureTasksForFixture(club.id, nextMatch.id);
+
+        // Auto-generate tasks from enabled templates if none exist
+        if (tasks.length === 0) {
+          try {
+            tasks = await generateTasksFromTemplates(club.id, nextMatch.id, nextMatch.venue);
+          } catch (e) {
+            console.log('Could not auto-generate tasks from templates');
+          }
+        }
+
         setFixtureTasks(tasks);
 
         // Load alerts from notification service
@@ -598,29 +608,36 @@ const TemplatesView: React.FC<{ fixtures: Fixture[]; clubId: string }> = ({ fixt
 
   const enabledPacks = templatePacks.filter(p => p.is_enabled);
   const nextFixture = fixtures.filter(f => f.status === 'SCHEDULED')[0];
+  const totalTaskCount = enabledPacks.reduce((sum, pack) => sum + (pack.tasks?.length || 0), 0);
 
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-white">Templates</h2>
-        <p className="text-sm text-slate-400 mt-1">Choose default templates to auto-fill matchday tasks</p>
+        <h2 className="text-2xl font-bold text-white">Matchday Task Templates</h2>
+        <p className="text-sm text-slate-400 mt-1">
+          Enable templates below to auto-populate your to-do list on the Dashboard
+        </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left Column - Template List */}
-        <div className="flex-1 space-y-4">
-          {/* Tip Banner */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-            <p className="text-sm text-amber-400">
-              <span className="font-semibold">Tip:</span> Choose default templates to auto-fill. Tasks will be created automatically when you schedule a fixture.
-            </p>
-          </div>
+      {/* How It Works */}
+      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+        <h4 className="text-sm font-bold text-green-400 mb-2">How it works</h4>
+        <ol className="text-sm text-slate-300 space-y-1 list-decimal list-inside">
+          <li>Enable one or more templates below</li>
+          <li>Go to Dashboard - tasks appear automatically for your next fixture</li>
+          <li>Check off tasks as you complete them</li>
+        </ol>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Template List */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Templates Section */}
           <div className="bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 bg-slate-900/50">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Templates</h3>
+            <div className="px-4 py-3 border-b border-white/10 bg-slate-900/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Available Templates</h3>
+              <span className="text-xs text-slate-500">{enabledPacks.length} of {templatePacks.length} enabled</span>
             </div>
 
             <div className="divide-y divide-white/5">
@@ -646,32 +663,20 @@ const TemplatesView: React.FC<{ fixtures: Fixture[]; clubId: string }> = ({ fixt
                       </button>
                       <div>
                         <p className="text-sm font-medium text-white">{pack.name}</p>
-                        <p className="text-xs text-slate-500">{pack.description}</p>
+                        <p className="text-xs text-slate-500">{pack.tasks?.length || 0} tasks • {pack.description}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {pack.is_enabled && (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-bold uppercase rounded">
-                          ON
-                        </span>
-                      )}
-                      <span className="text-slate-500">
-                        {selectedPack === pack.id ? '▼' : '▶'}
-                      </span>
-                    </div>
+                    <span className="text-slate-500 text-lg">
+                      {selectedPack === pack.id ? '−' : '+'}
+                    </span>
                   </div>
 
                   {/* Expanded Tasks */}
                   {selectedPack === pack.id && (
-                    <div className="mt-4 pl-12 space-y-2">
-                      <p className="text-[10px] text-green-500 font-mono uppercase mb-2">
-                        * Tasks auto-fill after you select this template
-                      </p>
+                    <div className="mt-4 pl-12 space-y-2 border-l-2 border-slate-700 ml-5">
                       {pack.tasks.map((task, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border border-slate-600 flex items-center justify-center">
-                            {/* Empty checkbox */}
-                          </div>
+                        <div key={i} className="flex items-center gap-2 py-1">
+                          <div className="w-4 h-4 rounded border border-slate-600 flex-shrink-0" />
                           <span className="text-sm text-slate-300">{task.label}</span>
                         </div>
                       ))}
@@ -683,68 +688,53 @@ const TemplatesView: React.FC<{ fixtures: Fixture[]; clubId: string }> = ({ fixt
           </div>
         </div>
 
-        {/* Right Column - Preview & Add */}
-        <div className="w-80 lg:w-96 space-y-4">
-          {/* Default Pack Info */}
+        {/* Right Column - Summary */}
+        <div className="space-y-4">
+          {/* Summary Card */}
           <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Active Templates</h4>
-            <div className="space-y-2">
-              {enabledPacks.length > 0 ? (
-                enabledPacks.map(pack => (
-                  <div key={pack.id} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-2">
-                    <span className="text-sm text-white">{pack.name}</span>
-                    <span className="text-[10px] text-green-400 font-bold">DEFAULT</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-500">No templates enabled</p>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 mt-3">
-              ✓ Auto-create tasks for each fixture
-            </p>
-          </div>
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-4">Your Setup</h4>
 
-          {/* Starter Packs */}
-          <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Starter Packs</h4>
-            <div className="space-y-2">
-              {templatePacks.filter(p => !p.is_enabled).slice(0, 4).map(pack => (
-                <div key={pack.id} className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">{pack.name}</span>
-                  <button
-                    onClick={() => togglePack(pack.id)}
-                    className="px-3 py-1 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-black text-xs font-bold rounded transition-colors"
-                  >
-                    + ADD
-                  </button>
+            {enabledPacks.length > 0 ? (
+              <div className="space-y-3">
+                <div className="text-center py-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <p className="text-3xl font-bold text-green-400">{totalTaskCount}</p>
+                  <p className="text-xs text-slate-400 mt-1">tasks per fixture</p>
                 </div>
-              ))}
-            </div>
+
+                <div className="space-y-2">
+                  {enabledPacks.map(pack => (
+                    <div key={pack.id} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">{pack.name}</span>
+                      <span className="text-green-400">{pack.tasks?.length || 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-4xl mb-2">📋</p>
+                <p className="text-sm text-slate-400">No templates enabled</p>
+                <p className="text-xs text-slate-500 mt-1">Enable a template to get started</p>
+              </div>
+            )}
           </div>
 
           {/* Next Fixture Preview */}
           {nextFixture && (
             <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Next Fixture Preview</h4>
-              <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Next Fixture</h4>
+              <div className="bg-slate-900/50 rounded-lg p-3">
                 <p className="text-sm font-semibold text-white">vs {nextFixture.opponent}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 mt-1">
                   {new Date(nextFixture.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                   {' • '}{nextFixture.venue}
                 </p>
-              </div>
-              <p className="text-xs text-slate-400">
-                {enabledPacks.length > 0 ? (
-                  <>
-                    <span className="text-green-400">{enabledPacks.reduce((sum, pack) => {
-                      return sum + (pack.tasks?.length || 0);
-                    }, 0)} tasks</span> will be auto-created from enabled templates
-                  </>
-                ) : (
-                  'Enable templates to auto-create tasks'
+                {enabledPacks.length > 0 && (
+                  <p className="text-xs text-green-400 mt-2">
+                    {totalTaskCount} tasks ready on Dashboard
+                  </p>
                 )}
-              </p>
+              </div>
             </div>
           )}
         </div>

@@ -190,6 +190,15 @@ export const deleteTemplatePack = async (packId: string): Promise<void> => {
 // ============================================================================
 
 /**
+ * Get all tasks for a fixture (for Dashboard - validates club ownership)
+ */
+export const getFixtureTasksForFixture = async (clubId: string, fixtureId: string): Promise<FixtureTask[]> => {
+  const tasks = await getFixtureTasks(fixtureId);
+  // Filter by club_id to ensure we only return tasks for this club
+  return tasks.filter(t => t.club_id === clubId);
+};
+
+/**
  * Get all tasks for a fixture
  */
 export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]> => {
