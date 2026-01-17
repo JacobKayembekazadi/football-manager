@@ -824,3 +824,190 @@ export const INITIAL_SPONSORS: Sponsor[] = [
 // --- INBOX EMAILS - DEPRECATED ---
 // Removed as part of pivot to Commercial & Media Operating System
 // Mock data completely removed - InboxEmail interface and INITIAL_EMAILS export deleted
+
+// ============================================================================
+// Template Packs & Fixture Tasks
+// ============================================================================
+
+export interface TemplateTask {
+  label: string;
+  sort_order: number;
+}
+
+export interface TemplatePack {
+  id: string;
+  club_id: string;
+  name: string;
+  description?: string;
+  is_enabled: boolean;
+  tasks: TemplateTask[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FixtureTask {
+  id: string;
+  club_id: string;
+  fixture_id: string;
+  template_pack_id?: string;
+  label: string;
+  is_completed: boolean;
+  completed_by?: string;
+  completed_at?: string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================================================
+// Player Availability
+// ============================================================================
+
+export type AvailabilityStatus = 'available' | 'unavailable' | 'maybe' | 'injured' | 'no_response';
+
+export interface PlayerAvailability {
+  id: string;
+  club_id: string;
+  player_id: string;
+  fixture_id: string;
+  status: AvailabilityStatus;
+  response_note?: string;
+  responded_at?: string;
+  marked_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================================================
+// Equipment Management
+// ============================================================================
+
+export type EquipmentCategory = 'kit' | 'training' | 'medical' | 'other';
+export type EquipmentCondition = 'new' | 'good' | 'fair' | 'poor';
+
+export interface EquipmentItem {
+  id: string;
+  club_id: string;
+  name: string;
+  category: EquipmentCategory;
+  size?: string;
+  quantity_total: number;
+  quantity_available: number;
+  min_stock: number;
+  condition: EquipmentCondition;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EquipmentAssignment {
+  id: string;
+  club_id: string;
+  item_id: string;
+  player_id: string;
+  quantity: number;
+  issued_at: string;
+  returned_at?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Joined fields
+  item?: EquipmentItem;
+  player?: Player;
+}
+
+export interface LaundryItem {
+  item_id: string;
+  quantity: number;
+}
+
+export type LaundryStatus = 'sent' | 'returned';
+
+export interface EquipmentLaundry {
+  id: string;
+  club_id: string;
+  items: LaundryItem[];
+  status: LaundryStatus;
+  sent_at: string;
+  returned_at?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================================================
+// Default Template Packs (for new clubs)
+// ============================================================================
+
+export const DEFAULT_TEMPLATE_PACKS: Omit<TemplatePack, 'id' | 'club_id'>[] = [
+  {
+    name: 'Matchday Pack (Home)',
+    description: 'Essential tasks for home matches',
+    is_enabled: true,
+    tasks: [
+      { label: 'Confirm referee and officials', sort_order: 1 },
+      { label: 'Prepare matchday programme', sort_order: 2 },
+      { label: 'Check pitch and goal nets', sort_order: 3 },
+      { label: 'Set up refreshments', sort_order: 4 },
+      { label: 'Post lineup graphic on social', sort_order: 5 },
+      { label: 'Brief stewards and volunteers', sort_order: 6 },
+    ]
+  },
+  {
+    name: 'Matchday Pack (Away)',
+    description: 'Essential tasks for away matches',
+    is_enabled: true,
+    tasks: [
+      { label: 'Confirm transport arrangements', sort_order: 1 },
+      { label: 'Check away kit is clean and packed', sort_order: 2 },
+      { label: 'Send travel details to players', sort_order: 3 },
+      { label: 'Post lineup graphic on social', sort_order: 4 },
+      { label: 'Confirm meeting time and location', sort_order: 5 },
+    ]
+  },
+  {
+    name: 'Training Night Pack',
+    description: 'Pre-training session tasks',
+    is_enabled: false,
+    tasks: [
+      { label: 'Set up training cones and equipment', sort_order: 1 },
+      { label: 'Check first aid kit', sort_order: 2 },
+      { label: 'Confirm session plan with coach', sort_order: 3 },
+      { label: 'Take attendance', sort_order: 4 },
+    ]
+  },
+  {
+    name: 'Squad Availability Pack',
+    description: 'Collect and track player availability',
+    is_enabled: true,
+    tasks: [
+      { label: 'Send availability request to group', sort_order: 1 },
+      { label: 'Chase non-responders', sort_order: 2 },
+      { label: 'Confirm final squad', sort_order: 3 },
+      { label: 'Notify unavailable players', sort_order: 4 },
+    ]
+  },
+  {
+    name: 'Kit & Equipment Pack',
+    description: 'Kit management before and after match',
+    is_enabled: false,
+    tasks: [
+      { label: 'Collect dirty kit from last match', sort_order: 1 },
+      { label: 'Send kit for laundry', sort_order: 2 },
+      { label: 'Check kit stock levels', sort_order: 3 },
+      { label: 'Prepare match kit', sort_order: 4 },
+    ]
+  },
+  {
+    name: 'Media Pack',
+    description: 'Content tasks for match coverage',
+    is_enabled: true,
+    tasks: [
+      { label: 'Write match preview', sort_order: 1 },
+      { label: 'Create matchday graphic', sort_order: 2 },
+      { label: 'Post pre-match content', sort_order: 3 },
+      { label: 'Post full-time result', sort_order: 4 },
+      { label: 'Write match report', sort_order: 5 },
+    ]
+  },
+];

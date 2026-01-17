@@ -1,0 +1,409 @@
+/**
+ * Fixture Task Service
+ *
+ * Handles fixture tasks and template packs for matchday checklists.
+ */
+
+import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
+import { FixtureTask, TemplatePack, TemplateTask, DEFAULT_TEMPLATE_PACKS } from '../types';
+
+// ============================================================================
+// Template Packs
+// ============================================================================
+
+/**
+ * Get all template packs for a club
+ */
+export const getTemplatePacks = async (clubId: string): Promise<TemplatePack[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    // Return mock data for demo mode
+    return DEFAULT_TEMPLATE_PACKS.map((pack, i) => ({
+      ...pack,
+      id: `demo-pack-${i}`,
+      club_id: clubId,
+    }));
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.TEMPLATE_PACKS)
+    .select('*')
+    .eq('club_id', clubId)
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching template packs:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapTemplatePackFromDb);
+};
+
+/**
+ * Initialize default template packs for a new club
+ */
+export const initializeDefaultPacks = async (clubId: string): Promise<TemplatePack[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return [];
+  }
+
+  const packs = DEFAULT_TEMPLATE_PACKS.map(pack => ({
+    club_id: clubId,
+    name: pack.name,
+    description: pack.description,
+    is_enabled: pack.is_enabled,
+    tasks: pack.tasks,
+  }));
+
+  const { data, error } = await supabase
+    .from(TABLES.TEMPLATE_PACKS)
+    .insert(packs)
+    .select();
+
+  if (error) {
+    console.error('Error initializing template packs:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapTemplatePackFromDb);
+};
+
+/**
+ * Update a template pack (toggle enabled, update tasks)
+ */
+export const updateTemplatePack = async (
+  packId: string,
+  updates: Partial<Omit<TemplatePack, 'id' | 'club_id'>>
+): Promise<TemplatePack> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.TEMPLATE_PACKS)
+    .update({
+      name: updates.name,
+      description: updates.description,
+      is_enabled: updates.is_enabled,
+      tasks: updates.tasks,
+    })
+    .eq('id', packId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating template pack:', error);
+    throw error;
+  }
+
+  return mapTemplatePackFromDb(data);
+};
+
+/**
+ * Create a custom template pack
+ */
+export const createTemplatePack = async (
+  clubId: string,
+  pack: Omit<TemplatePack, 'id' | 'club_id'>
+): Promise<TemplatePack> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.TEMPLATE_PACKS)
+    .insert({
+      club_id: clubId,
+      name: pack.name,
+      description: pack.description,
+      is_enabled: pack.is_enabled,
+      tasks: pack.tasks,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating template pack:', error);
+    throw error;
+  }
+
+  return mapTemplatePackFromDb(data);
+};
+
+/**
+ * Delete a template pack
+ */
+export const deleteTemplatePack = async (packId: string): Promise<void> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { error } = await supabase
+    .from(TABLES.TEMPLATE_PACKS)
+    .delete()
+    .eq('id', packId);
+
+  if (error) {
+    console.error('Error deleting template pack:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// Fixture Tasks
+// ============================================================================
+
+/**
+ * Get all tasks for a fixture
+ */
+export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .select('*')
+    .eq('fixture_id', fixtureId)
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching fixture tasks:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapFixtureTaskFromDb);
+};
+
+/**
+ * Get all tasks for multiple fixtures
+ */
+export const getTasksForFixtures = async (fixtureIds: string[]): Promise<FixtureTask[]> => {
+  if (!supabase || !isSupabaseConfigured() || fixtureIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .select('*')
+    .in('fixture_id', fixtureIds)
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching fixture tasks:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapFixtureTaskFromDb);
+};
+
+/**
+ * Generate tasks for a fixture from enabled templates
+ */
+export const generateTasksFromTemplates = async (
+  clubId: string,
+  fixtureId: string,
+  venue: 'Home' | 'Away'
+): Promise<FixtureTask[]> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    return [];
+  }
+
+  // Get enabled template packs
+  const packs = await getTemplatePacks(clubId);
+  const enabledPacks = packs.filter(p => p.is_enabled);
+
+  // Filter packs based on venue if applicable
+  const relevantPacks = enabledPacks.filter(p => {
+    const nameLower = p.name.toLowerCase();
+    if (nameLower.includes('(home)') && venue !== 'Home') return false;
+    if (nameLower.includes('(away)') && venue !== 'Away') return false;
+    return true;
+  });
+
+  // Collect all tasks from relevant packs
+  const tasksToCreate: Array<{
+    club_id: string;
+    fixture_id: string;
+    template_pack_id: string;
+    label: string;
+    is_completed: boolean;
+    sort_order: number;
+  }> = [];
+
+  let sortOrder = 0;
+  for (const pack of relevantPacks) {
+    for (const task of pack.tasks) {
+      tasksToCreate.push({
+        club_id: clubId,
+        fixture_id: fixtureId,
+        template_pack_id: pack.id,
+        label: task.label,
+        is_completed: false,
+        sort_order: sortOrder++,
+      });
+    }
+  }
+
+  if (tasksToCreate.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .insert(tasksToCreate)
+    .select();
+
+  if (error) {
+    console.error('Error generating fixture tasks:', error);
+    throw error;
+  }
+
+  return (data || []).map(mapFixtureTaskFromDb);
+};
+
+/**
+ * Add a custom task to a fixture
+ */
+export const addFixtureTask = async (
+  clubId: string,
+  fixtureId: string,
+  label: string
+): Promise<FixtureTask> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  // Get current max sort_order
+  const { data: existing } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .select('sort_order')
+    .eq('fixture_id', fixtureId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .insert({
+      club_id: clubId,
+      fixture_id: fixtureId,
+      label,
+      is_completed: false,
+      sort_order: nextOrder,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding fixture task:', error);
+    throw error;
+  }
+
+  return mapFixtureTaskFromDb(data);
+};
+
+/**
+ * Toggle task completion
+ */
+export const toggleTaskCompletion = async (
+  taskId: string,
+  isCompleted: boolean,
+  userId?: string
+): Promise<FixtureTask> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .update({
+      is_completed: isCompleted,
+      completed_by: isCompleted ? userId : null,
+      completed_at: isCompleted ? new Date().toISOString() : null,
+    })
+    .eq('id', taskId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error toggling task:', error);
+    throw error;
+  }
+
+  return mapFixtureTaskFromDb(data);
+};
+
+/**
+ * Delete a fixture task
+ */
+export const deleteFixtureTask = async (taskId: string): Promise<void> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .delete()
+    .eq('id', taskId);
+
+  if (error) {
+    console.error('Error deleting task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update task label
+ */
+export const updateFixtureTask = async (
+  taskId: string,
+  updates: { label?: string; sort_order?: number }
+): Promise<FixtureTask> => {
+  if (!supabase || !isSupabaseConfigured()) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.FIXTURE_TASKS)
+    .update(updates)
+    .eq('id', taskId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating task:', error);
+    throw error;
+  }
+
+  return mapFixtureTaskFromDb(data);
+};
+
+// ============================================================================
+// Mappers
+// ============================================================================
+
+const mapTemplatePackFromDb = (row: any): TemplatePack => ({
+  id: row.id,
+  club_id: row.club_id,
+  name: row.name,
+  description: row.description,
+  is_enabled: row.is_enabled,
+  tasks: (row.tasks || []) as TemplateTask[],
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+});
+
+const mapFixtureTaskFromDb = (row: any): FixtureTask => ({
+  id: row.id,
+  club_id: row.club_id,
+  fixture_id: row.fixture_id,
+  template_pack_id: row.template_pack_id,
+  label: row.label,
+  is_completed: row.is_completed,
+  completed_by: row.completed_by,
+  completed_at: row.completed_at,
+  sort_order: row.sort_order,
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+});

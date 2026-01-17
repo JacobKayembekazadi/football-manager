@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Inbox,
   UserCheck,
+  Users,
   Calendar,
   Package,
   Building2,
@@ -14,7 +15,6 @@ import {
   Zap,
   Bell,
   LogOut,
-  Radio,
   FileText,
   ClipboardList,
 } from 'lucide-react';
@@ -66,12 +66,12 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inbox', label: 'Inbox', icon: Inbox },
     { id: 'availability', label: 'Availability', icon: UserCheck },
+    { id: 'squad', label: 'Squad', icon: Users },
     { id: 'matchday', label: 'Matchday', icon: Calendar },
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'equipment', label: 'Equipment', icon: Package },
-    { id: 'club-ops', label: 'Club Ops', icon: Building2 },
     { id: 'templates', label: 'Templates', icon: ClipboardList },
-    { id: 'finance', label: 'Finance', icon: Wallet },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -142,17 +142,17 @@ const Layout: React.FC<LayoutProps> = ({
           })}
         </nav>
 
-        {/* System Status / Footer */}
+        {/* AI Assistant Status */}
         <div className={`border-t border-glass-border bg-black/20 ${isSidebarCollapsed ? 'md:p-2' : 'p-6'}`}>
           {!isSidebarCollapsed ? (
             <div className="glass-card p-4 rounded-lg flex items-center gap-3 hover:border-purple-500/50 transition-colors cursor-pointer group">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-black relative">
                 AI
-                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-black rounded-full animate-pulse"></span>
+                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-black rounded-full"></span>
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-bold text-white group-hover:text-purple-500 transition-colors">Admin Node</p>
-                <p className="text-[10px] text-emerald-400 uppercase tracking-wider">System Online</p>
+                <p className="text-sm font-bold text-white group-hover:text-purple-500 transition-colors">AI Assistant</p>
+                <p className="text-xs text-emerald-400">Ready to help</p>
               </div>
               <Settings size={16} className="text-slate-500 group-hover:animate-spin" />
             </div>
@@ -160,7 +160,7 @@ const Layout: React.FC<LayoutProps> = ({
             <div className="hidden md:flex justify-center">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-black relative">
                 AI
-                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-black rounded-full animate-pulse"></span>
+                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-black rounded-full"></span>
               </div>
             </div>
           )}
@@ -204,30 +204,21 @@ const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="hidden md:flex flex-col">
-            <h2 className="text-2xl font-display font-bold text-white tracking-widest uppercase glow-text">
+            <h2 className="text-2xl font-display font-bold text-white tracking-wide">
               {navItems.find(n => n.id === activeTab)?.label}
             </h2>
-            <div className="flex items-center gap-2 text-[10px] text-green-500 uppercase tracking-[0.2em] opacity-70">
-              <span className="w-1 h-1 bg-green-500 rounded-full animate-ping"></span>
-              Live Data Feed
-            </div>
           </div>
 
           <div className="flex items-center gap-6 relative">
-            <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-black/40 rounded-full border border-white/5">
-              <Radio size={14} className="text-red-500 animate-pulse" />
-              <span className="text-xs font-mono text-slate-300">SERVER_LATENCY: <span className="text-green-400">12ms</span></span>
-            </div>
-
             {onSwitchWorkspace && (
               <button
                 onClick={onSwitchWorkspace}
                 data-tour="workspace-switch"
-                className="hidden md:flex items-center gap-2 px-4 py-2 bg-black/40 rounded-full border border-white/5 text-xs font-mono text-slate-300 hover:text-white hover:border-white/10 transition-colors"
-                title="Switch club/workspace"
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-black/40 rounded-full border border-white/5 text-xs text-slate-300 hover:text-white hover:border-white/10 transition-colors"
+                title="Switch club"
               >
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                {workspaceLabel ? `CLUB: ${workspaceLabel}` : 'SWITCH_CLUB'}
+                {workspaceLabel || 'Switch club'}
               </button>
             )}
 
@@ -237,11 +228,11 @@ const Layout: React.FC<LayoutProps> = ({
                 await signOut();
                 if (onLogout) onLogout();
               }}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-400 hover:text-white hover:border-red-500/50 hover:bg-red-500/20 transition-colors rounded-full"
+              className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-xs text-red-400 hover:text-white hover:border-red-500/50 hover:bg-red-500/20 transition-colors rounded-full"
               title="Sign out"
             >
               <LogOut size={14} />
-              LOGOUT
+              Sign out
             </button>
 
             {/* Notification Bell */}
@@ -262,8 +253,8 @@ const Layout: React.FC<LayoutProps> = ({
                   <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
                   <div className="absolute right-0 top-12 w-80 bg-[#050505]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] z-50 overflow-hidden animate-slide-up">
                     <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                      <span className="text-xs font-bold font-display uppercase tracking-wider text-white">Notifications</span>
-                      <button onClick={markAllRead} className="text-[10px] text-green-500 hover:text-white transition-colors">MARK_ALL_READ</button>
+                      <span className="text-sm font-bold text-white">Notifications</span>
+                      <button onClick={markAllRead} className="text-xs text-green-500 hover:text-white transition-colors">Mark all read</button>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.length > 0 ? (
@@ -279,7 +270,7 @@ const Layout: React.FC<LayoutProps> = ({
                           </div>
                         ))
                       ) : (
-                        <div className="p-8 text-center text-slate-500 text-xs font-mono">NO DATA</div>
+                        <div className="p-8 text-center text-slate-500 text-sm">No notifications</div>
                       )}
                     </div>
                   </div>

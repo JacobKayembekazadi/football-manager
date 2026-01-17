@@ -6,6 +6,9 @@ import ContentEditorModal from './components/ContentEditorModal';
 import AutoPublisher from './components/AutoPublisher';
 import ViralScout from './components/ViralScout';
 import SquadView from './components/SquadView';
+import AvailabilityView from './components/AvailabilityView';
+import EquipmentView from './components/EquipmentView';
+import FixtureTasks from './components/FixtureTasks';
 import AiAssistant from './components/AiAssistant';
 import MatchReportModal from './components/MatchReportModal';
 import SponsorNexus from './components/SponsorNexus';
@@ -75,41 +78,11 @@ import {
   Palette,
   Quote,
   Sliders,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ClipboardList,
 } from 'lucide-react';
 
 // --- Sub-Components for Dashboard ---
-
-const NewsTicker: React.FC = () => {
-  return (
-    <div className="w-full bg-black/60 border-y border-white/5 h-8 flex items-center overflow-hidden relative z-20 mb-6 backdrop-blur-sm">
-      <div className="absolute left-0 bg-green-500 px-2 h-full flex items-center z-10">
-        <span className="text-[10px] font-black text-black uppercase tracking-widest">LIVE FEED</span>
-      </div>
-      <div className="whitespace-nowrap animate-float flex items-center gap-8 px-4" style={{ animation: 'marquee 20s linear infinite' }}>
-        {[
-          "BREAKING: Marcus Thorn form hits career high (9.1) after hat-trick.",
-          "SCANDAL: Orbital United manager sacked after 3-1 defeat.",
-          "TRANSFER: Rumors circulating about a bid for Sam Miller.",
-          "WEATHER: Heavy rain predicted for next fixture at Titan Rovers.",
-          "FANS: Season ticket sales up 12% following recent win streak.",
-          "TACTICS: AI suggesting 3-5-2 formation shift to counter Quantum FC."
-        ].map((item, i) => (
-          <span key={i} className="text-xs font-mono text-slate-400 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-green-500/50 rounded-full"></span>
-            {item}
-          </span>
-        ))}
-      </div>
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
-    </div>
-  );
-};
 
 const MomentumChart = () => (
   <svg className="w-full h-full absolute inset-0 opacity-20 pointer-events-none" preserveAspectRatio="none">
@@ -132,7 +105,7 @@ const WinProbability: React.FC<{ opponent: string }> = ({ opponent }) => {
   return (
     <div className="glass-card p-5 rounded-2xl border-green-500/20 relative overflow-hidden">
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <span className="text-[10px] font-mono text-slate-400 uppercase">AI Prediction Engine</span>
+        <span className="text-xs text-slate-400">Match Prediction</span>
         <Activity size={16} className="text-green-500" />
       </div>
 
@@ -145,13 +118,13 @@ const WinProbability: React.FC<{ opponent: string }> = ({ opponent }) => {
           <span className="absolute text-xl font-bold text-white">{winProb}%</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs font-bold text-white uppercase mb-1">Victory Likely</span>
-          <span className="text-[10px] text-slate-400 font-mono">Vs {opponent}</span>
+          <span className="text-xs font-bold text-white mb-1">Good chance of win</span>
+          <span className="text-xs text-slate-400">vs {opponent}</span>
           <div className="flex items-center gap-2 mt-2">
             <div className="h-1 w-12 bg-slate-700 rounded-full overflow-hidden">
               <div style={{ width: `${drawProb}%` }} className="h-full bg-slate-400"></div>
             </div>
-            <span className="text-[9px] text-slate-500 uppercase">Draw Chance</span>
+            <span className="text-[10px] text-slate-500">Draw chance</span>
           </div>
         </div>
       </div>
@@ -163,26 +136,26 @@ const WeatherWidget: React.FC = () => {
   return (
     <div className="glass-card p-5 rounded-2xl border-purple-500/20 flex flex-col justify-between">
       <div className="flex justify-between items-start mb-2">
-        <span className="text-[10px] font-mono text-slate-400 uppercase">Field Conditions</span>
+        <span className="text-xs text-slate-400">Match Day Weather</span>
         <CloudRain size={16} className="text-purple-500" />
       </div>
       <div className="flex items-center justify-between mt-2">
         <div>
           <span className="text-3xl font-display font-bold text-white">12°C</span>
-          <p className="text-[10px] text-slate-400 uppercase font-mono mt-1">Light Rain</p>
+          <p className="text-xs text-slate-400 mt-1">Light Rain</p>
         </div>
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] text-slate-300 font-mono">
+          <div className="flex items-center gap-2 text-xs text-slate-300">
             <Wind size={10} className="text-green-500" /> 14 km/h NW
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-300 font-mono">
-            <Thermometer size={10} className="text-red-400" /> 82% Hum
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <Thermometer size={10} className="text-red-400" /> 82% Humidity
           </div>
         </div>
       </div>
       <div className="mt-3 pt-3 border-t border-white/5">
-        <p className="text-[10px] text-purple-500 font-mono animate-pulse">
-          ADVISORY: Slick surface favors fast passing.
+        <p className="text-xs text-purple-400">
+          Tip: Slick surface, consider passing game
         </p>
       </div>
     </div>
@@ -431,12 +404,24 @@ const Dashboard: React.FC<{
 
           {/* Continue Button */}
           <div className="p-4 border-t border-white/10">
-            <button
-              onClick={() => onNavigate('matchday')}
-              className="w-full py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-            >
-              Continue <ArrowRight size={16} />
-            </button>
+            {(() => {
+              const nextTask = tasks.find(t => !completedTasks.includes(t.id));
+              return (
+                <button
+                  onClick={() => nextTask ? onNavigate(nextTask.navigate) : onNavigate('matchday')}
+                  className="w-full py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-lg text-sm transition-colors flex flex-col items-center justify-center gap-1"
+                >
+                  {nextTask ? (
+                    <>
+                      <span className="text-[10px] uppercase opacity-70">Next up</span>
+                      <span className="flex items-center gap-2">{nextTask.label} <ArrowRight size={16} /></span>
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-2">All done! View Matchday <ArrowRight size={16} /></span>
+                  )}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -716,7 +701,9 @@ const HypeEngine: React.FC<{
   const [isFixtureModalOpen, setIsFixtureModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedContentFixture, setExpandedContentFixture] = useState<string | null>(null);
+  const [expandedTasksFixture, setExpandedTasksFixture] = useState<string | null>(null);
   const [selectedContentItem, setSelectedContentItem] = useState<ContentItem | null>(null);
+  const [isMatchdayMode, setIsMatchdayMode] = useState(false);
 
   const approvedItems = contentItems.filter(item => item.status === 'APPROVED');
 
@@ -823,15 +810,132 @@ const HypeEngine: React.FC<{
     }
   };
 
+  // Check if there's a match today or soon for matchday mode
+  const todaysMatch = upcomingFixtures.find(f => {
+    const matchDate = new Date(f.kickoff_time);
+    const today = new Date();
+    return matchDate.toDateString() === today.toDateString();
+  });
+
+  // Matchday Mode - simplified view
+  if (isMatchdayMode && todaysMatch) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Matchday Mode Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Match Day</h2>
+            <p className="text-green-500 text-sm">vs {todaysMatch.opponent}</p>
+          </div>
+          <button
+            onClick={() => setIsMatchdayMode(false)}
+            className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600 transition-colors"
+          >
+            Exit Match Mode
+          </button>
+        </div>
+
+        {/* Big Action Buttons */}
+        <div className="flex-1 flex flex-col gap-4">
+          {/* Match Info Card */}
+          <div className="bg-slate-800/80 border border-green-500/30 rounded-2xl p-6 text-center">
+            <p className="text-xs text-slate-400 uppercase mb-2">{todaysMatch.competition}</p>
+            <h3 className="text-3xl font-bold text-white mb-2">vs {todaysMatch.opponent}</h3>
+            <p className="text-lg text-green-500">
+              {new Date(todaysMatch.kickoff_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              {' • '}{todaysMatch.venue}
+            </p>
+          </div>
+
+          {/* Quick Actions Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => onNavigate?.('availability')}
+              className="bg-blue-500/20 border border-blue-500/40 rounded-2xl p-6 text-center hover:bg-blue-500/30 transition-colors"
+            >
+              <span className="text-3xl mb-2 block">👥</span>
+              <span className="text-white font-semibold">Squad Status</span>
+            </button>
+            <button
+              onClick={() => handleHypeGeneration(todaysMatch)}
+              disabled={generatingHypeId === todaysMatch.id}
+              className="bg-purple-500/20 border border-purple-500/40 rounded-2xl p-6 text-center hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+            >
+              {generatingHypeId === todaysMatch.id ? (
+                <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin text-purple-400" />
+              ) : (
+                <span className="text-3xl mb-2 block">📣</span>
+              )}
+              <span className="text-white font-semibold">Post Content</span>
+            </button>
+            <button
+              onClick={() => setEditingId(todaysMatch.id)}
+              className="bg-green-500/20 border border-green-500/40 rounded-2xl p-6 text-center hover:bg-green-500/30 transition-colors"
+            >
+              <span className="text-3xl mb-2 block">⚽</span>
+              <span className="text-white font-semibold">Log Result</span>
+            </button>
+            <button
+              onClick={() => setExpandedContentFixture(todaysMatch.id)}
+              className="bg-amber-500/20 border border-amber-500/40 rounded-2xl p-6 text-center hover:bg-amber-500/30 transition-colors"
+            >
+              <span className="text-3xl mb-2 block">📋</span>
+              <span className="text-white font-semibold">View Content</span>
+            </button>
+          </div>
+
+          {/* Match Pack Checklist */}
+          <div className="bg-slate-800/60 border border-white/10 rounded-2xl p-5">
+            <h4 className="text-sm font-semibold text-white mb-4">Quick Checklist</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Squad confirmed', done: true },
+                { label: 'Kit ready', done: true },
+                { label: 'Travel sorted', done: todaysMatch.venue === 'Home' },
+                { label: 'Lineup posted', done: contentItems.some(c => c.fixture_id === todaysMatch.id && c.type === 'SOCIAL') },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm ${
+                    item.done ? 'bg-green-500 text-black' : 'border-2 border-slate-500'
+                  }`}>
+                    {item.done && '✓'}
+                  </div>
+                  <span className={`text-sm ${item.done ? 'text-slate-400' : 'text-white'}`}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Helper for matchday mode navigation (using club tab navigation if available)
+  const onNavigate = (tab: string) => {
+    // This will be passed down from parent in a future refactor
+    // For now, we'll just close matchday mode
+    setIsMatchdayMode(false);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in relative h-full flex flex-col">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white">Matchday</h2>
           <p className="text-slate-400 text-sm mt-1">Fixtures, results, and matchday operations</p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Matchday Mode Button - only show if there's a match today */}
+          {todaysMatch && (
+            <button
+              onClick={() => setIsMatchdayMode(true)}
+              className="flex items-center gap-2 bg-green-500 text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-400 transition-colors animate-pulse"
+            >
+              <Zap size={16} /> Match Day Mode
+            </button>
+          )}
+
           {/* Schedule Fixture Button */}
           <button
             onClick={() => setIsFixtureModalOpen(true)}
@@ -847,13 +951,13 @@ const HypeEngine: React.FC<{
               onClick={() => setActiveTab('upcoming')}
               className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'upcoming' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
             >
-              <Calendar size={14} /> Upcoming Ops
+              <Calendar size={14} /> Upcoming
             </button>
             <button
               onClick={() => setActiveTab('archive')}
               className={`px-4 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'archive' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
             >
-              <Archive size={14} /> Result Archive
+              <Archive size={14} /> Results
             </button>
           </div>
         </div>
@@ -895,9 +999,9 @@ const HypeEngine: React.FC<{
 
                   {/* Comms Timeline Widget */}
                   <div className="flex-1 w-full lg:w-auto">
-                    <div className="flex justify-between text-[9px] font-mono text-slate-500 uppercase mb-2">
-                      <span>Comms Schedule</span>
-                      <span>Status: {hasPreview ? 'ACTIVE' : 'PENDING'}</span>
+                    <div className="flex justify-between text-xs text-slate-500 mb-2">
+                      <span>Content Schedule</span>
+                      <span>{hasPreview ? 'Ready' : 'Not started'}</span>
                     </div>
                     <div className="relative h-1 bg-white/10 rounded-full flex items-center justify-between px-1">
                       {[
@@ -963,17 +1067,24 @@ const HypeEngine: React.FC<{
                         <button
                           onClick={() => handleDeleteFixture(fixture.id)}
                           disabled={deletingId === fixture.id}
-                          className="w-full py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1 disabled:opacity-50"
+                          className="w-full py-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {deletingId === fixture.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
-                          Delete Fixture
+                          {deletingId === fixture.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          Delete
                         </button>
                         <button
                           onClick={() => setExpandedContentFixture(expandedContentFixture === fixture.id ? null : fixture.id)}
-                          className="w-full py-1.5 text-purple-500/60 hover:text-purple-500 hover:bg-purple-500/10 font-mono uppercase text-[10px] rounded transition-all flex items-center justify-center gap-1"
+                          className="w-full py-2 bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2"
                         >
-                          <FileText size={10} />
+                          <FileText size={12} />
                           {expandedContentFixture === fixture.id ? 'Hide' : 'View'} Content
+                        </button>
+                        <button
+                          onClick={() => setExpandedTasksFixture(expandedTasksFixture === fixture.id ? null : fixture.id)}
+                          className="w-full py-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+                        >
+                          <ClipboardList size={12} />
+                          {expandedTasksFixture === fixture.id ? 'Hide' : 'View'} Tasks
                         </button>
                       </div>
                     )}
@@ -1003,16 +1114,26 @@ const HypeEngine: React.FC<{
                         ))}
                       {contentItems.filter(c => c.fixture_id === fixture.id).length === 0 && (
                         <div className="col-span-3 p-8 text-center border border-dashed border-white/10 rounded-xl">
-                          <p className="text-slate-500 font-mono text-sm mb-2">No content generated yet</p>
+                          <p className="text-slate-500 text-sm mb-4">No content generated yet</p>
                           <button
                             onClick={() => handleHypeGeneration(fixture)}
-                            className="text-xs text-green-500 hover:text-green-500/80 font-mono uppercase"
+                            className="px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-500 hover:bg-green-500/20 text-xs rounded-lg transition-all"
                           >
-                            Generate Hype Pack →
+                            Generate Hype Pack
                           </button>
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Fixture Tasks Section */}
+                {expandedTasksFixture === fixture.id && (
+                  <div className="bg-black/40 border-t border-amber-500/30 p-6">
+                    <FixtureTasks
+                      fixture={fixture}
+                      clubId={club.id}
+                    />
                   </div>
                 )}
 
@@ -1021,10 +1142,9 @@ const HypeEngine: React.FC<{
                   <div className="bg-black/60 border-t border-green-500/30 p-8 animate-slide-up backdrop-blur-xl">
                     <div className="max-w-5xl mx-auto">
                       <div className="flex items-center justify-between mb-8">
-                        <h4 className="text-green-500 font-mono text-sm uppercase flex items-center gap-2">
-                          <Zap size={14} /> Post-Match Data Entry
+                        <h4 className="text-green-500 text-sm font-semibold flex items-center gap-2">
+                          <Zap size={14} /> Log Match Result
                         </h4>
-                        <span className="text-[10px] font-mono text-slate-500 uppercase">Secure Uplink Established</span>
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
@@ -1170,10 +1290,10 @@ const HypeEngine: React.FC<{
                       <button
                         onClick={() => handleSaveResult(fixture.id)}
                         disabled={!scoreHome || !scoreAway || isProcessing}
-                        className="w-full py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-display font-bold uppercase tracking-widest rounded hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                        className="w-full py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                       >
                         {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Layers size={18} />}
-                        {isProcessing ? 'PROCESSING MATCH DATA...' : 'GENERATE FULL MATCH REPORT'}
+                        {isProcessing ? 'Generating report...' : 'Generate Match Report'}
                       </button>
                     </div>
                   </div>
@@ -1614,6 +1734,12 @@ const AppAuthed: React.FC<{
           />
         )}
         {activeTab === 'availability' && currentClub && (
+          <AvailabilityView
+            club={currentClub}
+            fixtures={fixtures}
+          />
+        )}
+        {activeTab === 'squad' && currentClub && (
           <SquadView
             players={currentClub.players}
             setPlayers={handleUpdatePlayers}
@@ -1638,7 +1764,7 @@ const AppAuthed: React.FC<{
         {activeTab === 'finance' && currentClub && (
           <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
         )}
-        {activeTab === 'club-ops' && currentClub && (
+        {activeTab === 'settings' && currentClub && (
           <SettingsView club={currentClub} />
         )}
         {activeTab === 'inbox' && currentClub && (
@@ -1680,52 +1806,9 @@ const AppAuthed: React.FC<{
           </div>
         )}
         {activeTab === 'equipment' && currentClub && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Equipment</h2>
-              <p className="text-sm text-slate-400 mt-1">Kit inventory, laundry, and issue tracking</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Inventory</p>
-                <p className="text-2xl font-bold text-white mt-1">148</p>
-                <p className="text-xs text-slate-400">items in stock</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Laundry</p>
-                <p className="text-2xl font-bold text-amber-400 mt-1">23</p>
-                <p className="text-xs text-slate-400">items in wash</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Issued</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">42</p>
-                <p className="text-xs text-slate-400">items out</p>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Low Stock</p>
-                <p className="text-2xl font-bold text-red-400 mt-1">5</p>
-                <p className="text-xs text-slate-400">items to reorder</p>
-              </div>
-            </div>
-            <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-              <h3 className="text-sm font-semibold text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Issue Kit
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Return Kit
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  Log Laundry
-                </button>
-                <button className="p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                  View Inventory
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 text-center">Full equipment management coming soon</p>
-          </div>
+          <EquipmentView
+            club={currentClub}
+          />
         )}
         {activeTab === 'templates' && currentClub && (
           <TemplatesView fixtures={fixtures} />
