@@ -8,9 +8,12 @@
 const STORAGE_KEYS = {
   FIXTURE_TASKS: 'pitchside_demo_fixture_tasks',
   AVAILABILITY: 'pitchside_demo_availability',
-  EQUIPMENT_ITEMS: 'pitchside_demo_equipment_items',
-  EQUIPMENT_ASSIGNMENTS: 'pitchside_demo_equipment_assignments',
-  EQUIPMENT_LAUNDRY: 'pitchside_demo_equipment_laundry',
+  // New grassroots equipment model
+  KIT_ASSIGNMENTS: 'pitchside_demo_kit_assignments',
+  CLUB_EQUIPMENT: 'pitchside_demo_club_equipment',
+  MATCHDAY_CHECKLISTS: 'pitchside_demo_matchday_checklists',
+  KIT_REQUESTS: 'pitchside_demo_kit_requests',
+  LAUNDRY_BATCHES: 'pitchside_demo_laundry_batches',
   TEMPLATE_PACKS_ENABLED: 'pitchside_demo_template_packs_enabled',
   CLUB_PROFILE: 'pitchside_demo_club_profile',
   BROADCASTS: 'pitchside_demo_broadcasts',
@@ -229,199 +232,309 @@ export function setDemoPlayerAvailability(
 }
 
 // ============================================================================
-// Equipment Items
+// Equipment - Grassroots Model
 // ============================================================================
 
-import { EquipmentItem, EquipmentAssignment, EquipmentLaundry, LaundryItem } from '../types';
+import {
+  PlayerKitAssignment,
+  ClubEquipment,
+  MatchDayChecklist,
+  MatchDayChecklistItem,
+  KitRequest,
+  LaundryBatch,
+  LaundryStatus,
+  DEFAULT_MATCHDAY_BAG,
+} from '../types';
 
-// Default starter equipment for demo mode
-const DEFAULT_EQUIPMENT: Omit<EquipmentItem, 'id' | 'club_id'>[] = [
-  { name: 'Home Shirt', category: 'kit', size: 'Mixed', quantity_total: 25, quantity_available: 20, min_stock: 15, condition: 'good' },
-  { name: 'Away Shirt', category: 'kit', size: 'Mixed', quantity_total: 25, quantity_available: 23, min_stock: 15, condition: 'good' },
-  { name: 'Shorts (Black)', category: 'kit', size: 'Mixed', quantity_total: 30, quantity_available: 28, min_stock: 20, condition: 'good' },
-  { name: 'Socks (Home)', category: 'kit', size: 'Mixed', quantity_total: 30, quantity_available: 25, min_stock: 20, condition: 'fair' },
-  { name: 'Training Bibs', category: 'training', quantity_total: 20, quantity_available: 18, min_stock: 15, condition: 'fair' },
-  { name: 'Training Cones', category: 'training', quantity_total: 40, quantity_available: 38, min_stock: 30, condition: 'good' },
-  { name: 'Match Balls', category: 'training', quantity_total: 10, quantity_available: 8, min_stock: 5, condition: 'good' },
-  { name: 'Training Balls', category: 'training', quantity_total: 15, quantity_available: 12, min_stock: 10, condition: 'fair' },
-  { name: 'First Aid Kit', category: 'medical', quantity_total: 3, quantity_available: 3, min_stock: 2, condition: 'new' },
-  { name: 'Ice Packs', category: 'medical', quantity_total: 10, quantity_available: 8, min_stock: 5, condition: 'good' },
-  { name: 'Goalkeeper Gloves', category: 'kit', size: 'Mixed', quantity_total: 4, quantity_available: 3, min_stock: 2, condition: 'good' },
-  { name: 'Corner Flags', category: 'other', quantity_total: 4, quantity_available: 4, min_stock: 4, condition: 'good' },
+// Default club equipment for demo mode
+const DEFAULT_CLUB_EQUIPMENT: Omit<ClubEquipment, 'id' | 'club_id'>[] = [
+  { name: 'Match Balls', category: 'matchday', quantity: 5, condition: 'good' },
+  { name: 'Training Balls', category: 'training', quantity: 12, condition: 'fair' },
+  { name: 'Corner Flags', category: 'matchday', quantity: 4, condition: 'good' },
+  { name: 'Training Cones', category: 'training', quantity: 30, condition: 'good' },
+  { name: 'Training Bibs (Orange)', category: 'training', quantity: 15, condition: 'fair' },
+  { name: 'Training Bibs (Blue)', category: 'training', quantity: 15, condition: 'good' },
+  { name: 'Agility Ladder', category: 'training', quantity: 2, condition: 'good' },
+  { name: 'First Aid Kit', category: 'medical', quantity: 2, condition: 'good' },
+  { name: 'Ice Packs', category: 'medical', quantity: 10, condition: 'good' },
+  { name: 'Water Bottles', category: 'matchday', quantity: 20, condition: 'fair' },
+  { name: 'Water Carrier', category: 'matchday', quantity: 2, condition: 'good' },
+  { name: 'Popup Goals (Small)', category: 'training', quantity: 4, condition: 'good' },
 ];
 
-export function getDemoEquipmentItems(clubId: string): EquipmentItem[] {
-  const items = getItem<EquipmentItem[]>(STORAGE_KEYS.EQUIPMENT_ITEMS, []);
+// ============================================================================
+// Player Kit Assignments
+// ============================================================================
+
+export function getDemoKitAssignments(clubId: string): PlayerKitAssignment[] {
+  return getItem<PlayerKitAssignment[]>(STORAGE_KEYS.KIT_ASSIGNMENTS, [])
+    .filter(k => k.club_id === clubId);
+}
+
+export function saveDemoKitAssignment(assignment: PlayerKitAssignment): PlayerKitAssignment {
+  const all = getItem<PlayerKitAssignment[]>(STORAGE_KEYS.KIT_ASSIGNMENTS, []);
+  const existingIndex = all.findIndex(k => k.id === assignment.id);
+
+  const updated = {
+    ...assignment,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existingIndex >= 0) {
+    all[existingIndex] = updated;
+  } else {
+    updated.created_at = new Date().toISOString();
+    all.push(updated);
+  }
+
+  setItem(STORAGE_KEYS.KIT_ASSIGNMENTS, all);
+  return updated;
+}
+
+export function deleteDemoKitAssignment(assignmentId: string): void {
+  const all = getItem<PlayerKitAssignment[]>(STORAGE_KEYS.KIT_ASSIGNMENTS, []);
+  setItem(STORAGE_KEYS.KIT_ASSIGNMENTS, all.filter(k => k.id !== assignmentId));
+}
+
+export function getDemoKitAssignmentByPlayer(clubId: string, playerId: string): PlayerKitAssignment | null {
+  const all = getDemoKitAssignments(clubId);
+  return all.find(k => k.player_id === playerId) || null;
+}
+
+// ============================================================================
+// Club Equipment (Shared Inventory)
+// ============================================================================
+
+export function getDemoClubEquipment(clubId: string): ClubEquipment[] {
+  const items = getItem<ClubEquipment[]>(STORAGE_KEYS.CLUB_EQUIPMENT, []);
 
   // Initialize with defaults if empty
-  if (items.length === 0) {
-    const defaultItems: EquipmentItem[] = DEFAULT_EQUIPMENT.map((item, i) => ({
+  if (items.filter(i => i.club_id === clubId).length === 0) {
+    const defaultItems: ClubEquipment[] = DEFAULT_CLUB_EQUIPMENT.map((item, i) => ({
       ...item,
-      id: `demo-equip-${i}`,
+      id: `demo-clubequip-${i}`,
       club_id: clubId,
       created_at: new Date().toISOString(),
     }));
-    setItem(STORAGE_KEYS.EQUIPMENT_ITEMS, defaultItems);
+    setItem(STORAGE_KEYS.CLUB_EQUIPMENT, [...items, ...defaultItems]);
     return defaultItems;
   }
 
   return items.filter(i => i.club_id === clubId);
 }
 
-export function saveDemoEquipmentItem(item: EquipmentItem): EquipmentItem {
-  const items = getItem<EquipmentItem[]>(STORAGE_KEYS.EQUIPMENT_ITEMS, []);
-  const existingIndex = items.findIndex(i => i.id === item.id);
+export function saveDemoClubEquipment(item: ClubEquipment): ClubEquipment {
+  const all = getItem<ClubEquipment[]>(STORAGE_KEYS.CLUB_EQUIPMENT, []);
+  const existingIndex = all.findIndex(i => i.id === item.id);
+
+  const updated = { ...item, updated_at: new Date().toISOString() };
 
   if (existingIndex >= 0) {
-    items[existingIndex] = { ...item, updated_at: new Date().toISOString() };
+    all[existingIndex] = updated;
   } else {
-    items.push({ ...item, created_at: new Date().toISOString() });
+    updated.created_at = new Date().toISOString();
+    all.push(updated);
   }
 
-  setItem(STORAGE_KEYS.EQUIPMENT_ITEMS, items);
-  return item;
+  setItem(STORAGE_KEYS.CLUB_EQUIPMENT, all);
+  return updated;
 }
 
-export function deleteDemoEquipmentItem(itemId: string): void {
-  const items = getItem<EquipmentItem[]>(STORAGE_KEYS.EQUIPMENT_ITEMS, []);
-  setItem(STORAGE_KEYS.EQUIPMENT_ITEMS, items.filter(i => i.id !== itemId));
+export function deleteDemoClubEquipment(itemId: string): void {
+  const all = getItem<ClubEquipment[]>(STORAGE_KEYS.CLUB_EQUIPMENT, []);
+  setItem(STORAGE_KEYS.CLUB_EQUIPMENT, all.filter(i => i.id !== itemId));
 }
 
 // ============================================================================
-// Equipment Assignments
+// Match Day Checklists
 // ============================================================================
 
-export function getDemoEquipmentAssignments(clubId: string): EquipmentAssignment[] {
-  const assignments = getItem<EquipmentAssignment[]>(STORAGE_KEYS.EQUIPMENT_ASSIGNMENTS, []);
-  return assignments.filter(a => a.club_id === clubId && !a.returned_at);
-}
+export function getDemoMatchDayChecklist(clubId: string, fixtureId: string): MatchDayChecklist {
+  const all = getItem<MatchDayChecklist[]>(STORAGE_KEYS.MATCHDAY_CHECKLISTS, []);
+  const existing = all.find(c => c.club_id === clubId && c.fixture_id === fixtureId);
 
-export function issueDemoEquipment(
-  clubId: string,
-  itemId: string,
-  playerId: string,
-  quantity: number,
-  notes?: string
-): EquipmentAssignment {
-  // Update item availability
-  const items = getItem<EquipmentItem[]>(STORAGE_KEYS.EQUIPMENT_ITEMS, []);
-  const itemIndex = items.findIndex(i => i.id === itemId);
-  if (itemIndex >= 0) {
-    items[itemIndex].quantity_available -= quantity;
-    setItem(STORAGE_KEYS.EQUIPMENT_ITEMS, items);
-  }
+  if (existing) return existing;
 
-  // Create assignment
-  const assignment: EquipmentAssignment = {
+  // Create new checklist with default items
+  const newChecklist: MatchDayChecklist = {
     id: generateDemoId(),
     club_id: clubId,
-    item_id: itemId,
-    player_id: playerId,
-    quantity,
-    issued_at: new Date().toISOString(),
+    fixture_id: fixtureId,
+    items: DEFAULT_MATCHDAY_BAG.map((item, i) => ({
+      ...item,
+      id: `item-${i}`,
+    })),
+    created_at: new Date().toISOString(),
+  };
+
+  all.push(newChecklist);
+  setItem(STORAGE_KEYS.MATCHDAY_CHECKLISTS, all);
+  return newChecklist;
+}
+
+export function updateDemoMatchDayChecklist(checklist: MatchDayChecklist): MatchDayChecklist {
+  const all = getItem<MatchDayChecklist[]>(STORAGE_KEYS.MATCHDAY_CHECKLISTS, []);
+  const index = all.findIndex(c => c.id === checklist.id);
+
+  const updated = { ...checklist, updated_at: new Date().toISOString() };
+
+  // Check if all items are checked
+  if (updated.items.every(i => i.is_checked)) {
+    updated.completed_at = new Date().toISOString();
+  } else {
+    updated.completed_at = undefined;
+  }
+
+  if (index >= 0) {
+    all[index] = updated;
+  } else {
+    all.push(updated);
+  }
+
+  setItem(STORAGE_KEYS.MATCHDAY_CHECKLISTS, all);
+  return updated;
+}
+
+export function toggleDemoChecklistItem(
+  clubId: string,
+  fixtureId: string,
+  itemId: string
+): MatchDayChecklist {
+  const checklist = getDemoMatchDayChecklist(clubId, fixtureId);
+  const itemIndex = checklist.items.findIndex(i => i.id === itemId);
+
+  if (itemIndex >= 0) {
+    checklist.items[itemIndex].is_checked = !checklist.items[itemIndex].is_checked;
+  }
+
+  return updateDemoMatchDayChecklist(checklist);
+}
+
+export function addDemoChecklistItem(
+  clubId: string,
+  fixtureId: string,
+  label: string
+): MatchDayChecklist {
+  const checklist = getDemoMatchDayChecklist(clubId, fixtureId);
+  checklist.items.push({
+    id: generateDemoId(),
+    label,
+    is_checked: false,
+  });
+  return updateDemoMatchDayChecklist(checklist);
+}
+
+// ============================================================================
+// Kit Requests
+// ============================================================================
+
+export function getDemoKitRequests(clubId: string): KitRequest[] {
+  return getItem<KitRequest[]>(STORAGE_KEYS.KIT_REQUESTS, [])
+    .filter(r => r.club_id === clubId);
+}
+
+export function saveDemoKitRequest(request: KitRequest): KitRequest {
+  const all = getItem<KitRequest[]>(STORAGE_KEYS.KIT_REQUESTS, []);
+  const existingIndex = all.findIndex(r => r.id === request.id);
+
+  const updated = { ...request, updated_at: new Date().toISOString() };
+
+  if (existingIndex >= 0) {
+    all[existingIndex] = updated;
+  } else {
+    all.push(updated);
+  }
+
+  setItem(STORAGE_KEYS.KIT_REQUESTS, all);
+  return updated;
+}
+
+export function deleteDemoKitRequest(requestId: string): void {
+  const all = getItem<KitRequest[]>(STORAGE_KEYS.KIT_REQUESTS, []);
+  setItem(STORAGE_KEYS.KIT_REQUESTS, all.filter(r => r.id !== requestId));
+}
+
+// ============================================================================
+// Laundry Batches (Simplified)
+// ============================================================================
+
+export function getDemoLaundryBatches(clubId: string): LaundryBatch[] {
+  return getItem<LaundryBatch[]>(STORAGE_KEYS.LAUNDRY_BATCHES, [])
+    .filter(b => b.club_id === clubId);
+}
+
+export function getDemoActiveLaundry(clubId: string): LaundryBatch[] {
+  return getDemoLaundryBatches(clubId).filter(b => b.status !== 'ready');
+}
+
+export function createDemoLaundryBatch(
+  clubId: string,
+  kitCount: number,
+  fixtureId?: string,
+  notes?: string
+): LaundryBatch {
+  const batch: LaundryBatch = {
+    id: generateDemoId(),
+    club_id: clubId,
+    fixture_id: fixtureId,
+    status: 'dirty',
+    kit_count: kitCount,
     notes,
     created_at: new Date().toISOString(),
   };
 
-  const assignments = getItem<EquipmentAssignment[]>(STORAGE_KEYS.EQUIPMENT_ASSIGNMENTS, []);
-  assignments.push(assignment);
-  setItem(STORAGE_KEYS.EQUIPMENT_ASSIGNMENTS, assignments);
+  const all = getItem<LaundryBatch[]>(STORAGE_KEYS.LAUNDRY_BATCHES, []);
+  all.push(batch);
+  setItem(STORAGE_KEYS.LAUNDRY_BATCHES, all);
 
-  return assignment;
+  return batch;
 }
 
-export function returnDemoEquipment(assignmentId: string): EquipmentAssignment | null {
-  const assignments = getItem<EquipmentAssignment[]>(STORAGE_KEYS.EQUIPMENT_ASSIGNMENTS, []);
-  const index = assignments.findIndex(a => a.id === assignmentId);
+export function updateDemoLaundryStatus(batchId: string, status: LaundryStatus): LaundryBatch | null {
+  const all = getItem<LaundryBatch[]>(STORAGE_KEYS.LAUNDRY_BATCHES, []);
+  const index = all.findIndex(b => b.id === batchId);
 
   if (index < 0) return null;
 
-  const assignment = assignments[index];
-  assignment.returned_at = new Date().toISOString();
-  assignments[index] = assignment;
-  setItem(STORAGE_KEYS.EQUIPMENT_ASSIGNMENTS, assignments);
+  all[index].status = status;
+  all[index].updated_at = new Date().toISOString();
 
-  // Update item availability
-  const items = getItem<EquipmentItem[]>(STORAGE_KEYS.EQUIPMENT_ITEMS, []);
-  const itemIndex = items.findIndex(i => i.id === assignment.item_id);
-  if (itemIndex >= 0) {
-    items[itemIndex].quantity_available += assignment.quantity;
-    setItem(STORAGE_KEYS.EQUIPMENT_ITEMS, items);
+  if (status === 'washing') {
+    all[index].sent_at = new Date().toISOString();
+  } else if (status === 'ready') {
+    all[index].returned_at = new Date().toISOString();
   }
 
-  return assignment;
+  setItem(STORAGE_KEYS.LAUNDRY_BATCHES, all);
+  return all[index];
+}
+
+export function deleteDemoLaundryBatch(batchId: string): void {
+  const all = getItem<LaundryBatch[]>(STORAGE_KEYS.LAUNDRY_BATCHES, []);
+  setItem(STORAGE_KEYS.LAUNDRY_BATCHES, all.filter(b => b.id !== batchId));
 }
 
 // ============================================================================
-// Equipment Laundry
+// Equipment Summary (for dashboard/notifications)
 // ============================================================================
 
-export function getDemoActiveLaundry(clubId: string): EquipmentLaundry[] {
-  const laundry = getItem<EquipmentLaundry[]>(STORAGE_KEYS.EQUIPMENT_LAUNDRY, []);
-  return laundry.filter(l => l.club_id === clubId && l.status === 'sent');
-}
-
-export function sendDemoToLaundry(
-  clubId: string,
-  items: LaundryItem[],
-  notes?: string
-): EquipmentLaundry {
-  const laundryRecord: EquipmentLaundry = {
-    id: generateDemoId(),
-    club_id: clubId,
-    items,
-    status: 'sent',
-    sent_at: new Date().toISOString(),
-    notes,
-    created_at: new Date().toISOString(),
-  };
-
-  const laundry = getItem<EquipmentLaundry[]>(STORAGE_KEYS.EQUIPMENT_LAUNDRY, []);
-  laundry.push(laundryRecord);
-  setItem(STORAGE_KEYS.EQUIPMENT_LAUNDRY, laundry);
-
-  return laundryRecord;
-}
-
-export function returnDemoFromLaundry(laundryId: string): EquipmentLaundry | null {
-  const laundry = getItem<EquipmentLaundry[]>(STORAGE_KEYS.EQUIPMENT_LAUNDRY, []);
-  const index = laundry.findIndex(l => l.id === laundryId);
-
-  if (index < 0) return null;
-
-  laundry[index].status = 'returned';
-  laundry[index].returned_at = new Date().toISOString();
-  setItem(STORAGE_KEYS.EQUIPMENT_LAUNDRY, laundry);
-
-  return laundry[index];
-}
-
-export function getDemoInventorySummary(clubId: string): {
-  total_items: number;
-  total_quantity: number;
-  available: number;
-  issued: number;
-  low_stock: number;
-  in_laundry: number;
+export function getDemoEquipmentSummary(clubId: string): {
+  totalPlayers: number;
+  playersWithKit: number;
+  kitNeedsReplacing: number;
+  pendingRequests: number;
+  laundryInProgress: number;
 } {
-  const items = getDemoEquipmentItems(clubId);
+  const kitAssignments = getDemoKitAssignments(clubId);
+  const kitRequests = getDemoKitRequests(clubId);
   const laundry = getDemoActiveLaundry(clubId);
 
-  const inLaundry = laundry.reduce((sum, l) => {
-    return sum + l.items.reduce((s, item) => s + item.quantity, 0);
-  }, 0);
-
-  const totalQuantity = items.reduce((sum, i) => sum + i.quantity_total, 0);
-  const available = items.reduce((sum, i) => sum + i.quantity_available, 0);
-  const lowStock = items.filter(i => i.quantity_available <= i.min_stock).length;
-
   return {
-    total_items: items.length,
-    total_quantity: totalQuantity,
-    available,
-    issued: totalQuantity - available,
-    low_stock: lowStock,
-    in_laundry: inLaundry,
+    totalPlayers: 0, // Will be set by component with actual player count
+    playersWithKit: kitAssignments.length,
+    kitNeedsReplacing: kitAssignments.filter(k => k.kit_condition === 'needs_replacing').length,
+    pendingRequests: kitRequests.filter(r => r.status === 'pending').length,
+    laundryInProgress: laundry.filter(l => l.status === 'washing').length,
   };
 }
 
