@@ -27,17 +27,22 @@ export const getAvailabilityForFixture = async (
     return getDemoAvailability(fixtureId);
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .select('*')
-    .eq('fixture_id', fixtureId);
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .select('*')
+      .eq('fixture_id', fixtureId);
 
-  if (error) {
-    console.error('Error fetching availability:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching availability, falling back to demo:', error);
+      return getDemoAvailability(fixtureId);
+    }
+
+    return (data || []).map(mapAvailabilityFromDb);
+  } catch (error) {
+    console.error('Error fetching availability, falling back to demo:', error);
+    return getDemoAvailability(fixtureId);
   }
-
-  return (data || []).map(mapAvailabilityFromDb);
 };
 
 /**
@@ -50,23 +55,28 @@ export const getAvailabilityWithPlayers = async (
     return getDemoAvailability(fixtureId);
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .select(`
-      *,
-      player:players(*)
-    `)
-    .eq('fixture_id', fixtureId);
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .select(`
+        *,
+        player:players(*)
+      `)
+      .eq('fixture_id', fixtureId);
 
-  if (error) {
-    console.error('Error fetching availability with players:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching availability with players, falling back to demo:', error);
+      return getDemoAvailability(fixtureId);
+    }
+
+    return (data || []).map(row => ({
+      ...mapAvailabilityFromDb(row),
+      player: row.player,
+    }));
+  } catch (error) {
+    console.error('Error fetching availability with players, falling back to demo:', error);
+    return getDemoAvailability(fixtureId);
   }
-
-  return (data || []).map(row => ({
-    ...mapAvailabilityFromDb(row),
-    player: row.player,
-  }));
 };
 
 /**
@@ -110,37 +120,47 @@ export const initializeAvailability = async (
     return [];
   }
 
-  // Check for existing records
-  const { data: existing } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .select('player_id')
-    .eq('fixture_id', fixtureId);
+  try {
+    // Check for existing records
+    const { data: existing, error: checkError } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .select('player_id')
+      .eq('fixture_id', fixtureId);
 
-  const existingPlayerIds = new Set((existing || []).map(e => e.player_id));
-  const newPlayerIds = playerIds.filter(id => !existingPlayerIds.has(id));
+    if (checkError) {
+      console.error('Error checking existing availability, falling back to demo:', checkError);
+      return initializeDemoAvailability(clubId, fixtureId, playerIds);
+    }
 
-  if (newPlayerIds.length === 0) {
-    return getAvailabilityForFixture(fixtureId);
+    const existingPlayerIds = new Set((existing || []).map(e => e.player_id));
+    const newPlayerIds = playerIds.filter(id => !existingPlayerIds.has(id));
+
+    if (newPlayerIds.length === 0) {
+      return getAvailabilityForFixture(fixtureId);
+    }
+
+    const records = newPlayerIds.map(playerId => ({
+      club_id: clubId,
+      fixture_id: fixtureId,
+      player_id: playerId,
+      status: 'no_response' as AvailabilityStatus,
+    }));
+
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .insert(records)
+      .select();
+
+    if (error) {
+      console.error('Error initializing availability, falling back to demo:', error);
+      return initializeDemoAvailability(clubId, fixtureId, playerIds);
+    }
+
+    return (data || []).map(mapAvailabilityFromDb);
+  } catch (error) {
+    console.error('Error initializing availability, falling back to demo:', error);
+    return initializeDemoAvailability(clubId, fixtureId, playerIds);
   }
-
-  const records = newPlayerIds.map(playerId => ({
-    club_id: clubId,
-    fixture_id: fixtureId,
-    player_id: playerId,
-    status: 'no_response' as AvailabilityStatus,
-  }));
-
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .insert(records)
-    .select();
-
-  if (error) {
-    console.error('Error initializing availability:', error);
-    throw error;
-  }
-
-  return (data || []).map(mapAvailabilityFromDb);
 };
 
 /**
@@ -158,29 +178,34 @@ export const setPlayerAvailability = async (
     return setDemoPlayerAvailability(clubId, fixtureId, playerId, status, note);
   }
 
-  // Upsert - create or update
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .upsert({
-      club_id: clubId,
-      fixture_id: fixtureId,
-      player_id: playerId,
-      status,
-      response_note: note,
-      responded_at: new Date().toISOString(),
-      marked_by: markedBy,
-    }, {
-      onConflict: 'player_id,fixture_id',
-    })
-    .select()
-    .single();
+  try {
+    // Upsert - create or update
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .upsert({
+        club_id: clubId,
+        fixture_id: fixtureId,
+        player_id: playerId,
+        status,
+        response_note: note,
+        responded_at: new Date().toISOString(),
+        marked_by: markedBy,
+      }, {
+        onConflict: 'player_id,fixture_id',
+      })
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error setting availability:', error);
-    throw error;
+    if (error) {
+      console.error('Error setting availability, falling back to demo:', error);
+      return setDemoPlayerAvailability(clubId, fixtureId, playerId, status, note);
+    }
+
+    return mapAvailabilityFromDb(data);
+  } catch (error) {
+    console.error('Error setting availability, falling back to demo:', error);
+    return setDemoPlayerAvailability(clubId, fixtureId, playerId, status, note);
   }
-
-  return mapAvailabilityFromDb(data);
 };
 
 /**
@@ -205,29 +230,42 @@ export const bulkSetAvailability = async (
     return [];
   }
 
-  const records = updates.map(u => ({
-    club_id: clubId,
-    fixture_id: fixtureId,
-    player_id: u.playerId,
-    status: u.status,
-    response_note: u.note,
-    responded_at: new Date().toISOString(),
-    marked_by: markedBy,
-  }));
+  try {
+    const records = updates.map(u => ({
+      club_id: clubId,
+      fixture_id: fixtureId,
+      player_id: u.playerId,
+      status: u.status,
+      response_note: u.note,
+      responded_at: new Date().toISOString(),
+      marked_by: markedBy,
+    }));
 
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .upsert(records, {
-      onConflict: 'player_id,fixture_id',
-    })
-    .select();
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .upsert(records, {
+        onConflict: 'player_id,fixture_id',
+      })
+      .select();
 
-  if (error) {
-    console.error('Error bulk setting availability:', error);
-    throw error;
+    if (error) {
+      console.error('Error bulk setting availability, falling back to demo:', error);
+      return Promise.all(
+        updates.map(u =>
+          setDemoPlayerAvailability(clubId, fixtureId, u.playerId, u.status, u.note)
+        )
+      );
+    }
+
+    return (data || []).map(mapAvailabilityFromDb);
+  } catch (error) {
+    console.error('Error bulk setting availability, falling back to demo:', error);
+    return Promise.all(
+      updates.map(u =>
+        setDemoPlayerAvailability(clubId, fixtureId, u.playerId, u.status, u.note)
+      )
+    );
   }
-
-  return (data || []).map(mapAvailabilityFromDb);
 };
 
 /**
@@ -237,20 +275,36 @@ export const clearAvailability = async (fixtureId: string): Promise<void> => {
   if (!supabase || !isSupabaseConfigured()) {
     // Demo mode: remove all availability for this fixture
     const allKey = 'pitchside_demo_availability';
-    const all: PlayerAvailability[] = JSON.parse(localStorage.getItem(allKey) || '[]');
-    const filtered = all.filter(a => a.fixture_id !== fixtureId);
-    localStorage.setItem(allKey, JSON.stringify(filtered));
+    try {
+      const all: PlayerAvailability[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+      const filtered = all.filter(a => a.fixture_id !== fixtureId);
+      localStorage.setItem(allKey, JSON.stringify(filtered));
+    } catch {
+      // Ignore
+    }
     return;
   }
 
-  const { error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .delete()
-    .eq('fixture_id', fixtureId);
+  try {
+    const { error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .delete()
+      .eq('fixture_id', fixtureId);
 
-  if (error) {
+    if (error) {
+      console.error('Error clearing availability:', error);
+      // Fall back to demo mode clearing
+      const allKey = 'pitchside_demo_availability';
+      try {
+        const all: PlayerAvailability[] = JSON.parse(localStorage.getItem(allKey) || '[]');
+        const filtered = all.filter(a => a.fixture_id !== fixtureId);
+        localStorage.setItem(allKey, JSON.stringify(filtered));
+      } catch {
+        // Ignore
+      }
+    }
+  } catch (error) {
     console.error('Error clearing availability:', error);
-    throw error;
   }
 };
 
@@ -263,18 +317,25 @@ export const getNonResponders = async (fixtureId: string): Promise<PlayerAvailab
     return all.filter(a => a.status === 'no_response');
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.PLAYER_AVAILABILITY)
-    .select('*')
-    .eq('fixture_id', fixtureId)
-    .eq('status', 'no_response');
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.PLAYER_AVAILABILITY)
+      .select('*')
+      .eq('fixture_id', fixtureId)
+      .eq('status', 'no_response');
 
-  if (error) {
-    console.error('Error fetching non-responders:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching non-responders, falling back to demo:', error);
+      const all = getDemoAvailability(fixtureId);
+      return all.filter(a => a.status === 'no_response');
+    }
+
+    return (data || []).map(mapAvailabilityFromDb);
+  } catch (error) {
+    console.error('Error fetching non-responders, falling back to demo:', error);
+    const all = getDemoAvailability(fixtureId);
+    return all.filter(a => a.status === 'no_response');
   }
-
-  return (data || []).map(mapAvailabilityFromDb);
 };
 
 // ============================================================================

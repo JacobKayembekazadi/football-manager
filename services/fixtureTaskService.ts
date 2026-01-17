@@ -24,8 +24,8 @@ import {
  * Get all template packs for a club
  */
 export const getTemplatePacks = async (clubId: string): Promise<TemplatePack[]> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    // Return mock data for demo mode with enabled state from localStorage
+  // Return demo data for demo mode
+  const getDemoTemplatePacks = () => {
     const enabledIds = getDemoEnabledTemplatePacks();
     return DEFAULT_TEMPLATE_PACKS.map((pack, i) => ({
       ...pack,
@@ -33,20 +33,34 @@ export const getTemplatePacks = async (clubId: string): Promise<TemplatePack[]> 
       club_id: clubId,
       is_enabled: enabledIds.includes(`demo-pack-${i}`),
     }));
+  };
+
+  if (!supabase || !isSupabaseConfigured()) {
+    return getDemoTemplatePacks();
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.TEMPLATE_PACKS)
-    .select('*')
-    .eq('club_id', clubId)
-    .order('name');
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.TEMPLATE_PACKS)
+      .select('*')
+      .eq('club_id', clubId)
+      .order('name');
 
-  if (error) {
-    console.error('Error fetching template packs:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching template packs, falling back to demo:', error);
+      return getDemoTemplatePacks();
+    }
+
+    // If no data in Supabase, return demo packs
+    if (!data || data.length === 0) {
+      return getDemoTemplatePacks();
+    }
+
+    return data.map(mapTemplatePackFromDb);
+  } catch (error) {
+    console.error('Error fetching template packs, falling back to demo:', error);
+    return getDemoTemplatePacks();
   }
-
-  return (data || []).map(mapTemplatePackFromDb);
 };
 
 /**
@@ -183,18 +197,23 @@ export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]>
     return getDemoFixtureTasks(fixtureId);
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.FIXTURE_TASKS)
-    .select('*')
-    .eq('fixture_id', fixtureId)
-    .order('sort_order');
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.FIXTURE_TASKS)
+      .select('*')
+      .eq('fixture_id', fixtureId)
+      .order('sort_order');
 
-  if (error) {
-    console.error('Error fetching fixture tasks:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching fixture tasks, falling back to demo:', error);
+      return getDemoFixtureTasks(fixtureId);
+    }
+
+    return (data || []).map(mapFixtureTaskFromDb);
+  } catch (error) {
+    console.error('Error fetching fixture tasks, falling back to demo:', error);
+    return getDemoFixtureTasks(fixtureId);
   }
-
-  return (data || []).map(mapFixtureTaskFromDb);
 };
 
 /**
@@ -202,7 +221,6 @@ export const getFixtureTasks = async (fixtureId: string): Promise<FixtureTask[]>
  */
 export const getTasksForFixtures = async (fixtureIds: string[]): Promise<FixtureTask[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    // Demo mode: collect tasks for all requested fixtures
     return fixtureIds.flatMap(id => getDemoFixtureTasks(id));
   }
 
@@ -210,18 +228,23 @@ export const getTasksForFixtures = async (fixtureIds: string[]): Promise<Fixture
     return [];
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.FIXTURE_TASKS)
-    .select('*')
-    .in('fixture_id', fixtureIds)
-    .order('sort_order');
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.FIXTURE_TASKS)
+      .select('*')
+      .in('fixture_id', fixtureIds)
+      .order('sort_order');
 
-  if (error) {
-    console.error('Error fetching fixture tasks:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching fixture tasks, falling back to demo:', error);
+      return fixtureIds.flatMap(id => getDemoFixtureTasks(id));
+    }
+
+    return (data || []).map(mapFixtureTaskFromDb);
+  } catch (error) {
+    console.error('Error fetching fixture tasks, falling back to demo:', error);
+    return fixtureIds.flatMap(id => getDemoFixtureTasks(id));
   }
-
-  return (data || []).map(mapFixtureTaskFromDb);
 };
 
 /**
@@ -417,14 +440,14 @@ export const deleteFixtureTask = async (taskId: string): Promise<void> => {
 };
 
 /**
- * Update task label
+ * Update a fixture task (label, status, sort order)
  */
 export const updateFixtureTask = async (
   taskId: string,
-  updates: { label?: string; sort_order?: number }
+  updates: { label?: string; sort_order?: number; status?: 'pending' | 'in_progress' | 'done' }
 ): Promise<FixtureTask> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    // Demo mode
+  // Demo mode function
+  const updateDemoTask = () => {
     const allTasksKey = 'pitchside_demo_fixture_tasks';
     const allTasks: FixtureTask[] = JSON.parse(localStorage.getItem(allTasksKey) || '[]');
     const taskIndex = allTasks.findIndex(t => t.id === taskId);
@@ -440,21 +463,30 @@ export const updateFixtureTask = async (
     }
 
     throw new Error('Task not found');
+  };
+
+  if (!supabase || !isSupabaseConfigured()) {
+    return updateDemoTask();
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.FIXTURE_TASKS)
-    .update(updates)
-    .eq('id', taskId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.FIXTURE_TASKS)
+      .update(updates)
+      .eq('id', taskId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error updating task:', error);
-    throw error;
+    if (error) {
+      console.error('Error updating task, falling back to demo:', error);
+      return updateDemoTask();
+    }
+
+    return mapFixtureTaskFromDb(data);
+  } catch (error) {
+    console.error('Error updating task, falling back to demo:', error);
+    return updateDemoTask();
   }
-
-  return mapFixtureTaskFromDb(data);
 };
 
 // ============================================================================
