@@ -1848,6 +1848,7 @@ const AppAuthed: React.FC<{
         {activeTab === 'equipment' && currentClub && (
           <EquipmentView
             club={currentClub}
+            fixtures={fixtures}
           />
         )}
         {activeTab === 'templates' && currentClub && (

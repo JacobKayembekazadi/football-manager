@@ -894,61 +894,102 @@ export interface PlayerAvailability {
 }
 
 // ============================================================================
-// Equipment Management
+// Equipment Management (Grassroots Model)
 // ============================================================================
 
-export type EquipmentCategory = 'kit' | 'training' | 'medical' | 'other';
-export type EquipmentCondition = 'new' | 'good' | 'fair' | 'poor';
+// Kit condition for individual player kit
+export type KitCondition = 'new' | 'good' | 'worn' | 'needs_replacing';
 
-export interface EquipmentItem {
+// Player's assigned kit
+export interface PlayerKitAssignment {
+  id: string;
+  club_id: string;
+  player_id: string;
+  shirt_number: number;
+  shirt_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  shorts_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  socks_size?: 'S' | 'M' | 'L';
+  kit_condition: KitCondition;
+  has_training_kit?: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Club shared equipment (not assigned to players)
+export interface ClubEquipment {
   id: string;
   club_id: string;
   name: string;
-  category: EquipmentCategory;
-  size?: string;
-  quantity_total: number;
-  quantity_available: number;
-  min_stock: number;
-  condition: EquipmentCondition;
+  category: 'matchday' | 'training' | 'medical' | 'other';
+  quantity: number;
+  condition: 'good' | 'fair' | 'poor';
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface EquipmentAssignment {
+// Match day bag checklist item
+export interface MatchDayChecklistItem {
+  id: string;
+  label: string;
+  is_checked: boolean;
+}
+
+// Match day bag checklist per fixture
+export interface MatchDayChecklist {
   id: string;
   club_id: string;
-  item_id: string;
+  fixture_id: string;
+  items: MatchDayChecklistItem[];
+  completed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Kit request from player
+export interface KitRequest {
+  id: string;
+  club_id: string;
   player_id: string;
-  quantity: number;
-  issued_at: string;
-  returned_at?: string;
-  notes?: string;
-  created_at?: string;
+  request_type: 'new_kit' | 'replacement' | 'size_change';
+  item_needed: 'shirt' | 'shorts' | 'socks' | 'full_kit' | 'training_kit';
+  size_needed?: string;
+  reason?: string;
+  status: 'pending' | 'ordered' | 'fulfilled';
+  created_at: string;
   updated_at?: string;
-  // Joined fields
-  item?: EquipmentItem;
-  player?: Player;
 }
 
-export interface LaundryItem {
-  item_id: string;
-  quantity: number;
-}
+// Laundry batch (simplified)
+export type LaundryStatus = 'dirty' | 'washing' | 'ready';
 
-export type LaundryStatus = 'sent' | 'returned';
-
-export interface EquipmentLaundry {
+export interface LaundryBatch {
   id: string;
   club_id: string;
-  items: LaundryItem[];
+  fixture_id?: string;
   status: LaundryStatus;
-  sent_at: string;
+  kit_count: number;
+  sent_at?: string;
   returned_at?: string;
   notes?: string;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
 }
+
+// Default match day bag items
+export const DEFAULT_MATCHDAY_BAG: Omit<MatchDayChecklistItem, 'id'>[] = [
+  { label: 'Match balls (x3)', is_checked: false },
+  { label: 'Corner flags (x4)', is_checked: false },
+  { label: 'First aid kit', is_checked: false },
+  { label: 'Water bottles', is_checked: false },
+  { label: 'Team sheet copies', is_checked: false },
+  { label: 'Referee payment', is_checked: false },
+  { label: 'Spare kit', is_checked: false },
+  { label: 'Warm-up bibs', is_checked: false },
+  { label: 'Cones', is_checked: false },
+  { label: 'Captain armband', is_checked: false },
+];
 
 // ============================================================================
 // Default Template Packs (for new clubs)

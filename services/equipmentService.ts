@@ -1,682 +1,192 @@
 /**
- * Equipment Service
+ * Equipment Service (Grassroots Model)
  *
- * Handles equipment inventory, assignments, and laundry tracking.
+ * Simplified equipment management for grassroots football clubs:
+ * - Player kit assignments (who has what number/size)
+ * - Club equipment inventory (shared items)
+ * - Match day bag checklists
+ * - Kit requests
+ * - Laundry tracking
  */
 
 import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
 import {
-  EquipmentItem,
-  EquipmentAssignment,
-  EquipmentLaundry,
-  EquipmentCategory,
-  EquipmentCondition,
-  LaundryItem,
+  PlayerKitAssignment,
+  ClubEquipment,
+  MatchDayChecklist,
+  KitRequest,
+  LaundryBatch,
   LaundryStatus,
-  Player,
 } from '../types';
 import {
-  getDemoEquipmentItems,
-  saveDemoEquipmentItem,
-  deleteDemoEquipmentItem,
-  getDemoEquipmentAssignments,
-  issueDemoEquipment,
-  returnDemoEquipment,
+  getDemoKitAssignments,
+  saveDemoKitAssignment,
+  deleteDemoKitAssignment,
+  getDemoClubEquipment,
+  saveDemoClubEquipment,
+  deleteDemoClubEquipment,
+  getDemoMatchDayChecklist,
+  updateDemoMatchDayChecklist,
+  toggleDemoChecklistItem,
+  addDemoChecklistItem,
+  getDemoKitRequests,
+  saveDemoKitRequest,
+  deleteDemoKitRequest,
+  getDemoLaundryBatches,
   getDemoActiveLaundry,
-  sendDemoToLaundry,
-  returnDemoFromLaundry,
-  getDemoInventorySummary,
-  generateDemoId,
+  createDemoLaundryBatch,
+  updateDemoLaundryStatus,
+  deleteDemoLaundryBatch,
+  getDemoEquipmentSummary,
 } from './demoStorageService';
 
-// Extended types with joins
-export interface EquipmentAssignmentWithDetails extends EquipmentAssignment {
-  item?: EquipmentItem;
-  player?: Player;
-}
-
 // ============================================================================
-// Equipment Items (Inventory)
+// Player Kit Assignments
 // ============================================================================
 
-/**
- * Get all equipment items for a club
- */
-export const getEquipmentItems = async (clubId: string): Promise<EquipmentItem[]> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoEquipmentItems(clubId);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .select('*')
-      .eq('club_id', clubId)
-      .order('category')
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching equipment items, falling back to demo:', error);
-      return getDemoEquipmentItems(clubId);
-    }
-
-    return (data || []).map(mapEquipmentItemFromDb);
-  } catch (error) {
-    console.error('Error fetching equipment items, falling back to demo:', error);
-    return getDemoEquipmentItems(clubId);
-  }
+export const getKitAssignments = async (clubId: string): Promise<PlayerKitAssignment[]> => {
+  // Demo mode only for now (no Supabase tables exist for new model)
+  return getDemoKitAssignments(clubId);
 };
 
-/**
- * Get equipment items by category
- */
-export const getEquipmentByCategory = async (
+export const saveKitAssignment = async (assignment: PlayerKitAssignment): Promise<PlayerKitAssignment> => {
+  return saveDemoKitAssignment(assignment);
+};
+
+export const deleteKitAssignment = async (assignmentId: string): Promise<void> => {
+  deleteDemoKitAssignment(assignmentId);
+};
+
+// ============================================================================
+// Club Equipment (Shared Inventory)
+// ============================================================================
+
+export const getClubEquipment = async (clubId: string): Promise<ClubEquipment[]> => {
+  return getDemoClubEquipment(clubId);
+};
+
+export const saveClubEquipment = async (item: ClubEquipment): Promise<ClubEquipment> => {
+  return saveDemoClubEquipment(item);
+};
+
+export const deleteClubEquipment = async (itemId: string): Promise<void> => {
+  deleteDemoClubEquipment(itemId);
+};
+
+// ============================================================================
+// Match Day Checklists
+// ============================================================================
+
+export const getMatchDayChecklist = async (
   clubId: string,
-  category: EquipmentCategory
-): Promise<EquipmentItem[]> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    const items = getDemoEquipmentItems(clubId);
-    return items.filter(i => i.category === category);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .select('*')
-      .eq('club_id', clubId)
-      .eq('category', category)
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching equipment by category, falling back to demo:', error);
-      const items = getDemoEquipmentItems(clubId);
-      return items.filter(i => i.category === category);
-    }
-
-    return (data || []).map(mapEquipmentItemFromDb);
-  } catch (error) {
-    console.error('Error fetching equipment by category, falling back to demo:', error);
-    const items = getDemoEquipmentItems(clubId);
-    return items.filter(i => i.category === category);
-  }
+  fixtureId: string
+): Promise<MatchDayChecklist> => {
+  return getDemoMatchDayChecklist(clubId, fixtureId);
 };
 
-/**
- * Get low stock items
- */
-export const getLowStockItems = async (clubId: string): Promise<EquipmentItem[]> => {
-  const allItems = await getEquipmentItems(clubId);
-  return allItems.filter(item => item.quantity_available <= item.min_stock);
+export const updateMatchDayChecklist = async (
+  checklist: MatchDayChecklist
+): Promise<MatchDayChecklist> => {
+  return updateDemoMatchDayChecklist(checklist);
 };
 
-/**
- * Create a new equipment item
- */
-export const createEquipmentItem = async (
+export const toggleChecklistItem = async (
   clubId: string,
-  item: Omit<EquipmentItem, 'id' | 'club_id'>
-): Promise<EquipmentItem> => {
-  const newItem: EquipmentItem = {
-    ...item,
-    id: generateDemoId(),
-    club_id: clubId,
-  };
-
-  if (!supabase || !isSupabaseConfigured()) {
-    return saveDemoEquipmentItem(newItem);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .insert({
-        club_id: clubId,
-        name: item.name,
-        category: item.category,
-        size: item.size,
-        quantity_total: item.quantity_total,
-        quantity_available: item.quantity_available,
-        min_stock: item.min_stock,
-        condition: item.condition,
-        notes: item.notes,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating equipment item, falling back to demo:', error);
-      return saveDemoEquipmentItem(newItem);
-    }
-
-    return mapEquipmentItemFromDb(data);
-  } catch (error) {
-    console.error('Error creating equipment item, falling back to demo:', error);
-    return saveDemoEquipmentItem(newItem);
-  }
+  fixtureId: string,
+  itemId: string
+): Promise<MatchDayChecklist> => {
+  return toggleDemoChecklistItem(clubId, fixtureId, itemId);
 };
 
-/**
- * Update an equipment item
- */
-export const updateEquipmentItem = async (
-  itemId: string,
-  updates: Partial<Omit<EquipmentItem, 'id' | 'club_id'>>
-): Promise<EquipmentItem> => {
-  // Demo mode function
-  const updateDemoItem = () => {
-    const allKey = 'pitchside_demo_equipment_items';
-    const items: EquipmentItem[] = JSON.parse(localStorage.getItem(allKey) || '[]');
-    const idx = items.findIndex(i => i.id === itemId);
-    if (idx >= 0) {
-      items[idx] = { ...items[idx], ...updates, updated_at: new Date().toISOString() };
-      localStorage.setItem(allKey, JSON.stringify(items));
-      return items[idx];
-    }
-    throw new Error('Item not found');
-  };
-
-  if (!supabase || !isSupabaseConfigured()) {
-    return updateDemoItem();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .update(updates)
-      .eq('id', itemId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating equipment item, falling back to demo:', error);
-      return updateDemoItem();
-    }
-
-    return mapEquipmentItemFromDb(data);
-  } catch (error) {
-    console.error('Error updating equipment item, falling back to demo:', error);
-    return updateDemoItem();
-  }
-};
-
-/**
- * Delete an equipment item
- */
-export const deleteEquipmentItem = async (itemId: string): Promise<void> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    deleteDemoEquipmentItem(itemId);
-    return;
-  }
-
-  try {
-    const { error } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .delete()
-      .eq('id', itemId);
-
-    if (error) {
-      console.error('Error deleting equipment item, falling back to demo:', error);
-      deleteDemoEquipmentItem(itemId);
-    }
-  } catch (error) {
-    console.error('Error deleting equipment item, falling back to demo:', error);
-    deleteDemoEquipmentItem(itemId);
-  }
-};
-
-/**
- * Get inventory summary stats
- */
-export const getInventorySummary = async (
-  clubId: string
-): Promise<{
-  total_items: number;
-  total_quantity: number;
-  available: number;
-  issued: number;
-  low_stock: number;
-  in_laundry: number;
-}> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoInventorySummary(clubId);
-  }
-
-  try {
-    const items = await getEquipmentItems(clubId);
-    const laundry = await getActiveLaundry(clubId);
-
-    const inLaundry = laundry.reduce((sum, l) => {
-      return sum + l.items.reduce((s, item) => s + item.quantity, 0);
-    }, 0);
-
-    const totalQuantity = items.reduce((sum, i) => sum + i.quantity_total, 0);
-    const available = items.reduce((sum, i) => sum + i.quantity_available, 0);
-    const lowStock = items.filter(i => i.quantity_available <= i.min_stock).length;
-
-    return {
-      total_items: items.length,
-      total_quantity: totalQuantity,
-      available,
-      issued: totalQuantity - available,
-      low_stock: lowStock,
-      in_laundry: inLaundry,
-    };
-  } catch (error) {
-    console.error('Error getting inventory summary, falling back to demo:', error);
-    return getDemoInventorySummary(clubId);
-  }
+export const addChecklistItem = async (
+  clubId: string,
+  fixtureId: string,
+  label: string
+): Promise<MatchDayChecklist> => {
+  return addDemoChecklistItem(clubId, fixtureId, label);
 };
 
 // ============================================================================
-// Equipment Assignments
+// Kit Requests
 // ============================================================================
 
-/**
- * Get all active assignments (not returned)
- */
-export const getActiveAssignments = async (
-  clubId: string
-): Promise<EquipmentAssignmentWithDetails[]> => {
-  // Demo fallback function
-  const getDemoAssignments = () => {
-    const assignments = getDemoEquipmentAssignments(clubId);
-    const items = getDemoEquipmentItems(clubId);
-    return assignments.map(a => ({
-      ...a,
-      item: items.find(i => i.id === a.item_id),
-    }));
-  };
-
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoAssignments();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ASSIGNMENTS)
-      .select(`
-        *,
-        item:equipment_items(*),
-        player:players(*)
-      `)
-      .eq('club_id', clubId)
-      .is('returned_at', null)
-      .order('issued_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching assignments, falling back to demo:', error);
-      return getDemoAssignments();
-    }
-
-    return (data || []).map(row => ({
-      ...mapEquipmentAssignmentFromDb(row),
-      item: row.item ? mapEquipmentItemFromDb(row.item) : undefined,
-      player: row.player,
-    }));
-  } catch (error) {
-    console.error('Error fetching assignments, falling back to demo:', error);
-    return getDemoAssignments();
-  }
+export const getKitRequests = async (clubId: string): Promise<KitRequest[]> => {
+  return getDemoKitRequests(clubId);
 };
 
-/**
- * Get assignments for a specific player
- */
-export const getPlayerAssignments = async (
-  playerId: string
-): Promise<EquipmentAssignmentWithDetails[]> => {
-  // Demo fallback
-  const getDemoPlayerAssignments = () => {
-    const allKey = 'pitchside_demo_equipment_assignments';
-    const all: EquipmentAssignment[] = JSON.parse(localStorage.getItem(allKey) || '[]');
-    const playerAssignments = all.filter(a => a.player_id === playerId && !a.returned_at);
-    const items = getDemoEquipmentItems('demo');
-    return playerAssignments.map(a => ({
-      ...a,
-      item: items.find(i => i.id === a.item_id),
-    }));
-  };
-
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoPlayerAssignments();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ASSIGNMENTS)
-      .select(`
-        *,
-        item:equipment_items(*)
-      `)
-      .eq('player_id', playerId)
-      .is('returned_at', null)
-      .order('issued_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching player assignments, falling back to demo:', error);
-      return getDemoPlayerAssignments();
-    }
-
-    return (data || []).map(row => ({
-      ...mapEquipmentAssignmentFromDb(row),
-      item: row.item ? mapEquipmentItemFromDb(row.item) : undefined,
-    }));
-  } catch (error) {
-    console.error('Error fetching player assignments, falling back to demo:', error);
-    return getDemoPlayerAssignments();
-  }
+export const getPendingKitRequests = async (clubId: string): Promise<KitRequest[]> => {
+  const all = await getKitRequests(clubId);
+  return all.filter(r => r.status === 'pending');
 };
 
-/**
- * Issue equipment to a player
- */
-export const issueEquipment = async (
-  clubId: string,
-  itemId: string,
-  playerId: string,
-  quantity: number = 1,
-  notes?: string
-): Promise<EquipmentAssignment> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return issueDemoEquipment(clubId, itemId, playerId, quantity, notes);
-  }
-
-  try {
-    // First, check available quantity
-    const { data: item, error: itemError } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .select('quantity_available')
-      .eq('id', itemId)
-      .single();
-
-    if (itemError) {
-      console.error('Error checking stock, falling back to demo:', itemError);
-      return issueDemoEquipment(clubId, itemId, playerId, quantity, notes);
-    }
-
-    if (item.quantity_available < quantity) {
-      throw new Error('Not enough stock available');
-    }
-
-    // Create assignment
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ASSIGNMENTS)
-      .insert({
-        club_id: clubId,
-        item_id: itemId,
-        player_id: playerId,
-        quantity,
-        notes,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating assignment, falling back to demo:', error);
-      return issueDemoEquipment(clubId, itemId, playerId, quantity, notes);
-    }
-
-    // Update available quantity
-    await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .update({ quantity_available: item.quantity_available - quantity })
-      .eq('id', itemId);
-
-    return mapEquipmentAssignmentFromDb(data);
-  } catch (error) {
-    console.error('Error issuing equipment, falling back to demo:', error);
-    return issueDemoEquipment(clubId, itemId, playerId, quantity, notes);
-  }
+export const saveKitRequest = async (request: KitRequest): Promise<KitRequest> => {
+  return saveDemoKitRequest(request);
 };
 
-/**
- * Return equipment from a player
- */
-export const returnEquipment = async (
-  assignmentId: string
-): Promise<EquipmentAssignment> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    const result = returnDemoEquipment(assignmentId);
-    if (!result) throw new Error('Assignment not found');
-    return result;
-  }
-
-  try {
-    // Get assignment details
-    const { data: assignment, error: getError } = await supabase
-      .from(TABLES.EQUIPMENT_ASSIGNMENTS)
-      .select('item_id, quantity')
-      .eq('id', assignmentId)
-      .single();
-
-    if (getError) {
-      console.error('Error getting assignment, falling back to demo:', getError);
-      const result = returnDemoEquipment(assignmentId);
-      if (!result) throw new Error('Assignment not found');
-      return result;
-    }
-
-    // Mark as returned
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_ASSIGNMENTS)
-      .update({ returned_at: new Date().toISOString() })
-      .eq('id', assignmentId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error returning equipment, falling back to demo:', error);
-      const result = returnDemoEquipment(assignmentId);
-      if (!result) throw new Error('Assignment not found');
-      return result;
-    }
-
-    // Update available quantity
-    const { data: item } = await supabase
-      .from(TABLES.EQUIPMENT_ITEMS)
-      .select('quantity_available')
-      .eq('id', assignment.item_id)
-      .single();
-
-    if (item) {
-      await supabase
-        .from(TABLES.EQUIPMENT_ITEMS)
-        .update({ quantity_available: item.quantity_available + assignment.quantity })
-        .eq('id', assignment.item_id);
-    }
-
-    return mapEquipmentAssignmentFromDb(data);
-  } catch (error) {
-    console.error('Error returning equipment, falling back to demo:', error);
-    const result = returnDemoEquipment(assignmentId);
-    if (!result) throw new Error('Assignment not found');
-    return result;
-  }
+export const deleteKitRequest = async (requestId: string): Promise<void> => {
+  deleteDemoKitRequest(requestId);
 };
 
 // ============================================================================
 // Laundry Tracking
 // ============================================================================
 
-/**
- * Get active laundry batches (sent but not returned)
- */
-export const getActiveLaundry = async (clubId: string): Promise<EquipmentLaundry[]> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoActiveLaundry(clubId);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_LAUNDRY)
-      .select('*')
-      .eq('club_id', clubId)
-      .eq('status', 'sent')
-      .order('sent_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching laundry, falling back to demo:', error);
-      return getDemoActiveLaundry(clubId);
-    }
-
-    return (data || []).map(mapEquipmentLaundryFromDb);
-  } catch (error) {
-    console.error('Error fetching laundry, falling back to demo:', error);
-    return getDemoActiveLaundry(clubId);
-  }
+export const getLaundryBatches = async (clubId: string): Promise<LaundryBatch[]> => {
+  return getDemoLaundryBatches(clubId);
 };
 
-/**
- * Get laundry history
- */
-export const getLaundryHistory = async (
-  clubId: string,
-  limit: number = 20
-): Promise<EquipmentLaundry[]> => {
-  // Demo fallback
-  const getDemoHistory = () => {
-    const allKey = 'pitchside_demo_equipment_laundry';
-    const all: EquipmentLaundry[] = JSON.parse(localStorage.getItem(allKey) || '[]');
-    return all.filter(l => l.club_id === clubId).slice(0, limit);
-  };
-
-  if (!supabase || !isSupabaseConfigured()) {
-    return getDemoHistory();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_LAUNDRY)
-      .select('*')
-      .eq('club_id', clubId)
-      .order('sent_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error fetching laundry history, falling back to demo:', error);
-      return getDemoHistory();
-    }
-
-    return (data || []).map(mapEquipmentLaundryFromDb);
-  } catch (error) {
-    console.error('Error fetching laundry history, falling back to demo:', error);
-    return getDemoHistory();
-  }
+export const getActiveLaundry = async (clubId: string): Promise<LaundryBatch[]> => {
+  return getDemoActiveLaundry(clubId);
 };
 
-/**
- * Send items to laundry
- */
-export const sendToLaundry = async (
+export const createLaundryBatch = async (
   clubId: string,
-  items: LaundryItem[],
+  kitCount: number,
+  fixtureId?: string,
   notes?: string
-): Promise<EquipmentLaundry> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return sendDemoToLaundry(clubId, items, notes);
-  }
+): Promise<LaundryBatch> => {
+  return createDemoLaundryBatch(clubId, kitCount, fixtureId, notes);
+};
 
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_LAUNDRY)
-      .insert({
-        club_id: clubId,
-        items,
-        status: 'sent',
-        notes,
-      })
-      .select()
-      .single();
+export const updateLaundryStatus = async (
+  batchId: string,
+  status: LaundryStatus
+): Promise<LaundryBatch | null> => {
+  return updateDemoLaundryStatus(batchId, status);
+};
 
-    if (error) {
-      console.error('Error sending to laundry, falling back to demo:', error);
-      return sendDemoToLaundry(clubId, items, notes);
-    }
+export const deleteLaundryBatch = async (batchId: string): Promise<void> => {
+  deleteDemoLaundryBatch(batchId);
+};
 
-    return mapEquipmentLaundryFromDb(data);
-  } catch (error) {
-    console.error('Error sending to laundry, falling back to demo:', error);
-    return sendDemoToLaundry(clubId, items, notes);
-  }
+// ============================================================================
+// Summary & Stats (for notifications/dashboard)
+// ============================================================================
+
+export const getEquipmentSummary = async (clubId: string): Promise<{
+  totalPlayers: number;
+  playersWithKit: number;
+  kitNeedsReplacing: number;
+  pendingRequests: number;
+  laundryInProgress: number;
+}> => {
+  return getDemoEquipmentSummary(clubId);
 };
 
 /**
- * Mark laundry as returned
+ * Get items that need attention (for notifications)
+ * Returns kit assignments that need replacing
  */
-export const returnFromLaundry = async (laundryId: string): Promise<EquipmentLaundry> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    const result = returnDemoFromLaundry(laundryId);
-    if (!result) throw new Error('Laundry batch not found');
-    return result;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.EQUIPMENT_LAUNDRY)
-      .update({
-        status: 'returned',
-        returned_at: new Date().toISOString(),
-      })
-      .eq('id', laundryId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error returning laundry, falling back to demo:', error);
-      const result = returnDemoFromLaundry(laundryId);
-      if (!result) throw new Error('Laundry batch not found');
-      return result;
-    }
-
-    return mapEquipmentLaundryFromDb(data);
-  } catch (error) {
-    console.error('Error returning laundry, falling back to demo:', error);
-    const result = returnDemoFromLaundry(laundryId);
-    if (!result) throw new Error('Laundry batch not found');
-    return result;
-  }
+export const getKitNeedingAttention = async (clubId: string): Promise<PlayerKitAssignment[]> => {
+  const assignments = await getKitAssignments(clubId);
+  return assignments.filter(k => k.kit_condition === 'needs_replacing' || k.kit_condition === 'worn');
 };
 
-// ============================================================================
-// Mappers
-// ============================================================================
-
-const mapEquipmentItemFromDb = (row: any): EquipmentItem => ({
-  id: row.id,
-  club_id: row.club_id,
-  name: row.name,
-  category: row.category as EquipmentCategory,
-  size: row.size,
-  quantity_total: row.quantity_total,
-  quantity_available: row.quantity_available,
-  min_stock: row.min_stock,
-  condition: row.condition as EquipmentCondition,
-  notes: row.notes,
-  created_at: row.created_at,
-  updated_at: row.updated_at,
-});
-
-const mapEquipmentAssignmentFromDb = (row: any): EquipmentAssignment => ({
-  id: row.id,
-  club_id: row.club_id,
-  item_id: row.item_id,
-  player_id: row.player_id,
-  quantity: row.quantity,
-  issued_at: row.issued_at,
-  returned_at: row.returned_at,
-  notes: row.notes,
-  created_at: row.created_at,
-  updated_at: row.updated_at,
-});
-
-const mapEquipmentLaundryFromDb = (row: any): EquipmentLaundry => ({
-  id: row.id,
-  club_id: row.club_id,
-  items: (row.items || []) as LaundryItem[],
-  status: row.status as LaundryStatus,
-  sent_at: row.sent_at,
-  returned_at: row.returned_at,
-  notes: row.notes,
-  created_at: row.created_at,
-  updated_at: row.updated_at,
-});
+/**
+ * Legacy compatibility - returns empty array as there's no "low stock" concept in new model
+ * The new model focuses on kit assignments to players, not inventory quantity tracking
+ */
+export const getLowStockItems = async (_clubId: string): Promise<any[]> => {
+  // New model doesn't have "low stock" - returns empty for compatibility
+  return [];
+};
