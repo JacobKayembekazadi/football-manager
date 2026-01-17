@@ -21,6 +21,7 @@ import ImageGeneratorModal from './components/ImageGeneratorModal';
 import OnboardingManager from './components/OnboardingManager';
 import EducationView from './components/EducationView';
 import FixtureFormModal from './components/FixtureFormModal';
+import InboxView from './components/InboxView';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
 import { ToastProvider } from './components/Toast';
@@ -175,12 +176,58 @@ const Dashboard: React.FC<{
 }> = ({ fixtures, club, contentItems, onNavigate }) => {
   const upcoming = fixtures.filter(f => f.status === 'SCHEDULED').sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
   const nextMatch = upcoming[0];
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [fixtureTasks, setFixtureTasks] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+  const [quickStats, setQuickStats] = useState({ pendingTasks: 0, lowStockItems: 0 });
 
-  const toggleTask = (taskId: string) => {
-    setCompletedTasks(prev =>
-      prev.includes(taskId) ? prev.filter(t => t !== taskId) : [...prev, taskId]
-    );
+  // Load fixture tasks for the next match
+  useEffect(() => {
+    const loadData = async () => {
+      if (!nextMatch) {
+        setLoadingTasks(false);
+        return;
+      }
+
+      try {
+        // Load fixture tasks
+        const { getFixtureTasksForFixture } = await import('./services/fixtureTaskService');
+        const tasks = await getFixtureTasksForFixture(club.id, nextMatch.id);
+        setFixtureTasks(tasks);
+
+        // Load alerts from notification service
+        const { getDashboardAlerts, getQuickStats } = await import('./services/notificationService');
+        const [alertsData, statsData] = await Promise.all([
+          getDashboardAlerts(club.id, fixtures, club.players),
+          getQuickStats(club.id, fixtures),
+        ]);
+        setAlerts(alertsData);
+        setQuickStats(statsData);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoadingTasks(false);
+      }
+    };
+
+    loadData();
+  }, [nextMatch?.id, club.id, fixtures]);
+
+  const toggleTask = async (taskId: string) => {
+    const task = fixtureTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newStatus = task.status === 'done' ? 'pending' : 'done';
+
+    try {
+      const { updateFixtureTask } = await import('./services/fixtureTaskService');
+      await updateFixtureTask(taskId, { status: newStatus });
+      setFixtureTasks(prev =>
+        prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
+      );
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
   };
 
   // Calculate days until next match
@@ -190,23 +237,30 @@ const Dashboard: React.FC<{
     return Math.ceil((matchDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Dynamic tasks based on fixtures and state
-  const tasks = [
+  // Map fixture tasks to display format + add fallback tasks if none exist
+  const displayTasks = fixtureTasks.length > 0 ? fixtureTasks.slice(0, 4).map(task => ({
+    id: task.id,
+    label: task.label,
+    sublabel: nextMatch ? `vs ${nextMatch.opponent}` : '',
+    icon: task.category === 'comms' ? '📣' :
+          task.category === 'logistics' ? '🚌' :
+          task.category === 'squad' ? '👥' :
+          task.category === 'medical' ? '🏥' : '📋',
+    color: task.category === 'comms' ? 'border-l-purple-500' :
+           task.category === 'logistics' ? 'border-l-blue-500' :
+           task.category === 'squad' ? 'border-l-green-500' :
+           task.category === 'medical' ? 'border-l-red-500' : 'border-l-amber-500',
+    navigate: 'matchday',
+    status: task.status,
+  })) : [
     {
       id: 'availability',
       label: 'Confirm player availability',
       sublabel: `${club.players.length} players on roster`,
       icon: '👥',
       color: 'border-l-blue-500',
-      navigate: 'availability'
-    },
-    {
-      id: 'injuries',
-      label: 'Update injuries',
-      sublabel: '1 player flagged for assessment',
-      icon: '🏥',
-      color: 'border-l-red-500',
-      navigate: 'availability'
+      navigate: 'availability',
+      status: 'pending',
     },
     {
       id: 'prematch',
@@ -214,24 +268,40 @@ const Dashboard: React.FC<{
       sublabel: nextMatch ? `vs ${nextMatch.opponent}` : 'No upcoming match',
       icon: '📝',
       color: 'border-l-purple-500',
-      navigate: 'matchday'
+      navigate: 'matchday',
+      status: 'pending',
+    },
+    {
+      id: 'equipment',
+      label: 'Check kit availability',
+      sublabel: 'Equipment status',
+      icon: '👕',
+      color: 'border-l-amber-500',
+      navigate: 'equipment',
+      status: 'pending',
     },
     {
       id: 'sponsor',
       label: 'Review sponsor deliverables',
-      sublabel: 'Partnership renewal in 15 days',
+      sublabel: 'Partnership tasks',
       icon: '💼',
-      color: 'border-l-amber-500',
-      navigate: 'finance'
+      color: 'border-l-green-500',
+      navigate: 'finance',
+      status: 'pending',
     },
   ];
 
-  // Mock alerts (player updates, notifications)
-  const alerts = [
-    { id: '1', player: 'Will Taylor', date: 'Fri, 16 April', status: 'CONFIRMED', statusColor: 'bg-green-500 text-green-500' },
-    { id: '2', player: 'Jake Brooks', date: 'Fri, 16 April', amount: '+£3,000', status: 'COMMIT', statusColor: 'bg-blue-500 text-blue-500' },
-    { id: '3', player: 'Tyler Coles', date: 'Sat, 20 April', amount: '+£1,200', status: 'PENDING', statusColor: 'bg-amber-500 text-amber-500' },
-  ];
+  // Format alerts for display
+  const displayAlerts = alerts.slice(0, 4).map(alert => ({
+    id: alert.id,
+    player: alert.title,
+    date: new Date(alert.timestamp).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
+    status: alert.priority === 'high' ? 'URGENT' : alert.priority === 'medium' ? 'ATTENTION' : 'INFO',
+    statusColor: alert.priority === 'high' ? 'bg-red-500 text-red-500' :
+                 alert.priority === 'medium' ? 'bg-amber-500 text-amber-500' : 'bg-green-500 text-green-500',
+    description: alert.description,
+    actionTab: alert.actionTab,
+  }));
 
   return (
     <div className="flex gap-6 pb-8 h-full">
@@ -239,72 +309,98 @@ const Dashboard: React.FC<{
       <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-2">
         {/* Today Section */}
         <div>
-          <h2 className="text-3xl font-bold text-white mb-6">Today</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tasks.map(task => (
-              <div
-                key={task.id}
-                onClick={() => onNavigate(task.navigate)}
-                className={`bg-slate-800/60 border border-white/10 ${task.color} border-l-4 rounded-xl p-4 cursor-pointer hover:bg-slate-800/80 hover:border-white/20 transition-all group`}
-              >
-                <div className="flex items-start gap-3">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
-                      completedTasks.includes(task.id)
-                        ? 'bg-green-500 border-green-500 text-black'
-                        : 'border-slate-500 hover:border-green-500'
-                    }`}
-                  >
-                    {completedTasks.includes(task.id) && <span className="text-xs">✓</span>}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${completedTasks.includes(task.id) ? 'text-slate-500 line-through' : 'text-white'}`}>
-                      {task.label}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">{task.sublabel}</p>
-                  </div>
-                  <span className="text-lg opacity-60 group-hover:opacity-100 transition-opacity">{task.icon}</span>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-white">Today</h2>
+            {nextMatch && (
+              <span className="text-xs font-mono text-green-500 bg-green-500/10 px-3 py-1 rounded-full">
+                {getDaysUntil(nextMatch.kickoff_time) <= 0 ? 'MATCH DAY' :
+                 getDaysUntil(nextMatch.kickoff_time) === 1 ? 'TOMORROW' :
+                 `${getDaysUntil(nextMatch.kickoff_time)} DAYS`} vs {nextMatch.opponent}
+              </span>
+            )}
           </div>
+          {loadingTasks ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {displayTasks.map(task => (
+                <div
+                  key={task.id}
+                  onClick={() => onNavigate(task.navigate)}
+                  className={`bg-slate-800/60 border border-white/10 ${task.color} border-l-4 rounded-xl p-4 cursor-pointer hover:bg-slate-800/80 hover:border-white/20 transition-all group`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
+                        task.status === 'done'
+                          ? 'bg-green-500 border-green-500 text-black'
+                          : 'border-slate-500 hover:border-green-500'
+                      }`}
+                    >
+                      {task.status === 'done' && <span className="text-xs">✓</span>}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${task.status === 'done' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                        {task.label}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">{task.sublabel}</p>
+                    </div>
+                    <span className="text-lg opacity-60 group-hover:opacity-100 transition-opacity">{task.icon}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Alerts Section */}
         <div>
-          <h3 className="text-xl font-bold text-white mb-4">Alerts</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Alerts</h3>
+            <button
+              onClick={() => onNavigate('inbox')}
+              className="text-xs text-slate-400 hover:text-white transition-colors"
+            >
+              View All →
+            </button>
+          </div>
           <div className="space-y-3">
-            {alerts.map(alert => (
+            {displayAlerts.length > 0 ? displayAlerts.map(alert => (
               <div
                 key={alert.id}
                 className="bg-slate-800/60 border border-white/10 rounded-xl p-4 flex items-center justify-between hover:border-white/20 transition-colors cursor-pointer"
-                onClick={() => onNavigate('availability')}
+                onClick={() => onNavigate(alert.actionTab || 'inbox')}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${alert.statusColor.split(' ')[0]}`}></div>
                   <div>
                     <p className="text-sm font-medium text-white">{alert.player}</p>
-                    <p className="text-xs text-slate-500">{alert.date}</p>
+                    <p className="text-xs text-slate-500">{alert.description || alert.date}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {alert.amount && <span className="text-xs text-slate-400">{alert.amount}</span>}
                   <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
-                    alert.status === 'CONFIRMED' ? 'bg-green-500/10 border-green-500/30 text-green-500' :
-                    alert.status === 'COMMIT' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' :
-                    'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                    alert.status === 'URGENT' ? 'bg-red-500/10 border-red-500/30 text-red-500' :
+                    alert.status === 'ATTENTION' ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' :
+                    'bg-green-500/10 border-green-500/30 text-green-500'
                   }`}>
                     {alert.status}
                   </span>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="bg-slate-800/40 border border-dashed border-white/10 rounded-xl p-6 text-center">
+                <p className="text-sm text-slate-500">No alerts - you're all caught up!</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Quick Stats Row */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-green-500">{club.players.length}</p>
             <p className="text-xs text-slate-500 uppercase">Squad Size</p>
@@ -314,8 +410,16 @@ const Dashboard: React.FC<{
             <p className="text-xs text-slate-500 uppercase">Upcoming</p>
           </div>
           <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-purple-500">{contentItems.filter(c => c.status === 'DRAFT').length}</p>
-            <p className="text-xs text-slate-500 uppercase">Content Drafts</p>
+            <p className={`text-2xl font-bold ${quickStats.pendingTasks > 0 ? 'text-amber-500' : 'text-slate-500'}`}>
+              {quickStats.pendingTasks}
+            </p>
+            <p className="text-xs text-slate-500 uppercase">Tasks Due</p>
+          </div>
+          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-4 text-center">
+            <p className={`text-2xl font-bold ${quickStats.lowStockItems > 0 ? 'text-red-500' : 'text-slate-500'}`}>
+              {quickStats.lowStockItems}
+            </p>
+            <p className="text-xs text-slate-500 uppercase">Low Stock</p>
           </div>
         </div>
       </div>
@@ -383,23 +487,45 @@ const Dashboard: React.FC<{
           {/* Match Pack Section (for next match) */}
           {nextMatch && (
             <div className="border-t border-white/10 p-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Match Pack</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase">Match Pack</h4>
+                {fixtureTasks.length > 0 && (
+                  <span className="text-[10px] text-green-500">
+                    {fixtureTasks.filter(t => t.status === 'done').length}/{fixtureTasks.length} done
+                  </span>
+                )}
+              </div>
               <div className="space-y-2">
-                {[
-                  { label: 'Squad confirmed', done: true },
-                  { label: 'Travel booked', done: true },
-                  { label: 'Kit prepared', done: false },
-                  { label: 'Pre-match content', done: contentItems.some(c => c.fixture_id === nextMatch.id && c.type === 'PREVIEW') },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] ${
-                      item.done ? 'bg-green-500 text-black' : 'border border-slate-600'
-                    }`}>
-                      {item.done && '✓'}
+                {fixtureTasks.length > 0 ? (
+                  fixtureTasks.slice(0, 4).map((task) => (
+                    <div key={task.id} className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] ${
+                        task.status === 'done' ? 'bg-green-500 text-black' : 'border border-slate-600'
+                      }`}>
+                        {task.status === 'done' && '✓'}
+                      </div>
+                      <span className={`text-xs ${task.status === 'done' ? 'text-slate-400' : 'text-white'}`}>
+                        {task.label}
+                      </span>
                     </div>
-                    <span className={`text-xs ${item.done ? 'text-slate-400' : 'text-white'}`}>{item.label}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  // Fallback to content-based checks
+                  [
+                    { label: 'Squad confirmed', done: true },
+                    { label: 'Kit prepared', done: false },
+                    { label: 'Pre-match content', done: contentItems.some(c => c.fixture_id === nextMatch.id && c.type === 'PREVIEW') },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] ${
+                        item.done ? 'bg-green-500 text-black' : 'border border-slate-600'
+                      }`}>
+                        {item.done && '✓'}
+                      </div>
+                      <span className={`text-xs ${item.done ? 'text-slate-400' : 'text-white'}`}>{item.label}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -407,7 +533,7 @@ const Dashboard: React.FC<{
           {/* Continue Button */}
           <div className="p-4 border-t border-white/10">
             {(() => {
-              const nextTask = tasks.find(t => !completedTasks.includes(t.id));
+              const nextTask = displayTasks.find(t => t.status !== 'done');
               return (
                 <button
                   onClick={() => nextTask ? onNavigate(nextTask.navigate) : onNavigate('matchday')}
@@ -1711,42 +1837,11 @@ const AppAuthed: React.FC<{
           <SettingsView club={currentClub} />
         )}
         {activeTab === 'inbox' && currentClub && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Inbox</h2>
-              <p className="text-sm text-slate-400 mt-1">Notifications, approvals, and updates</p>
-            </div>
-            <div className="grid gap-4">
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Invoice #1042 awaiting approval</p>
-                    <p className="text-xs text-slate-500 mt-1">Finance • 2 hours ago</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">James Wilson - Hamstring strain reported</p>
-                    <p className="text-xs text-slate-500 mt-1">Medical • 4 hours ago</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Matchday checklist complete for Saturday</p>
-                    <p className="text-xs text-slate-500 mt-1">Operations • 1 day ago</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 text-center">Full inbox functionality coming soon</p>
-          </div>
+          <InboxView
+            club={currentClub}
+            fixtures={fixtures}
+            onNavigate={setActiveTab}
+          />
         )}
         {activeTab === 'equipment' && currentClub && (
           <EquipmentView

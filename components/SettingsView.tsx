@@ -9,6 +9,7 @@ import {
 import { seedDemoData, clearDemoData } from '../services/mockDataService';
 import { hasDemoData } from '../services/dataPresenceService';
 import { Skeleton, StatCardSkeleton } from './Skeleton';
+import { getDemoClubProfile, saveDemoClubProfile, DemoClubProfile } from '../services/demoStorageService';
 
 // AI Tone options
 const AI_TONES = [
@@ -79,6 +80,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
   const [brandColor, setBrandColor] = useState<string>('#22c55e');
   const [isSavingBranding, setIsSavingBranding] = useState(false);
 
+  // Club Profile Settings
+  const [clubProfile, setClubProfile] = useState<DemoClubProfile>({
+    club_id: clubId,
+    display_name: club.name,
+    logo_url: '',
+    contact_email: '',
+    contact_phone: '',
+    address: '',
+    stadium_name: '',
+    website_url: '',
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
   // Phase 3: System Health
   const [systemHealth, setSystemHealth] = useState<{
     supabaseStatus: 'connected' | 'error' | 'checking';
@@ -99,6 +113,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
       setSuccess(null);
 
       try {
+        // Load club profile from localStorage (works in both demo and non-demo mode)
+        const savedProfile = getDemoClubProfile(clubId);
+        if (savedProfile) {
+          setClubProfile(savedProfile);
+        } else {
+          // Initialize with club name
+          setClubProfile(prev => ({ ...prev, display_name: club.name }));
+        }
+
         if (!supabase || !isSupabaseConfigured()) {
           setLoading(false);
           return;
@@ -293,6 +316,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
     }
   };
 
+  // Save club profile
+  const saveClubProfile = async () => {
+    setIsSavingProfile(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      saveDemoClubProfile(clubProfile);
+      setSuccess('Club profile saved successfully!');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save club profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   // Phase 1: Save branding settings
   const saveBrandingSettings = async () => {
     if (!supabase || !isSupabaseConfigured()) return;
@@ -429,6 +468,147 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club }) => {
           </div>
         </div>
       )}
+
+      {/* Club Profile Section */}
+      <div className="glass-card p-6 rounded-2xl border border-green-500/20 space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-display font-bold uppercase tracking-wider text-white flex items-center gap-2">
+            <Shield size={18} className="text-green-500" />
+            Club Profile
+          </h3>
+          <span className="text-[10px] text-slate-500 font-mono">
+            {clubProfile.updated_at ? `Last saved: ${new Date(clubProfile.updated_at).toLocaleDateString()}` : 'Not saved yet'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Club Name */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Club Name
+            </label>
+            <input
+              type="text"
+              value={clubProfile.display_name || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, display_name: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="Enter club name"
+            />
+          </div>
+
+          {/* Logo URL */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Logo URL
+            </label>
+            <input
+              type="url"
+              value={clubProfile.logo_url || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, logo_url: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="https://example.com/logo.png"
+            />
+          </div>
+
+          {/* Contact Email */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Contact Email
+            </label>
+            <input
+              type="email"
+              value={clubProfile.contact_email || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, contact_email: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="contact@club.com"
+            />
+          </div>
+
+          {/* Contact Phone */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Contact Phone
+            </label>
+            <input
+              type="tel"
+              value={clubProfile.contact_phone || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, contact_phone: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="+44 123 456 7890"
+            />
+          </div>
+
+          {/* Stadium Name */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Stadium / Ground
+            </label>
+            <input
+              type="text"
+              value={clubProfile.stadium_name || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, stadium_name: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="Stadium name"
+            />
+          </div>
+
+          {/* Website */}
+          <div>
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Website
+            </label>
+            <input
+              type="url"
+              value={clubProfile.website_url || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, website_url: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none"
+              placeholder="https://yourclub.com"
+            />
+          </div>
+
+          {/* Address - Full Width */}
+          <div className="md:col-span-2">
+            <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">
+              Address
+            </label>
+            <textarea
+              value={clubProfile.address || ''}
+              onChange={(e) => setClubProfile(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-green-500 outline-none resize-none h-20"
+              placeholder="Club address..."
+            />
+          </div>
+        </div>
+
+        {/* Logo Preview */}
+        {clubProfile.logo_url && (
+          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10">
+            <img
+              src={clubProfile.logo_url}
+              alt="Club logo"
+              className="w-16 h-16 rounded-lg object-contain bg-white/10"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <div>
+              <p className="text-sm text-white font-bold">{clubProfile.display_name || club.name}</p>
+              {clubProfile.stadium_name && (
+                <p className="text-xs text-slate-400">{clubProfile.stadium_name}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={saveClubProfile}
+          disabled={isSavingProfile}
+          className="w-full py-3 rounded-lg bg-green-500 text-black font-display font-bold uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSavingProfile ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+          {isSavingProfile ? 'Saving...' : 'Save Club Profile'}
+        </button>
+      </div>
 
       {/* AI Usage Analytics */}
       {usageStats && (

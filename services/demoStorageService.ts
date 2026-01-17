@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   EQUIPMENT_ASSIGNMENTS: 'pitchside_demo_equipment_assignments',
   EQUIPMENT_LAUNDRY: 'pitchside_demo_equipment_laundry',
   TEMPLATE_PACKS_ENABLED: 'pitchside_demo_template_packs_enabled',
+  CLUB_PROFILE: 'pitchside_demo_club_profile',
 } as const;
 
 // Generic helpers
@@ -418,4 +419,36 @@ export function getDemoInventorySummary(clubId: string): {
     low_stock: lowStock,
     in_laundry: inLaundry,
   };
+}
+
+// ============================================================================
+// Club Profile (for demo mode)
+// ============================================================================
+
+export interface DemoClubProfile {
+  club_id: string;
+  display_name?: string;
+  logo_url?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  founded_year?: number;
+  stadium_name?: string;
+  website_url?: string;
+  updated_at?: string;
+}
+
+export function getDemoClubProfile(clubId: string): DemoClubProfile | null {
+  const profiles = getItem<Record<string, DemoClubProfile>>(STORAGE_KEYS.CLUB_PROFILE, {});
+  return profiles[clubId] || null;
+}
+
+export function saveDemoClubProfile(profile: DemoClubProfile): DemoClubProfile {
+  const profiles = getItem<Record<string, DemoClubProfile>>(STORAGE_KEYS.CLUB_PROFILE, {});
+  profiles[profile.club_id] = {
+    ...profile,
+    updated_at: new Date().toISOString(),
+  };
+  setItem(STORAGE_KEYS.CLUB_PROFILE, profiles);
+  return profiles[profile.club_id];
 }
