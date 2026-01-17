@@ -243,7 +243,7 @@ const FixtureFormModal: React.FC<FixtureFormModalProps> = ({
         </button>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center" aria-hidden="true">
               <Zap className="text-green-500" size={20} />

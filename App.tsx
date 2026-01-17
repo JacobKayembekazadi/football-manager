@@ -452,9 +452,9 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
     const totalBagItems = matchDayBagChecklist.length;
 
     return (
-      <div className="h-full flex flex-col pb-8 animate-fade-in">
+      <div className="h-full flex flex-col pb-24 lg:pb-8 animate-fade-in">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3">
               <span className="text-3xl">⚡</span>
@@ -489,83 +489,83 @@ ${subs.map(p => `• ${p.name} (${p.position})`).join('\n')}
         </div>
 
         {/* Big Action Buttons */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
           {/* Team Sheet */}
           <button
             onClick={() => setShowTeamSheet(!showTeamSheet)}
-            className="bg-blue-500/20 border-2 border-blue-500/40 hover:border-blue-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02]"
+            className="bg-blue-500/20 border-2 border-blue-500/40 hover:border-blue-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02]"
           >
-            <span className="text-4xl block mb-3">📋</span>
-            <span className="text-white font-bold text-lg">Team Sheet</span>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">📋</span>
+            <span className="text-white font-bold text-base md:text-lg">Team Sheet</span>
             <p className="text-xs text-slate-400 mt-1">View & share lineup</p>
           </button>
 
           {/* Kit Bag */}
           <button
             onClick={() => onNavigate('equipment')}
-            className="bg-amber-500/20 border-2 border-amber-500/40 hover:border-amber-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02] relative"
+            className="bg-amber-500/20 border-2 border-amber-500/40 hover:border-amber-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02] relative"
           >
-            <span className="text-4xl block mb-3">🎒</span>
-            <span className="text-white font-bold text-lg">Kit Bag</span>
-            <p className="text-xs text-slate-400 mt-1">{checkedBagItems}/{totalBagItems} checked</p>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">🎒</span>
+            <span className="text-white font-bold text-base md:text-lg">Kit Bag</span>
+            <p className="text-[10px] md:text-xs text-slate-400 mt-1">{checkedBagItems}/{totalBagItems} checked</p>
             {checkedBagItems === totalBagItems && totalBagItems > 0 && (
-              <span className="absolute top-3 right-3 text-green-500">✓</span>
+              <span className="absolute top-2 right-2 md:top-3 md:right-3 text-green-500">✓</span>
             )}
           </button>
 
           {/* Squad Status */}
           <button
             onClick={() => onNavigate('availability')}
-            className="bg-purple-500/20 border-2 border-purple-500/40 hover:border-purple-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02]"
+            className="bg-purple-500/20 border-2 border-purple-500/40 hover:border-purple-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02]"
           >
-            <span className="text-4xl block mb-3">👥</span>
-            <span className="text-white font-bold text-lg">Squad</span>
-            <p className="text-xs text-slate-400 mt-1">{availablePlayers} available</p>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">👥</span>
+            <span className="text-white font-bold text-base md:text-lg">Squad</span>
+            <p className="text-[10px] md:text-xs text-slate-400 mt-1">{availablePlayers} available</p>
           </button>
 
           {/* Travel Info */}
           <button
-            className="bg-cyan-500/20 border-2 border-cyan-500/40 hover:border-cyan-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02]"
+            className="bg-cyan-500/20 border-2 border-cyan-500/40 hover:border-cyan-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02]"
           >
-            <span className="text-4xl block mb-3">🗺️</span>
-            <span className="text-white font-bold text-lg">Travel</span>
-            <p className="text-xs text-slate-400 mt-1">{nextMatch.venue === 'Home' ? 'Home game' : 'Away trip'}</p>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">🗺️</span>
+            <span className="text-white font-bold text-base md:text-lg">Travel</span>
+            <p className="text-[10px] md:text-xs text-slate-400 mt-1">{nextMatch.venue === 'Home' ? 'Home game' : 'Away trip'}</p>
           </button>
 
           {/* Post Lineup */}
           <button
             onClick={() => onNavigate('content')}
-            className="bg-pink-500/20 border-2 border-pink-500/40 hover:border-pink-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02]"
+            className="bg-pink-500/20 border-2 border-pink-500/40 hover:border-pink-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02]"
           >
-            <span className="text-4xl block mb-3">📣</span>
-            <span className="text-white font-bold text-lg">Post</span>
-            <p className="text-xs text-slate-400 mt-1">Share lineup</p>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">📣</span>
+            <span className="text-white font-bold text-base md:text-lg">Post</span>
+            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Share lineup</p>
           </button>
 
           {/* Log Result */}
           <button
             onClick={() => onNavigate('matchday')}
-            className="bg-green-500/20 border-2 border-green-500/40 hover:border-green-500 rounded-2xl p-6 text-center transition-all hover:scale-[1.02]"
+            className="bg-green-500/20 border-2 border-green-500/40 hover:border-green-500 rounded-xl md:rounded-2xl p-4 md:p-6 text-center transition-all active:scale-95 md:hover:scale-[1.02]"
           >
-            <span className="text-4xl block mb-3">⚽</span>
-            <span className="text-white font-bold text-lg">Result</span>
-            <p className="text-xs text-slate-400 mt-1">Log score</p>
+            <span className="text-3xl md:text-4xl block mb-2 md:mb-3">⚽</span>
+            <span className="text-white font-bold text-base md:text-lg">Result</span>
+            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Log score</p>
           </button>
         </div>
 
         {/* Team Sheet Modal */}
         {showTeamSheet && (
-          <div className="bg-slate-800/90 border border-white/10 rounded-2xl p-6 mb-6">
+          <div className="bg-slate-800/90 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">Starting XI</h3>
-              <button onClick={() => setShowTeamSheet(false)} className="text-slate-400 hover:text-white">✕</button>
+              <h3 className="text-base md:text-lg font-bold text-white">Starting XI</h3>
+              <button onClick={() => setShowTeamSheet(false)} className="p-2 text-slate-400 hover:text-white">✕</button>
             </div>
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
               {club.players.slice(0, 11).map((player, i) => (
-                <div key={player.id} className="flex items-center gap-2 bg-slate-700/50 rounded-lg p-2">
-                  <span className="w-6 h-6 bg-green-500 text-black text-xs font-bold rounded-full flex items-center justify-center">{i + 1}</span>
-                  <span className="text-sm text-white">{player.name}</span>
-                  <span className="text-xs text-slate-400 ml-auto">{player.position}</span>
+                <div key={player.id} className="flex items-center gap-2 bg-slate-700/50 rounded-lg p-2 md:p-3">
+                  <span className="w-6 h-6 bg-green-500 text-black text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                  <span className="text-sm text-white truncate">{player.name}</span>
+                  <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{player.position}</span>
                 </div>
               ))}
             </div>
