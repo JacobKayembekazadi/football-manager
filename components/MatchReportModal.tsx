@@ -53,49 +53,49 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
         <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose}></div>
         
-        <div className="relative w-full max-w-5xl h-[90vh] bg-[#050505] rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(0,243,255,0.1)] flex flex-col">
-            
+        <div className="relative w-full max-w-5xl h-[95vh] md:h-[90vh] bg-[#050505] rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(0,243,255,0.1)] flex flex-col">
+
             {/* Header / Hero */}
-            <div className="relative h-64 overflow-hidden border-b border-white/10 flex items-center justify-center shrink-0">
+            <div className="relative h-40 md:h-64 overflow-hidden border-b border-white/10 flex items-center justify-center shrink-0">
                  {/* Animated BG */}
                  <div className="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-20"></div>
                  <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.6)]"></div>
                  
-                 <div className="relative z-10 flex flex-col items-center w-full">
-                     <span className={`text-[10rem] font-display font-bold leading-none opacity-10 absolute select-none ${getResultColor()}`}>
+                 <div className="relative z-10 flex flex-col items-center w-full px-4">
+                     <span className={`text-6xl md:text-[10rem] font-display font-bold leading-none opacity-10 absolute select-none ${getResultColor()}`}>
                          {getResultText()}
                      </span>
-                     
-                     <div className="flex items-center justify-between w-full max-w-3xl px-8 relative z-20">
+
+                     <div className="flex items-center justify-between w-full max-w-3xl px-2 md:px-8 relative z-20">
                          {/* Home Team */}
                          <div className="text-center w-1/3">
-                             <h2 className={`text-4xl font-display font-bold ${isHome ? 'text-blue-400' : 'text-white'}`}>
+                             <h2 className={`text-lg md:text-4xl font-display font-bold truncate ${isHome ? 'text-blue-400' : 'text-white'}`}>
                                  {isHome ? club.name : fixture.opponent}
                              </h2>
-                             {isHome && <span className="text-xs font-mono text-blue-400 uppercase tracking-widest">[HOME]</span>}
+                             {isHome && <span className="text-[10px] md:text-xs font-mono text-blue-400 uppercase tracking-widest">[HOME]</span>}
                          </div>
 
                          {/* Scoreboard */}
-                         <div className="flex items-center gap-6">
-                             <span className="text-8xl font-display font-bold text-white shadow-xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                         <div className="flex items-center gap-2 md:gap-6">
+                             <span className="text-5xl md:text-8xl font-display font-bold text-white shadow-xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                                  {homeScore}
                              </span>
-                             <span className="text-2xl font-mono text-slate-500">-</span>
-                             <span className="text-8xl font-display font-bold text-white shadow-xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                             <span className="text-lg md:text-2xl font-mono text-slate-500">-</span>
+                             <span className="text-5xl md:text-8xl font-display font-bold text-white shadow-xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                                  {awayScore}
                              </span>
                          </div>
 
                          {/* Away Team */}
                          <div className="text-center w-1/3">
-                             <h2 className={`text-4xl font-display font-bold ${!isHome ? 'text-blue-400' : 'text-white'}`}>
+                             <h2 className={`text-lg md:text-4xl font-display font-bold truncate ${!isHome ? 'text-blue-400' : 'text-white'}`}>
                                  {!isHome ? club.name : fixture.opponent}
                              </h2>
-                             {!isHome && <span className="text-xs font-mono text-blue-400 uppercase tracking-widest">[AWAY]</span>}
+                             {!isHome && <span className="text-[10px] md:text-xs font-mono text-blue-400 uppercase tracking-widest">[AWAY]</span>}
                          </div>
                      </div>
                      
-                     <div className="mt-8 flex gap-4 text-xs font-mono text-slate-400">
+                     <div className="mt-4 md:mt-8 flex flex-wrap justify-center gap-2 md:gap-4 text-[10px] md:text-xs font-mono text-slate-400">
                          <span className="flex items-center gap-1"><Globe size={12} /> {fixture.venue.toUpperCase()}</span>
                          <span className="text-slate-600">|</span>
                          <span className="flex items-center gap-1"><Award size={12} /> {fixture.competition?.toUpperCase()}</span>
@@ -109,7 +109,7 @@ const MatchReportModal: React.FC<MatchReportModalProps> = ({
 
             {/* Content Body */}
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#050505] to-[#0a0a0a]">
-                <div className="max-w-7xl mx-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
                     
                     {/* Left: Report Narrative */}
                     <div className="lg:col-span-7 space-y-6">
