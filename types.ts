@@ -1290,3 +1290,39 @@ export const AUDIT_EVENT_ICONS: Record<AuditEventType, string> = {
   'user.marked_unavailable': 'UserX',
   'user.status_changed': 'User',
 };
+
+// ============================================================================
+// Phase 6: Quick Handover
+// ============================================================================
+
+export type HandoverScope = 'all' | 'fixture' | 'pack';
+export type HandoverTarget = 'user' | 'role' | 'backup';
+
+export interface HandoverRequest {
+  fromUserId: string;
+  scope: HandoverScope;
+  fixtureId?: string;        // Required if scope is 'fixture'
+  templatePackId?: string;   // Required if scope is 'pack'
+  target: HandoverTarget;
+  toUserId?: string;         // Required if target is 'user'
+  toRole?: ClubRoleName;     // Required if target is 'role'
+}
+
+export interface HandoverResult {
+  success: boolean;
+  tasksAffected: number;
+  errors?: string[];
+}
+
+// Optional auto-handover rules for future implementation
+export type HandoverTrigger = 'owner_unavailable' | 'overdue_4h' | 'no_response_24h';
+export type HandoverAction = 'assign_backup' | 'assign_role' | 'notify_admin';
+
+export interface HandoverRule {
+  id: string;
+  club_id: string;
+  trigger: HandoverTrigger;
+  action: HandoverAction;
+  notify: boolean;
+  is_enabled: boolean;
+}
