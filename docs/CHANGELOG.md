@@ -7,11 +7,39 @@ All notable changes to this project are documented here. LLMs working on this pr
 ## [Unreleased]
 
 ### In Progress
-- Independence & Leverage feature set (Phase 3-7 pending)
+- Independence & Leverage feature set (Phase 4-7 pending)
 
 ---
 
 ## 2026-01-21
+
+### Added - Independence & Leverage Phase 3: Task Ownership (Session: Claude Opus 4.5)
+- **TaskOwnerSelector Component**: Dropdown for assigning task owners with backup support
+- **MyTasks Component**: View all assigned tasks across upcoming fixtures
+- **FixtureTasks Update**: Integrated ownership display, claim button, owner avatars
+- **Task Ownership Fields**: Extended FixtureTask with owner_user_id, backup_user_id, owner_role, due_at
+
+### Features
+- **Claim Tasks**: Users can claim unassigned tasks with one click
+- **Assign Owners**: Dropdown to select task owner with avatar display
+- **Backup Support**: Optional backup user for each task
+- **Visual Indicators**:
+  - Blue border for "my tasks"
+  - Owner avatars with status
+  - Backup indicator badge
+  - Overdue task warnings
+
+### Files Added
+- `components/TaskOwnerSelector.tsx`
+- `components/MyTasks.tsx`
+
+### Files Modified
+- `components/FixtureTasks.tsx` - Added ownership display and claim functionality
+- `services/fixtureTaskService.ts` - Extended mapper with ownership fields, updated updateFixtureTask
+- `types.ts` - Already had ownership fields from earlier in session
+- `docs/CONTEXT.md` - Updated to reflect Phase 3 completion
+
+---
 
 ### Added - Independence & Leverage Phase 2: RBAC (Session: Claude Opus 4.5)
 - **Permission Service**: Created `services/permissionService.ts` with default permission matrix

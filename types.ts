@@ -979,6 +979,10 @@ export const getRoleColorClass = (color: string): string => {
 export interface TemplateTask {
   label: string;
   sort_order: number;
+  // Phase 4: Default ownership for volunteer-proof templates
+  default_owner_role?: ClubRoleName;
+  default_backup_role?: ClubRoleName;
+  offset_hours?: number;  // Hours before kickoff when task is due
 }
 
 export interface TemplatePack {
@@ -1004,6 +1008,11 @@ export interface FixtureTask {
   sort_order: number;
   created_at?: string;
   updated_at?: string;
+  // Phase 3: Task Ownership
+  owner_user_id?: string;       // Assigned owner (ClubUser.id)
+  backup_user_id?: string;      // Backup person (ClubUser.id)
+  owner_role?: ClubRoleName;    // Fallback: anyone with this role can claim
+  due_at?: string;              // ISO timestamp for when task is due
 }
 
 // ============================================================================

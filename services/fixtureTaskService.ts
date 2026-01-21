@@ -453,7 +453,16 @@ export const deleteFixtureTask = async (taskId: string): Promise<void> => {
  */
 export const updateFixtureTask = async (
   taskId: string,
-  updates: { label?: string; sort_order?: number; status?: 'pending' | 'in_progress' | 'done' }
+  updates: {
+    label?: string;
+    sort_order?: number;
+    status?: 'pending' | 'in_progress' | 'done';
+    // Phase 3: Task ownership fields
+    owner_user_id?: string | null;
+    backup_user_id?: string | null;
+    owner_role?: string | null;
+    due_at?: string | null;
+  }
 ): Promise<FixtureTask> => {
   // Demo mode function
   const updateDemoTask = () => {
@@ -523,6 +532,11 @@ const mapFixtureTaskFromDb = (row: any): FixtureTask => ({
   completed_by: row.completed_by,
   completed_at: row.completed_at,
   sort_order: row.sort_order,
+  // Phase 3: Task Ownership fields
+  owner_user_id: row.owner_user_id,
+  backup_user_id: row.backup_user_id,
+  owner_role: row.owner_role,
+  due_at: row.due_at,
   created_at: row.created_at,
   updated_at: row.updated_at,
 });

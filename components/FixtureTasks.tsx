@@ -5,6 +5,7 @@
  * - Check/uncheck tasks
  * - Add custom tasks
  * - View task completion progress
+ * - Assign task owners (Phase 3: Task Ownership)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,47 +17,69 @@ import {
   Loader2,
   ListTodo,
   Trash2,
+  User,
+  Hand,
 } from 'lucide-react';
-import { FixtureTask, Fixture } from '../types';
+import { FixtureTask, Fixture, ClubUser } from '../types';
 import {
   getFixtureTasks,
   toggleTaskCompletion,
   addFixtureTask,
   deleteFixtureTask,
   generateTasksFromTemplates,
+  updateFixtureTask,
 } from '../services/fixtureTaskService';
+import { getClubUsers } from '../services/userService';
+import UserAvatar from './UserAvatar';
+import TaskOwnerSelector from './TaskOwnerSelector';
 
 interface FixtureTasksProps {
   fixture: Fixture;
   clubId: string;
+  currentUserId?: string;
+  showOwnership?: boolean;
   onTasksChange?: () => void;
 }
 
 const FixtureTasks: React.FC<FixtureTasksProps> = ({
   fixture,
   clubId,
+  currentUserId,
+  showOwnership = true,
   onTasksChange,
 }) => {
   const [tasks, setTasks] = useState<FixtureTask[]>([]);
+  const [users, setUsers] = useState<ClubUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTaskLabel, setNewTaskLabel] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTasks();
-  }, [fixture.id]);
+    loadData();
+  }, [fixture.id, clubId]);
 
-  const loadTasks = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await getFixtureTasks(fixture.id);
-      setTasks(data);
+      const [tasksData, usersData] = await Promise.all([
+        getFixtureTasks(fixture.id),
+        showOwnership ? getClubUsers(clubId) : Promise.resolve([]),
+      ]);
+      setTasks(tasksData);
+      setUsers(usersData.filter(u => u.status === 'active'));
     } catch (error) {
       console.error('Error loading tasks:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get user by ID for avatar display
+  const getUserById = (userId?: string): ClubUser | undefined => {
+    if (!userId) return undefined;
+    return users.find(u => u.id === userId);
   };
 
   const handleToggleTask = async (task: FixtureTask) => {
@@ -93,6 +116,53 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
       onTasksChange?.();
     } catch (error) {
       console.error('Error deleting task:', error);
+    }
+  };
+
+  // Phase 3: Task Ownership handlers
+  const handleClaimTask = async (task: FixtureTask) => {
+    if (!currentUserId) return;
+    setAssigningId(task.id);
+    try {
+      const updated = await updateFixtureTask(task.id, {
+        owner_user_id: currentUserId,
+      });
+      setTasks(prev => prev.map(t => (t.id === task.id ? updated : t)));
+      onTasksChange?.();
+    } catch (error) {
+      console.error('Error claiming task:', error);
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
+  const handleAssignOwner = async (taskId: string, userId: string | null) => {
+    setAssigningId(taskId);
+    try {
+      const updated = await updateFixtureTask(taskId, {
+        owner_user_id: userId,
+      });
+      setTasks(prev => prev.map(t => (t.id === taskId ? updated : t)));
+      onTasksChange?.();
+    } catch (error) {
+      console.error('Error assigning task owner:', error);
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
+  const handleAssignBackup = async (taskId: string, userId: string | null) => {
+    setAssigningId(taskId);
+    try {
+      const updated = await updateFixtureTask(taskId, {
+        backup_user_id: userId,
+      });
+      setTasks(prev => prev.map(t => (t.id === taskId ? updated : t)));
+      onTasksChange?.();
+    } catch (error) {
+      console.error('Error assigning backup:', error);
+    } finally {
+      setAssigningId(null);
     }
   };
 
@@ -152,45 +222,110 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
       {/* Task List */}
       {tasks.length > 0 ? (
         <div className="space-y-2">
-          {tasks.map(task => (
-            <div
-              key={task.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                task.is_completed
-                  ? 'bg-green-500/5 border-green-500/20'
-                  : 'bg-slate-800/50 border-white/10 hover:border-white/20'
-              }`}
-            >
-              <button
-                onClick={() => handleToggleTask(task)}
-                disabled={togglingId === task.id}
-                className="flex-shrink-0"
-              >
-                {togglingId === task.id ? (
-                  <Loader2 size={20} className="animate-spin text-slate-400" />
-                ) : task.is_completed ? (
-                  <CheckCircle2 size={20} className="text-green-500" />
-                ) : (
-                  <Circle size={20} className="text-slate-500 hover:text-white" />
-                )}
-              </button>
-              <span
-                className={`flex-1 text-sm ${
-                  task.is_completed ? 'text-slate-400 line-through' : 'text-white'
+          {tasks.map(task => {
+            const owner = getUserById(task.owner_user_id);
+            const backup = getUserById(task.backup_user_id);
+            const isMyTask = currentUserId && task.owner_user_id === currentUserId;
+            const isUnassigned = !task.owner_user_id;
+
+            return (
+              <div
+                key={task.id}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  task.is_completed
+                    ? 'bg-green-500/5 border-green-500/20'
+                    : isMyTask
+                    ? 'bg-blue-500/5 border-blue-500/20'
+                    : 'bg-slate-800/50 border-white/10 hover:border-white/20'
                 }`}
               >
-                {task.label}
-              </span>
-              {!task.template_pack_id && (
+                {/* Checkbox */}
                 <button
-                  onClick={() => handleDeleteTask(task.id)}
-                  className="text-slate-500 hover:text-red-400 transition-colors"
+                  onClick={() => handleToggleTask(task)}
+                  disabled={togglingId === task.id}
+                  className="flex-shrink-0"
                 >
-                  <Trash2 size={14} />
+                  {togglingId === task.id ? (
+                    <Loader2 size={20} className="animate-spin text-slate-400" />
+                  ) : task.is_completed ? (
+                    <CheckCircle2 size={20} className="text-green-500" />
+                  ) : (
+                    <Circle size={20} className="text-slate-500 hover:text-white" />
+                  )}
                 </button>
-              )}
-            </div>
-          ))}
+
+                {/* Task Label */}
+                <span
+                  className={`flex-1 text-sm ${
+                    task.is_completed ? 'text-slate-400 line-through' : 'text-white'
+                  }`}
+                >
+                  {task.label}
+                </span>
+
+                {/* Owner Display & Actions */}
+                {showOwnership && (
+                  <div className="flex items-center gap-2">
+                    {assigningId === task.id ? (
+                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                    ) : owner ? (
+                      /* Show owner avatar with tooltip */
+                      <div className="flex items-center gap-1">
+                        <UserAvatar user={owner} size="sm" showStatus />
+                        {backup && (
+                          <div className="relative -ml-2">
+                            <UserAvatar user={backup} size="sm" />
+                            <span className="absolute -bottom-0.5 -right-0.5 text-[8px] bg-slate-700 text-slate-300 px-0.5 rounded">
+                              B
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : isUnassigned && currentUserId ? (
+                      /* Claim button for unassigned tasks */
+                      <button
+                        onClick={() => handleClaimTask(task)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                      >
+                        <Hand size={12} />
+                        Claim
+                      </button>
+                    ) : (
+                      /* Unassigned indicator */
+                      <div className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500">
+                        <User size={12} />
+                        <span>Unassigned</span>
+                      </div>
+                    )}
+
+                    {/* Owner selector (for admins or task assignment) */}
+                    {owner && (
+                      <TaskOwnerSelector
+                        clubId={clubId}
+                        currentOwnerId={task.owner_user_id}
+                        currentBackupId={task.backup_user_id}
+                        ownerRole={task.owner_role}
+                        onOwnerChange={(userId) => handleAssignOwner(task.id, userId)}
+                        onBackupChange={(userId) => handleAssignBackup(task.id, userId)}
+                        size="sm"
+                        showBackup={true}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Delete button for custom tasks */}
+                {!task.template_pack_id && (
+                  <button
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="text-slate-500 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-6 border border-dashed border-white/10 rounded-lg">

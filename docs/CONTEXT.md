@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-21
 **Updated By:** Claude (Opus 4.5)
-**Current Phase:** Independence & Leverage - Phase 2 COMPLETE, Phase 3 next
+**Current Phase:** Independence & Leverage - Phase 3 COMPLETE, Phase 4 next
 
 ---
 
@@ -35,13 +35,16 @@ D14 (branded as PitchSide) is a **football operations command centre** for grass
 - ✅ Toast notifications
 - ✅ Quick Action FAB (mobile)
 - ✅ Basic auth (Supabase or demo mode)
+- ✅ **Phase 1: Users & Roles** - Multi-user support with 6 default roles
+- ✅ **Phase 2: RBAC / Permissions** - Role-based access control
+- ✅ **Phase 3: Task Ownership + Backup** - Task claiming, owner assignment, backup users
 
 ### In Progress
 - 🔄 **Independence & Leverage** feature set:
-  - Phase 1: Users & Roles (STARTING)
-  - Phase 2: RBAC / Permissions
-  - Phase 3: Task Ownership + Backup
-  - Phase 4: Volunteer-proof Templates
+  - ~~Phase 1: Users & Roles~~ ✅
+  - ~~Phase 2: RBAC / Permissions~~ ✅
+  - ~~Phase 3: Task Ownership + Backup~~ ✅
+  - Phase 4: Volunteer-proof Templates (NEXT)
   - Phase 5: Audit Trail
   - Phase 6: Quick Handover
   - Phase 7: Exception Alerts
@@ -80,17 +83,29 @@ D14 (branded as PitchSide) is a **football operations command centre** for grass
 │   ├── Toast.tsx           # Notification system
 │   ├── EmptyState.tsx      # Reusable empty states
 │   ├── QuickActionFAB.tsx  # Mobile quick actions
-│   ├── FixtureTasks.tsx    # Task checklist component
+│   ├── FixtureTasks.tsx    # Task checklist + ownership (Phase 3)
+│   ├── TaskOwnerSelector.tsx  # Task owner dropdown (Phase 3)
+│   ├── MyTasks.tsx         # User's assigned tasks (Phase 3)
+│   ├── UserAvatar.tsx      # Avatar with initials (Phase 1)
+│   ├── RoleBadge.tsx       # Styled role badges (Phase 1)
+│   ├── TeamSettings.tsx    # User/role management (Phase 1)
+│   ├── PermissionGate.tsx  # RBAC gate component (Phase 2)
 │   ├── EquipmentView.tsx   # Kit inventory
 │   ├── AvailabilityView.tsx
 │   ├── SquadView.tsx
 │   ├── SettingsView.tsx
-│   └── ... (30+ components)
+│   └── ... (35+ components)
 ├── services/
-│   ├── fixtureTaskService.ts  # Templates + task generation
+│   ├── fixtureTaskService.ts  # Templates + task generation + ownership
+│   ├── userService.ts         # User CRUD (Phase 1)
+│   ├── permissionService.ts   # RBAC logic (Phase 2)
 │   ├── equipmentService.ts
 │   ├── geminiService.ts       # AI content generation
-│   └── ... (10+ services)
+│   └── ... (12+ services)
+├── hooks/
+│   └── usePermission.ts    # Permission hook (Phase 2)
+├── contexts/
+│   └── PermissionContext.tsx  # App-wide RBAC (Phase 2)
 ├── docs/                   # LLM context (YOU ARE HERE)
 │   ├── LLM_INSTRUCTIONS.md
 │   ├── CONTEXT.md
@@ -115,22 +130,24 @@ ContentItem: { id, club_id, fixture_id, type, body, status, ... }
 EquipmentItem: { id, club_id, name, category, quantity, status, ... }
 ```
 
-### Task System (Current)
+### Task System (Phase 3 Complete)
 ```typescript
 TemplatePack: { id, club_id, name, enabled, tasks: TemplateTask[] }
-TemplateTask: { label, offset_hours, category }
-FixtureTask: { id, fixture_id, label, status, due_at, category }
+TemplateTask: { label, offset_hours, category, default_owner_role?, default_backup_role? }
+FixtureTask: {
+  id, fixture_id, label, status, due_at, category,
+  owner_user_id,      // Phase 3: Task owner
+  backup_user_id,     // Phase 3: Backup owner
+  owner_role,         // Phase 3: Role-based fallback
+  due_at              // Phase 3: Task deadline
+}
 ```
 
-### Task System (After Phase 3)
+### Users & Permissions (Phase 1-2 Complete)
 ```typescript
-// Extended fields
-FixtureTask: { 
-  ...existing,
-  owner_user_id,      // NEW
-  backup_user_id,     // NEW
-  owner_role          // NEW (fallback)
-}
+ClubUser: { id, club_id, email, name, avatar_url, status, roles[], primary_role }
+ClubRole: { id, club_id, name, color, is_system }
+Permission: { id, club_id, role_id, module, action, is_granted }
 ```
 
 ---
