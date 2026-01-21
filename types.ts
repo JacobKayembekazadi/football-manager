@@ -1326,3 +1326,31 @@ export interface HandoverRule {
   notify: boolean;
   is_enabled: boolean;
 }
+
+// ============================================================================
+// Phase 7: Exception Alerts
+// ============================================================================
+
+export type RiskLevel = 'ok' | 'warning' | 'critical';
+
+export interface TaskRisk {
+  task: FixtureTask;
+  level: RiskLevel;
+  reasons: string[];
+  fixture?: Fixture;
+}
+
+export interface RiskSummary {
+  critical: number;
+  warning: number;
+  ok: number;
+  total: number;
+  criticalTasks: TaskRisk[];
+  warningTasks: TaskRisk[];
+}
+
+// Risk thresholds (in hours)
+export const RISK_THRESHOLDS = {
+  WARNING_HOURS: 2,    // Warning if due in < 2 hours
+  CRITICAL_HOURS: 0,   // Critical if overdue
+} as const;

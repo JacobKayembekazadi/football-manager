@@ -6,12 +6,35 @@ All notable changes to this project are documented here. LLMs working on this pr
 
 ## [Unreleased]
 
-### In Progress
-- Independence & Leverage feature set (Phase 7 pending)
+### Completed
+- **Independence & Leverage** - All 7 phases complete!
 
 ---
 
 ## 2026-01-21
+
+### Added - Independence & Leverage Phase 7: Exception Alerts (Session: Claude Opus 4.5)
+- **Risk Assessment Types**: Created RiskLevel, TaskRisk, RiskSummary types
+- **Exception Alert Service**: Created `services/exceptionAlertService.ts` for risk assessment
+- **AtRiskWidget Component**: Dashboard widget showing at-risk tasks with quick actions
+- **Risk Thresholds**: Warning at < 2 hours, Critical when overdue
+
+### Features
+- **Risk Levels**: ok, warning (due < 2h, unassigned), critical (overdue, blocked)
+- **At-Risk Widget**: Expandable dashboard widget with risk counts
+- **Quick Claim**: One-click claim for unassigned at-risk tasks
+- **Risk Reasons**: Clear explanations of why tasks are flagged
+- **Color Coding**: Red for critical, amber for warning, green for ok
+
+### Files Added
+- `services/exceptionAlertService.ts` - Risk assessment and queries
+- `components/AtRiskWidget.tsx` - Dashboard at-risk widget
+
+### Type Additions (types.ts)
+- `RiskLevel`, `TaskRisk`, `RiskSummary` - Risk assessment types
+- `RISK_THRESHOLDS` - Configurable warning/critical thresholds
+
+---
 
 ### Added - Independence & Leverage Phase 6: Quick Handover (Session: Claude Opus 4.5)
 - **Handover Types**: Created HandoverRequest, HandoverResult, HandoverScope, HandoverTarget types
