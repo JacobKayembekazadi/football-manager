@@ -40,6 +40,53 @@ export interface OrgMember {
   updated_at?: string;
 }
 
+// ============================================================================
+// Club Users & Roles (Independence & Leverage)
+// ============================================================================
+
+export type ClubUserStatus = 'active' | 'inactive' | 'unavailable';
+
+export type ClubRoleName = 'Admin' | 'Coach' | 'Ops' | 'Media' | 'Kit' | 'Finance';
+
+export interface ClubUser {
+  id: string;
+  club_id: string;
+  user_id?: string;           // Links to Supabase auth.users (null for demo)
+  email: string;
+  name: string;
+  avatar_url?: string;
+  status: ClubUserStatus;
+  created_at: string;
+  // Populated from UserRole join
+  roles?: ClubRole[];
+  primary_role?: ClubRole;
+}
+
+export interface ClubRole {
+  id: string;
+  club_id: string;
+  name: ClubRoleName | string; // Core roles + custom
+  color: string;              // Tailwind color for badges (e.g., 'red', 'blue')
+  is_system: boolean;         // Prevent deletion of core roles
+}
+
+export interface UserRole {
+  id: string;
+  user_id: string;            // ClubUser.id
+  role_id: string;            // ClubRole.id
+  is_primary: boolean;        // User's main role for default assignment
+}
+
+// Permission system (Phase 2)
+export type PermissionModule = 'fixtures' | 'content' | 'equipment' | 'squad' | 'finance' | 'settings' | 'templates';
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve';
+
+export interface Permission {
+  role_id: string;
+  module: PermissionModule;
+  action: PermissionAction;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -832,6 +879,90 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     logo_initials: 'GB' 
   },
 ];
+
+// ============================================================================
+// Initial Roles & Users (Independence & Leverage)
+// ============================================================================
+
+export const INITIAL_ROLES: ClubRole[] = [
+  { id: generateDemoUUID('role', 1), club_id: DEMO_UUIDS.CLUB, name: 'Admin', color: 'red', is_system: true },
+  { id: generateDemoUUID('role', 2), club_id: DEMO_UUIDS.CLUB, name: 'Coach', color: 'blue', is_system: true },
+  { id: generateDemoUUID('role', 3), club_id: DEMO_UUIDS.CLUB, name: 'Ops', color: 'purple', is_system: true },
+  { id: generateDemoUUID('role', 4), club_id: DEMO_UUIDS.CLUB, name: 'Media', color: 'pink', is_system: true },
+  { id: generateDemoUUID('role', 5), club_id: DEMO_UUIDS.CLUB, name: 'Kit', color: 'amber', is_system: true },
+  { id: generateDemoUUID('role', 6), club_id: DEMO_UUIDS.CLUB, name: 'Finance', color: 'green', is_system: false },
+];
+
+export const INITIAL_CLUB_USERS: ClubUser[] = [
+  {
+    id: generateDemoUUID('clubuser', 1),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'jacob@pitchside.ai',
+    name: 'Jacob Kayembe',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[0], INITIAL_ROLES[1]], // Admin + Coach
+    primary_role: INITIAL_ROLES[0], // Admin
+  },
+  {
+    id: generateDemoUUID('clubuser', 2),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'sarah@example.com',
+    name: 'Sarah Mitchell',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2]], // Ops
+    primary_role: INITIAL_ROLES[2],
+  },
+  {
+    id: generateDemoUUID('clubuser', 3),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'mike@example.com',
+    name: 'Mike Thompson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[3]], // Media
+    primary_role: INITIAL_ROLES[3],
+  },
+  {
+    id: generateDemoUUID('clubuser', 4),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'emma@example.com',
+    name: 'Emma Wilson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[4]], // Kit
+    primary_role: INITIAL_ROLES[4],
+  },
+  {
+    id: generateDemoUUID('clubuser', 5),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'david@example.com',
+    name: 'David Chen',
+    avatar_url: undefined,
+    status: 'unavailable', // Example unavailable user
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2], INITIAL_ROLES[5]], // Ops + Finance
+    primary_role: INITIAL_ROLES[2],
+  },
+];
+
+// Helper to get role color class
+export const getRoleColorClass = (color: string): string => {
+  const colorMap: Record<string, string> = {
+    red: 'bg-red-500/20 text-red-400 border-red-500/30',
+    blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    pink: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    amber: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    green: 'bg-green-500/20 text-green-400 border-green-500/30',
+  };
+  return colorMap[color] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+};
 
 // --- ADMIN TASKS (Ops Queue) - DEPRECATED ---
 // Removed as part of pivot to Commercial & Media Operating System

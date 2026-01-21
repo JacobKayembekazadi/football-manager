@@ -1,553 +1,318 @@
-# Architecture Documentation
+# D14 / PitchSide - Architecture
 
-**Last Updated**: 2024-12-17  
-**Version**: 2.0.0  
-**Purpose**: Complete system architecture documentation  
-**For LLMs**: Use this to understand the overall system design and data flow
+**Last Updated:** 2026-01-21  
+**Updated By:** Claude (Opus 4.5)
 
 ---
 
-## System Overview
-
-PitchSide AI is a **multi-tenant SaaS platform** for football club media management. The system supports:
-
-- **Organizations (workspaces)** that can contain multiple clubs
-- **Role-based access control** (owner, admin, editor, viewer)
-- **AI-powered content generation** with managed and BYOK key options
-- **Email integrations** (Gmail, Outlook) with private and shared inboxes
-
----
-
-## Architecture Diagram
+## High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            User Browser                                  │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    React Application (Vite)                         │ │
-│  │                                                                      │ │
-│  │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐       │ │
-│  │   │AuthScreen│   │Workspace │   │  Main    │   │ Settings │       │ │
-│  │   │          │   │  Gate    │   │  Views   │   │  View    │       │ │
-│  │   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘       │ │
-│  │        └──────────────┴──────────────┴──────────────┘              │ │
-│  │                              │                                      │ │
-│  │                    ┌─────────▼─────────┐                           │ │
-│  │                    │   Service Layer   │                           │ │
-│  │                    └─────────┬─────────┘                           │ │
-│  │                              │                                      │ │
-│  └──────────────────────────────┼──────────────────────────────────────┘ │
-└──────────────────────────────────┼──────────────────────────────────────────┘
-                                   │
-     ┌─────────────────────────────┼─────────────────────────────┐
-     │                             │                             │
-     ▼                             ▼                             ▼
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│    Supabase      │     │  Edge Functions  │     │  External APIs   │
-│                  │     │                  │     │                  │
-│  ┌────────────┐  │     │  ┌────────────┐  │     │  ┌────────────┐  │
-│  │ PostgreSQL │  │     │  │ai-generate │  │     │  │Gemini API  │  │
-│  │ (with RLS) │  │     │  │ai-settings │  │     │  │            │  │
-│  ├────────────┤  │◄───►│  │email-oauth │  │◄───►│  ├────────────┤  │
-│  │   Auth     │  │     │  │email-sync  │  │     │  │Gmail API   │  │
-│  ├────────────┤  │     │  │email-send  │  │     │  │            │  │
-│  │ Real-time  │  │     │  └────────────┘  │     │  ├────────────┤  │
-│  └────────────┘  │     │                  │     │  │MS Graph    │  │
-│                  │     │                  │     │  └────────────┘  │
-└──────────────────┘     └──────────────────┘     └──────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      FRONTEND (React)                        │
+├─────────────────────────────────────────────────────────────┤
+│  Components          │  Hooks           │  Context           │
+│  - Views (pages)     │  - useSupabase   │  - ToastContext    │
+│  - Modals            │  - useRealtime   │  - AuthContext     │
+│  - Cards/Widgets     │                  │  (future: UserCtx) │
+├─────────────────────────────────────────────────────────────┤
+│                       SERVICES LAYER                         │
+│  fixtureService, playerService, contentService, etc.        │
+│  (abstracts Supabase vs localStorage for demo mode)         │
+├─────────────────────────────────────────────────────────────┤
+│                      DATA LAYER                              │
+│  ┌─────────────────┐    ┌─────────────────┐                 │
+│  │    Supabase     │ OR │   localStorage  │                 │
+│  │  (production)   │    │   (demo mode)   │                 │
+│  └─────────────────┘    └─────────────────┘                 │
+├─────────────────────────────────────────────────────────────┤
+│                    EXTERNAL SERVICES                         │
+│  - Gemini API (AI content generation)                       │
+│  - (future: email, push notifications)                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Technology Stack
-
-### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 19.x | UI framework |
-| TypeScript | 5.x | Type safety |
-| Vite | 6.x | Build tool |
-| Tailwind CSS | 3.x | Styling |
-| Lucide React | - | Icons |
-
-### Backend (Supabase)
-| Component | Purpose |
-|-----------|---------|
-| PostgreSQL | Primary database |
-| Supabase Auth | Authentication |
-| Row Level Security | Multi-tenant isolation |
-| Real-time | Live data updates |
-| Edge Functions | Server-side processing |
-| Storage | File storage (future) |
-
-### AI Integration
-| Service | Purpose |
-|---------|---------|
-| Google Gemini 2.5 | Text generation |
-| Google Veo | Video generation (optional) |
-
-### Email Integration
-| Provider | Protocol |
-|----------|----------|
-| Gmail | OAuth 2.0 + Gmail API |
-| Outlook | OAuth 2.0 + Microsoft Graph |
-
----
-
-## Multi-Tenant Architecture
-
-### Data Hierarchy
+## Component Hierarchy
 
 ```
-Organization (org)
-├── org_members (user ↔ org ↔ role)
-├── org_ai_settings
-│
-├── Club 1
-│   ├── club_ai_settings
-│   ├── players
-│   ├── fixtures
-│   ├── content_items
-│   ├── sponsors
-│   ├── admin_tasks
-│   ├── inbox_emails
-│   └── email_connections (club-level)
-│
-└── Club 2
-    └── (same structure)
-```
-
-### Role System
-
-| Role | Access Level |
-|------|--------------|
-| `owner` | Full org management, billing, delete |
-| `admin` | Full feature access, settings, members |
-| `editor` | Create/edit content, players, fixtures |
-| `viewer` | Read-only access |
-
-### RLS Implementation
-
-```sql
--- Every table has org_id
--- RLS policy pattern:
-CREATE POLICY "org_members_only" ON table_name
-  FOR ALL
-  USING (is_org_member(org_id))
-  WITH CHECK (is_org_member(org_id));
-
--- Helper function
-CREATE FUNCTION is_org_member(p_org_id UUID) RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM org_members
-    WHERE org_id = p_org_id AND user_id = auth.uid()
-  );
-$$ LANGUAGE sql STABLE;
+App.tsx
+├── AuthScreen (if not authenticated)
+├── WorkspaceGate (org/club selection)
+└── AppAuthed (main app shell)
+    ├── Layout
+    │   ├── Sidebar (desktop)
+    │   ├── Header
+    │   ├── BottomNav (mobile)
+    │   └── [Active View]
+    ├── Dashboard (default view)
+    │   ├── MatchdayMode (when active)
+    │   ├── TaskList
+    │   ├── AlertsWidget
+    │   └── StatsCards
+    ├── SquadView
+    ├── AvailabilityView
+    ├── EquipmentView
+    ├── ContentHub
+    ├── OperationsHub
+    ├── SettingsView
+    └── ... other views
 ```
 
 ---
 
 ## Data Flow
 
-### Authentication Flow
-
+### Read Flow
 ```
-User
-  │
-  ├─► [AuthScreen]
-  │      │
-  │      ├─► Sign Up ─► supabase.auth.signUp()
-  │      │                  │
-  │      └─► Sign In ─► supabase.auth.signInWithPassword()
-  │                        │
-  │                        ▼
-  └───────────────────► [Session]
-                           │
-                           ▼
-                      [WorkspaceGate]
-                           │
-                      Select Org/Club
-                           │
-                           ▼
-                      [Main App]
+Component → useSupabaseQuery hook → Service → Supabase/localStorage → Data
+                                                      ↓
+                                              Component re-renders
 ```
 
-### AI Generation Flow
-
+### Write Flow
 ```
-User Click
-    │
-    ▼
-Component (e.g., "Generate Report")
-    │
-    ▼
-geminiService.ts
-    │
-    ├─► supabase.functions.invoke('ai-generate')
-    │
-    ▼
-Edge Function (ai-generate)
-    │
-    ├─► Resolve API key (precedence: club → org → platform)
-    ├─► Call Gemini API
-    ├─► Log to ai_usage_events
-    │
-    ▼
-Return generated content
-    │
-    ▼
-Save to database (content_items)
-    │
-    ▼
-Real-time update
-    │
-    ▼
-Component re-render
+User action → Component handler → Service.create/update → Supabase/localStorage
+                                                               ↓
+                                                        Refetch triggered
+                                                               ↓
+                                                      Component re-renders
 ```
 
-### Email OAuth Flow
-
+### Real-time (Supabase only)
 ```
-User: "Connect Gmail"
-    │
-    ▼
-emailConnectionService.startEmailOAuth()
-    │
-    ▼
-Edge Function (email-oauth-start)
-    │
-    ├─► Build OAuth URL with state
-    │
-    ▼
-Redirect to Google/Microsoft
-    │
-    ▼
-User grants permission
-    │
-    ▼
-Redirect to callback URL
-    │
-    ▼
-Edge Function (email-oauth-exchange)
-    │
-    ├─► Exchange code for tokens
-    ├─► Encrypt tokens
-    ├─► Save to email_connections + email_oauth_tokens
-    │
-    ▼
-Redirect back to app
-    │
-    ▼
-Connection appears in UI
-```
-
-### Email Sync Flow
-
-```
-User: "Sync Now"
-    │
-    ▼
-emailConnectionService.syncEmailConnection()
-    │
-    ▼
-Edge Function (email-sync)
-    │
-    ├─► Get connection from DB
-    ├─► Decrypt access token
-    ├─► Refresh token if expired
-    ├─► Fetch messages from provider
-    ├─► Normalize message format
-    ├─► Upsert to inbox_emails
-    ├─► Update last_synced_at
-    │
-    ▼
-Emails appear in InboxView
-```
-
-### User Onboarding Flow
-
-```
-User logs in + selects workspace
-    │
-    ▼
-OnboardingManager initializes
-    │
-    ├─► Check/create user_onboarding_state for org
-    │
-    ▼
-If welcome_completed = false:
-    │
-    ├─► Show Welcome Modal
-    │     ├─► "Start Tour" → Run react-joyride tour
-    │     └─► "Skip" → Mark welcome_completed = true
-    │
-    ▼
-Tour completes:
-    │
-    ├─► Mark tour_completed = true
-    │
-    ▼
-User visits Education page:
-    │
-    ├─► Show modules from educationModules.ts
-    ├─► Track completed_modules[] in user_onboarding_state
-    └─► Navigate to relevant tabs on "Jump to" actions
-```
-
-**Onboarding State Table (`user_onboarding_state`):**
-| Column | Type | Description |
-|--------|------|-------------|
-| org_id | uuid | Organization scope |
-| user_id | uuid | User (auth.users.id) |
-| welcome_completed | boolean | Welcome modal dismissed |
-| tour_completed | boolean | Tour finished/skipped |
-| completed_modules | text[] | IDs of completed education modules |
-
----
-
-## Key Precedence Systems
-
-### AI Key Resolution
-
-```typescript
-function resolveAIKey(orgId, clubId?):
-  // 1. Check club BYOK
-  if clubId and club_ai_settings[clubId].mode === 'byok':
-    return decrypt(club_ai_settings[clubId].byok_key)
-  
-  // 2. Check org BYOK
-  if org_ai_settings[orgId].mode === 'byok':
-    return decrypt(org_ai_settings[orgId].byok_key)
-  
-  // 3. Platform managed
-  return PLATFORM_GEMINI_API_KEY
-```
-
-### Master Inbox Resolution
-
-```typescript
-function getMasterInbox(orgId, clubId):
-  // 1. Check club master
-  clubMaster = email_connections
-    .where(org_id: orgId, club_id: clubId, is_master: true)
-    .first()
-  if clubMaster: return clubMaster
-  
-  // 2. Check org master
-  orgMaster = email_connections
-    .where(org_id: orgId, club_id: null, is_master: true)
-    .first()
-  return orgMaster
+Supabase broadcast → useRealtimeSubscription → State update → Re-render
 ```
 
 ---
 
-## Database Schema Overview
+## State Management
 
-### Core Tables
+### Current Approach
+- **Local state**: Component-level `useState` for UI state
+- **Lifted state**: Parent components hold shared state (e.g., fixtures in App.tsx)
+- **Context**: Toast notifications, auth state
+- **Server state**: Fetched via `useSupabaseQuery`, refetched on mutations
 
-```sql
--- Tenancy
-orgs                    -- Organizations (workspaces)
-org_members             -- User ↔ Org ↔ Role mapping
-
--- Domain Data
-clubs                   -- Football clubs (org-scoped)
-players                 -- Player roster (club-scoped)
-fixtures                -- Match schedule (club-scoped)
-content_items           -- Generated content (club-scoped)
-sponsors                -- Sponsor relationships (club-scoped)
-admin_tasks             -- Administrative tasks (club-scoped)
-inbox_emails            -- Synced emails (club-scoped)
-
--- AI
-ai_conversations        -- Chat sessions
-ai_messages             -- Chat messages
-org_ai_settings         -- Org-level AI config
-club_ai_settings        -- Club-level AI config
-ai_usage_events         -- Usage tracking
-
--- Email
-email_connections       -- OAuth connections
-email_oauth_tokens      -- Encrypted tokens
+### Future (with Users & Roles)
 ```
-
-### Key Relationships
-
-```
-orgs 1:N org_members N:1 users (auth.users)
-orgs 1:N clubs
-clubs 1:N [players, fixtures, content_items, sponsors, admin_tasks, inbox_emails]
-orgs 1:1 org_ai_settings
-clubs 1:1 club_ai_settings
-email_connections 1:1 email_oauth_tokens
+AuthContext (current user, session)
+    └── UserContext (user profile, roles, permissions)
+            └── Components (check permissions via usePermission hook)
 ```
 
 ---
 
-## Edge Functions
+## Service Layer Pattern
 
-| Function | Purpose | Auth |
-|----------|---------|------|
-| `ai-generate` | AI content generation | User JWT |
-| `ai-settings` | Get/set AI configuration | User JWT |
-| `email-oauth-start` | Initiate OAuth flow | User JWT |
-| `email-oauth-exchange` | Exchange OAuth code | None (callback) |
-| `email-sync` | Fetch emails from provider | User JWT |
-| `email-send` | Send email via provider | User JWT |
-
-### Edge Function Pattern
+Each service follows this pattern:
 
 ```typescript
-// supabase/functions/{name}/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// services/exampleService.ts
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+import { supabase } from './supabaseClient';
+import { demoStorage } from './demoStorageService';
+
+const isDemo = () => !supabase || !process.env.VITE_SUPABASE_URL;
+
+export const getItems = async (clubId: string): Promise<Item[]> => {
+  if (isDemo()) {
+    return demoStorage.get('items') || [];
+  }
+  
+  const { data, error } = await supabase
+    .from('items')
+    .select('*')
+    .eq('club_id', clubId);
+    
+  if (error) throw error;
+  return data;
 };
 
-serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+export const createItem = async (clubId: string, item: Partial<Item>): Promise<Item> => {
+  if (isDemo()) {
+    const newItem = { id: crypto.randomUUID(), ...item };
+    const items = demoStorage.get('items') || [];
+    demoStorage.set('items', [...items, newItem]);
+    return newItem;
   }
-
-  try {
-    // Get user from JWT
-    const authHeader = req.headers.get('Authorization');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { auth: { persistSession: false } }
-    );
+  
+  const { data, error } = await supabase
+    .from('items')
+    .insert({ club_id: clubId, ...item })
+    .select()
+    .single();
     
-    const { data: { user }, error } = await supabase.auth.getUser(
-      authHeader?.replace('Bearer ', '')
-    );
-    if (!user) throw new Error('Unauthorized');
-
-    // Process request
-    const body = await req.json();
-    
-    // ... business logic ...
-
-    return new Response(
-      JSON.stringify({ success: true, data: result }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
+  if (error) throw error;
+  return data;
+};
 ```
 
 ---
 
-## Security Model
+## Authentication Architecture
 
-### Authentication
-- Supabase Auth (email + password)
-- JWT tokens for API authorization
-- Session management in client
-
-### Authorization
-- RLS policies on all tables
-- Role-based access in UI
-- org_id filtering on every query
-
-### Data Protection
-- OAuth tokens encrypted (AES-256-GCM)
-- BYOK API keys encrypted
-- HTTPS only
-
-### See Also
-- [SECURITY.md](SECURITY.md) for detailed security documentation
-
----
-
-## Deployment Architecture
-
-### Production
-
+### Current
 ```
-┌─────────────────┐     ┌─────────────────┐
-│  Vercel/Netlify │     │    Supabase     │
-│  (Static Host)  │     │   (Managed)     │
-│                 │     │                 │
-│  - React App    │◄───►│  - Database     │
-│  - CDN          │     │  - Auth         │
-│                 │     │  - Functions    │
-└─────────────────┘     │  - Real-time    │
-                        └─────────────────┘
+┌─────────────────────────────────────────┐
+│           Supabase Auth                  │
+│  - Email/password                        │
+│  - Session stored in localStorage        │
+└─────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│          WorkspaceGate                   │
+│  - Select organization                   │
+│  - Select club within org                │
+└─────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│           AppAuthed                      │
+│  - All features available                │
+│  - clubId passed to services             │
+└─────────────────────────────────────────┘
 ```
 
-### Environment Variables
-
-**Client (.env.local)**
+### Future (with RBAC)
 ```
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-```
-
-**Edge Functions (Supabase Secrets)**
-```
-GEMINI_API_KEY=
-ENCRYPTION_KEY=
-GMAIL_CLIENT_ID=
-GMAIL_CLIENT_SECRET=
-OUTLOOK_CLIENT_ID=
-OUTLOOK_CLIENT_SECRET=
+┌─────────────────────────────────────────┐
+│           Supabase Auth                  │
+└─────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│          WorkspaceGate                   │
+│  + Fetch user roles for selected club    │
+└─────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│         PermissionProvider               │
+│  - Exposes usePermission hook            │
+│  - Gates routes/components               │
+└─────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│           AppAuthed                      │
+│  - Features based on permissions         │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## Development Workflow
+## Database Schema (Supabase)
 
-### Local Development
-
-```bash
-# Start Vite dev server
-npm run dev
-
-# Start local Supabase (optional)
-supabase start
-
-# Run tests
-npm test
+### Existing Tables
+```sql
+clubs (id, org_id, name, primary_color, secondary_color, logo_url, ...)
+fixtures (id, club_id, opponent, kickoff_time, venue, status, ...)
+players (id, club_id, name, position, squad_number, ...)
+content_items (id, club_id, fixture_id, type, body, status, ...)
+equipment_items (id, club_id, name, category, quantity, status, ...)
+availability_responses (id, fixture_id, player_id, status, ...)
 ```
 
-### Deployment
+### New Tables (Phase 1-7)
+```sql
+-- Phase 1: Users & Roles
+club_users (id, club_id, user_id, status, created_at)
+roles (id, club_id, name, color, is_system)
+user_roles (user_id, role_id, is_primary)
 
-```bash
-# Build for production
-npm run build
+-- Phase 2: Permissions
+permissions (role_id, module, action)
 
-# Deploy to Vercel/Netlify
-# (automatic via Git push)
+-- Phase 3: Task Ownership (alter existing)
+ALTER TABLE fixture_tasks ADD COLUMN owner_user_id UUID REFERENCES club_users(id);
+ALTER TABLE fixture_tasks ADD COLUMN backup_user_id UUID REFERENCES club_users(id);
+ALTER TABLE fixture_tasks ADD COLUMN owner_role TEXT;
 
-# Deploy Edge Functions
-supabase functions deploy
+-- Phase 5: Audit Trail
+audit_events (id, club_id, fixture_id, task_id, actor_user_id, event_type, payload, created_at)
 ```
 
 ---
 
-## Related Documentation
+## Styling Architecture
 
-| Document | Purpose |
-|----------|---------|
-| [CONTEXT.md](CONTEXT.md) | Quick context for LLMs |
-| [DATA_MODEL.md](DATA_MODEL.md) | Detailed schema docs |
-| [SECURITY.md](SECURITY.md) | Security architecture |
-| [RUNBOOK.md](RUNBOOK.md) | Operations guide |
-| [AI_OPERATIONS.md](AI_OPERATIONS.md) | AI configuration |
-| [INBOX_INTEGRATIONS.md](INBOX_INTEGRATIONS.md) | Email OAuth |
+### CSS Structure
+```
+index.css
+├── Tailwind directives (@tailwind base/components/utilities)
+├── Global styles (html, body, #root)
+├── Safe area support (PWA)
+├── Custom animations
+│   ├── fade-in
+│   ├── scale-in
+│   ├── slide-up
+│   ├── slide-in-right
+│   ├── stagger-in
+│   ├── pulse-soft
+│   └── glow-pulse
+└── Utility classes (.transition-smooth, .stagger-1 to .stagger-5)
+```
+
+### Design Tokens (via Tailwind)
+```
+Colors:
+  - Primary: green-500 (#22c55e)
+  - Background: [#030303]
+  - Cards: bg-white/5, border-white/10
+  - Text: slate-400 (secondary), white (primary)
+  
+Spacing:
+  - Cards: p-4 to p-6
+  - Gaps: gap-2 to gap-6
+  - Rounded: rounded-lg, rounded-xl, rounded-2xl
+```
 
 ---
 
-*This document provides a comprehensive overview of the system architecture. For specific implementation details, refer to the related documentation files.*
+## Error Handling
+
+### Pattern
+```typescript
+try {
+  const result = await someService.doThing();
+  showSuccess('Thing done!');
+} catch (error) {
+  const message = handleError(error, 'contextName');
+  showError(message);
+}
+```
+
+### Error Handler (`utils/errorHandler.ts`)
+- Logs to console with context
+- Returns user-friendly message
+- Handles Supabase errors, network errors, generic errors
+
+---
+
+## Performance Considerations
+
+### Current Issues
+1. **Bundle size**: ~1.1MB (needs code splitting)
+2. **Initial load**: All components loaded upfront
+
+### Planned Optimizations
+1. Route-based code splitting with React.lazy
+2. Move large dependencies (html2canvas) to dynamic imports
+3. Virtual scrolling for long lists (squad, equipment)
+
+---
+
+## Security Considerations
+
+### Current
+- Supabase RLS (Row Level Security) for data isolation
+- No secrets in frontend code
+- API keys in environment variables
+
+### Future (with RBAC)
+- Permission checks in services (defense in depth)
+- Audit logging for sensitive operations
+- Rate limiting on AI endpoints
