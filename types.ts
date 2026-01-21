@@ -1226,3 +1226,67 @@ export const DEFAULT_TEMPLATE_PACKS: Omit<TemplatePack, 'id' | 'club_id'>[] = [
     ]
   },
 ];
+
+// ============================================================================
+// Phase 5: Audit Trail
+// ============================================================================
+
+export type AuditEventType =
+  | 'task.created'
+  | 'task.claimed'
+  | 'task.completed'
+  | 'task.reopened'
+  | 'task.reassigned'
+  | 'task.blocked'
+  | 'content.approved'
+  | 'content.published'
+  | 'fixture.created'
+  | 'fixture.updated'
+  | 'handover.executed'
+  | 'user.marked_unavailable'
+  | 'user.status_changed';
+
+export interface AuditEvent {
+  id: string;
+  club_id: string;
+  fixture_id?: string;
+  task_id?: string;
+  actor_user_id: string;
+  event_type: AuditEventType;
+  payload: Record<string, any>;  // Event-specific data
+  created_at: string;
+}
+
+// Helper to get human-readable event descriptions
+export const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
+  'task.created': 'created a task',
+  'task.claimed': 'claimed a task',
+  'task.completed': 'completed a task',
+  'task.reopened': 'reopened a task',
+  'task.reassigned': 'reassigned a task',
+  'task.blocked': 'marked a task as blocked',
+  'content.approved': 'approved content',
+  'content.published': 'published content',
+  'fixture.created': 'created a fixture',
+  'fixture.updated': 'updated a fixture',
+  'handover.executed': 'executed a handover',
+  'user.marked_unavailable': 'marked themselves unavailable',
+  'user.status_changed': 'changed user status',
+};
+
+// Event type icons for UI
+export const AUDIT_EVENT_ICONS: Record<AuditEventType, string> = {
+  'task.created': 'Plus',
+  'task.claimed': 'Hand',
+  'task.completed': 'CheckCircle2',
+  'task.reopened': 'RotateCcw',
+  'task.reassigned': 'UserPlus',
+  'task.blocked': 'AlertCircle',
+  'content.approved': 'ThumbsUp',
+  'content.published': 'Send',
+  'fixture.created': 'Calendar',
+  'fixture.updated': 'Edit',
+  'handover.executed': 'ArrowRightLeft',
+  'user.marked_unavailable': 'UserX',
+  'user.status_changed': 'User',
+};

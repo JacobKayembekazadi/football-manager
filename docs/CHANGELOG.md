@@ -7,11 +7,36 @@ All notable changes to this project are documented here. LLMs working on this pr
 ## [Unreleased]
 
 ### In Progress
-- Independence & Leverage feature set (Phase 5-7 pending)
+- Independence & Leverage feature set (Phase 6-7 pending)
 
 ---
 
 ## 2026-01-21
+
+### Added - Independence & Leverage Phase 5: Audit Trail (Session: Claude Opus 4.5)
+- **AuditEvent Type**: Created type with 13 event types for tracking all actions
+- **Audit Service**: Created `services/auditService.ts` for logging and querying events
+- **ActivityPanel Component**: Timeline view showing who did what and when
+- **Demo Mode Support**: Audit events persist in localStorage for demo mode
+
+### Features
+- **Event Logging**: Log actions with actor, timestamp, and contextual payload
+- **Event Types**: task.created, task.claimed, task.completed, task.reopened, task.reassigned, task.blocked, content.approved, content.published, fixture.created, fixture.updated, handover.executed, user.marked_unavailable, user.status_changed
+- **Convenience Loggers**: Helper functions like logTaskClaimed, logTaskCompleted, logFixtureCreated
+- **Timeline UI**: Visual timeline with icons, colors, user avatars, and relative timestamps
+- **Filter Support**: Filter activity by event type
+
+### Files Added
+- `services/auditService.ts` - Audit event logging and queries
+- `components/ActivityPanel.tsx` - Timeline UI component
+
+### Type Additions (types.ts)
+- `AuditEventType` - Union of all event types
+- `AuditEvent` - Event interface with payload
+- `AUDIT_EVENT_LABELS` - Human-readable descriptions
+- `AUDIT_EVENT_ICONS` - Icon mapping for UI
+
+---
 
 ### Added - Independence & Leverage Phase 4: Volunteer-proof Templates (Session: Claude Opus 4.5)
 - **Auto-Apply Setting**: Templates can be set to auto-apply based on venue (home/away/always/never)
