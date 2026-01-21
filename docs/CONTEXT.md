@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-21
 **Updated By:** Claude (Opus 4.5)
-**Current Phase:** Independence & Leverage - Phase 3 COMPLETE, Phase 4 next
+**Current Phase:** Independence & Leverage - Phase 4 COMPLETE, Phase 5 next
 
 ---
 
@@ -38,14 +38,15 @@ D14 (branded as PitchSide) is a **football operations command centre** for grass
 - ✅ **Phase 1: Users & Roles** - Multi-user support with 6 default roles
 - ✅ **Phase 2: RBAC / Permissions** - Role-based access control
 - ✅ **Phase 3: Task Ownership + Backup** - Task claiming, owner assignment, backup users
+- ✅ **Phase 4: Volunteer-proof Templates** - Auto-assignment based on roles, due dates
 
 ### In Progress
 - 🔄 **Independence & Leverage** feature set:
   - ~~Phase 1: Users & Roles~~ ✅
   - ~~Phase 2: RBAC / Permissions~~ ✅
   - ~~Phase 3: Task Ownership + Backup~~ ✅
-  - Phase 4: Volunteer-proof Templates (NEXT)
-  - Phase 5: Audit Trail
+  - ~~Phase 4: Volunteer-proof Templates~~ ✅
+  - Phase 5: Audit Trail (NEXT)
   - Phase 6: Quick Handover
   - Phase 7: Exception Alerts
 

@@ -985,12 +985,18 @@ export interface TemplateTask {
   offset_hours?: number;  // Hours before kickoff when task is due
 }
 
+// Phase 4: Auto-apply setting for volunteer-proof templates
+export type TemplateAutoApply = 'never' | 'home' | 'away' | 'always';
+
 export interface TemplatePack {
   id: string;
   club_id: string;
   name: string;
   description?: string;
   is_enabled: boolean;
+  // Phase 4: Volunteer-proof Templates
+  auto_apply?: TemplateAutoApply;      // When to auto-apply this pack
+  default_owner_role?: ClubRoleName;   // Default owner role for all tasks in pack
   tasks: TemplateTask[];
   created_at?: string;
   updated_at?: string;
@@ -1141,70 +1147,82 @@ export const DEFAULT_TEMPLATE_PACKS: Omit<TemplatePack, 'id' | 'club_id'>[] = [
     name: 'Matchday Pack (Home)',
     description: 'Essential tasks for home matches',
     is_enabled: true,
+    auto_apply: 'home',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm referee and officials', sort_order: 1 },
-      { label: 'Prepare matchday programme', sort_order: 2 },
-      { label: 'Check pitch and goal nets', sort_order: 3 },
-      { label: 'Set up refreshments', sort_order: 4 },
-      { label: 'Post lineup graphic on social', sort_order: 5 },
-      { label: 'Brief stewards and volunteers', sort_order: 6 },
+      { label: 'Confirm referee and officials', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Prepare matchday programme', sort_order: 2, default_owner_role: 'Media' },
+      { label: 'Check pitch and goal nets', sort_order: 3, default_owner_role: 'Ops' },
+      { label: 'Set up refreshments', sort_order: 4, default_owner_role: 'Ops' },
+      { label: 'Post lineup graphic on social', sort_order: 5, default_owner_role: 'Media' },
+      { label: 'Brief stewards and volunteers', sort_order: 6, default_owner_role: 'Ops' },
     ]
   },
   {
     name: 'Matchday Pack (Away)',
     description: 'Essential tasks for away matches',
     is_enabled: true,
+    auto_apply: 'away',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm transport arrangements', sort_order: 1 },
-      { label: 'Check away kit is clean and packed', sort_order: 2 },
-      { label: 'Send travel details to players', sort_order: 3 },
-      { label: 'Post lineup graphic on social', sort_order: 4 },
-      { label: 'Confirm meeting time and location', sort_order: 5 },
+      { label: 'Confirm transport arrangements', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Check away kit is clean and packed', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Send travel details to players', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Post lineup graphic on social', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Confirm meeting time and location', sort_order: 5, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Training Night Pack',
     description: 'Pre-training session tasks',
     is_enabled: false,
+    auto_apply: 'never',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Set up training cones and equipment', sort_order: 1 },
-      { label: 'Check first aid kit', sort_order: 2 },
-      { label: 'Confirm session plan with coach', sort_order: 3 },
-      { label: 'Take attendance', sort_order: 4 },
+      { label: 'Set up training cones and equipment', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Check first aid kit', sort_order: 2, default_owner_role: 'Ops' },
+      { label: 'Confirm session plan with coach', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Take attendance', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Squad Availability Pack',
     description: 'Collect and track player availability',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Send availability request to group', sort_order: 1 },
-      { label: 'Chase non-responders', sort_order: 2 },
-      { label: 'Confirm final squad', sort_order: 3 },
-      { label: 'Notify unavailable players', sort_order: 4 },
+      { label: 'Send availability request to group', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Chase non-responders', sort_order: 2, default_owner_role: 'Coach' },
+      { label: 'Confirm final squad', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Notify unavailable players', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Kit & Equipment Pack',
     description: 'Kit management before and after match',
     is_enabled: false,
+    auto_apply: 'always',
+    default_owner_role: 'Kit',
     tasks: [
-      { label: 'Collect dirty kit from last match', sort_order: 1 },
-      { label: 'Send kit for laundry', sort_order: 2 },
-      { label: 'Check kit stock levels', sort_order: 3 },
-      { label: 'Prepare match kit', sort_order: 4 },
+      { label: 'Collect dirty kit from last match', sort_order: 1, default_owner_role: 'Kit' },
+      { label: 'Send kit for laundry', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Check kit stock levels', sort_order: 3, default_owner_role: 'Kit' },
+      { label: 'Prepare match kit', sort_order: 4, default_owner_role: 'Kit' },
     ]
   },
   {
     name: 'Media Pack',
     description: 'Content tasks for match coverage',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Media',
     tasks: [
-      { label: 'Write match preview', sort_order: 1 },
-      { label: 'Create matchday graphic', sort_order: 2 },
-      { label: 'Post pre-match content', sort_order: 3 },
-      { label: 'Post full-time result', sort_order: 4 },
-      { label: 'Write match report', sort_order: 5 },
+      { label: 'Write match preview', sort_order: 1, default_owner_role: 'Media', offset_hours: -48 },
+      { label: 'Create matchday graphic', sort_order: 2, default_owner_role: 'Media', offset_hours: -24 },
+      { label: 'Post pre-match content', sort_order: 3, default_owner_role: 'Media', offset_hours: -2 },
+      { label: 'Post full-time result', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Write match report', sort_order: 5, default_owner_role: 'Media' },
     ]
   },
 ];

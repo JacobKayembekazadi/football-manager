@@ -169,10 +169,12 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   const handleGenerateTasks = async () => {
     try {
       setLoading(true);
+      // Phase 4: Pass kickoff_time for auto-assignment and due date calculation
       const generated = await generateTasksFromTemplates(
         clubId,
         fixture.id,
-        fixture.venue
+        fixture.venue,
+        fixture.kickoff_time
       );
       setTasks(prev => [...prev, ...generated]);
       onTasksChange?.();

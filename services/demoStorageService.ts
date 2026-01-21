@@ -49,7 +49,7 @@ export function generateDemoId(): string {
 // Fixture Tasks
 // ============================================================================
 
-import { FixtureTask, TemplatePack, DEFAULT_TEMPLATE_PACKS } from '../types';
+import { FixtureTask, TemplatePack, DEFAULT_TEMPLATE_PACKS, ClubRoleName, ClubUser, INITIAL_CLUB_USERS } from '../types';
 
 export function getDemoFixtureTasks(fixtureId: string): FixtureTask[] {
   const allTasks = getItem<FixtureTask[]>(STORAGE_KEYS.FIXTURE_TASKS, []);
@@ -76,10 +76,32 @@ export function deleteDemoFixtureTask(taskId: string): void {
   setItem(STORAGE_KEYS.FIXTURE_TASKS, filtered);
 }
 
+/**
+ * Phase 4: Find first available user with a specific primary role (demo mode)
+ */
+function findDemoUserByRole(roleName: ClubRoleName): ClubUser | undefined {
+  // Use INITIAL_CLUB_USERS for demo mode
+  return INITIAL_CLUB_USERS.find(u =>
+    u.status === 'active' &&
+    u.primary_role?.name === roleName
+  );
+}
+
+/**
+ * Phase 4: Calculate due date based on offset hours from kickoff
+ */
+function calculateDueDate(kickoffTime: string, offsetHours?: number): string | undefined {
+  if (offsetHours === undefined) return undefined;
+  const kickoff = new Date(kickoffTime);
+  kickoff.setHours(kickoff.getHours() + offsetHours);
+  return kickoff.toISOString();
+}
+
 export function generateDemoTasksFromTemplates(
   clubId: string,
   fixtureId: string,
-  venue: 'Home' | 'Away'
+  venue: 'Home' | 'Away',
+  kickoffTime?: string
 ): FixtureTask[] {
   // Check if tasks already exist for this fixture
   const existing = getDemoFixtureTasks(fixtureId);
@@ -99,20 +121,36 @@ export function generateDemoTasksFromTemplates(
 
   const enabledPacks = packs.filter((p, i) => enabledPackIds.includes(`demo-pack-${i}`));
 
-  // Filter by venue
+  // Phase 4: Filter by auto_apply setting and venue
   const relevantPacks = enabledPacks.filter(p => {
+    // Check auto_apply setting first
+    if (p.auto_apply === 'never') return false;
+    if (p.auto_apply === 'home' && venue !== 'Home') return false;
+    if (p.auto_apply === 'away' && venue !== 'Away') return false;
+    // 'always' applies to both
+
+    // Legacy: Also check name for backwards compatibility
     const nameLower = p.name.toLowerCase();
-    if (nameLower.includes('(home)') && venue !== 'Home') return false;
-    if (nameLower.includes('(away)') && venue !== 'Away') return false;
+    if (nameLower.includes('(home)') && venue !== 'Home' && !p.auto_apply) return false;
+    if (nameLower.includes('(away)') && venue !== 'Away' && !p.auto_apply) return false;
     return true;
   });
 
-  // Generate tasks
+  // Generate tasks with Phase 4 auto-assignment
   const tasks: FixtureTask[] = [];
   let sortOrder = 0;
 
   for (const pack of relevantPacks) {
     for (const templateTask of pack.tasks) {
+      // Phase 4: Determine owner role (task-level overrides pack-level)
+      const ownerRole = templateTask.default_owner_role || pack.default_owner_role;
+
+      // Phase 4: Find user with matching primary role for auto-assignment
+      const assignedUser = ownerRole ? findDemoUserByRole(ownerRole) : undefined;
+
+      // Phase 4: Calculate due date if kickoff time and offset provided
+      const dueAt = kickoffTime ? calculateDueDate(kickoffTime, templateTask.offset_hours) : undefined;
+
       tasks.push({
         id: generateDemoId(),
         club_id: clubId,
@@ -121,6 +159,10 @@ export function generateDemoTasksFromTemplates(
         label: templateTask.label,
         is_completed: false,
         sort_order: sortOrder++,
+        // Phase 4: Auto-assignment fields
+        owner_user_id: assignedUser?.id,
+        owner_role: ownerRole,
+        due_at: dueAt,
         created_at: new Date().toISOString(),
       });
     }

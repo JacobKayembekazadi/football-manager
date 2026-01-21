@@ -7,11 +7,40 @@ All notable changes to this project are documented here. LLMs working on this pr
 ## [Unreleased]
 
 ### In Progress
-- Independence & Leverage feature set (Phase 4-7 pending)
+- Independence & Leverage feature set (Phase 5-7 pending)
 
 ---
 
 ## 2026-01-21
+
+### Added - Independence & Leverage Phase 4: Volunteer-proof Templates (Session: Claude Opus 4.5)
+- **Auto-Apply Setting**: Templates can be set to auto-apply based on venue (home/away/always/never)
+- **Default Owner Roles**: Each template pack and individual task can specify default owner roles
+- **Auto-Assignment**: When tasks are generated, owners are automatically assigned based on their primary role
+- **Due Date Calculation**: Tasks with offset_hours are automatically assigned due dates relative to kickoff
+- **Enhanced DEFAULT_TEMPLATE_PACKS**: All 6 default packs now have role-based auto-assignment
+
+### Features
+- **Automatic Task Assignment**: When generating tasks from templates:
+  - System finds first active user with matching primary role
+  - Assigns them as task owner automatically
+  - Calculates due_at from kickoff_time and offset_hours
+- **Role-Based Auto-Apply**: Packs auto-apply based on venue setting
+- **Task-Level Override**: Individual tasks can override pack-level default owner role
+
+### Type Changes
+- Added `TemplateAutoApply = 'never' | 'home' | 'away' | 'always'`
+- Extended `TemplatePack` with `auto_apply` and `default_owner_role`
+- Extended `TemplateTask` already had `default_owner_role`, `default_backup_role`, `offset_hours`
+
+### Files Modified
+- `types.ts` - Added TemplateAutoApply, extended TemplatePack, updated DEFAULT_TEMPLATE_PACKS
+- `services/fixtureTaskService.ts` - Added findUserByRole, calculateDueDate, updated generateTasksFromTemplates
+- `services/demoStorageService.ts` - Updated generateDemoTasksFromTemplates for demo mode
+- `components/FixtureTasks.tsx` - Pass kickoff_time to generateTasksFromTemplates
+- `docs/CONTEXT.md` - Updated to reflect Phase 4 completion
+
+---
 
 ### Added - Independence & Leverage Phase 3: Task Ownership (Session: Claude Opus 4.5)
 - **TaskOwnerSelector Component**: Dropdown for assigning task owners with backup support
