@@ -7,11 +7,35 @@ All notable changes to this project are documented here. LLMs working on this pr
 ## [Unreleased]
 
 ### In Progress
-- Independence & Leverage feature set (Phase 2-7 pending)
+- Independence & Leverage feature set (Phase 3-7 pending)
 
 ---
 
 ## 2026-01-21
+
+### Added - Independence & Leverage Phase 2: RBAC (Session: Claude Opus 4.5)
+- **Permission Service**: Created `services/permissionService.ts` with default permission matrix
+- **usePermission Hook**: Created `hooks/usePermission.ts` for React permission checks
+- **PermissionGate Component**: Created `components/PermissionGate.tsx` for conditional rendering
+- **PermissionContext**: Created `contexts/PermissionContext.tsx` for app-wide permission state
+
+### Default Permission Matrix
+| Role | Fixtures | Content | Equipment | Squad | Finance | Settings | Templates |
+|------|----------|---------|-----------|-------|---------|----------|-----------|
+| Admin | Full | Full | Full | Full | Full | Full | Full |
+| Coach | View/Edit | View | View | Full | - | - | View |
+| Ops | View | View | Full | View | - | - | View/Edit |
+| Media | View | Full | View | View | - | - | View/Edit |
+| Kit | View | View | Full | View | - | - | View/Edit |
+| Finance | View | View | View | View | Full | - | - |
+
+### Files Added
+- `services/permissionService.ts`
+- `hooks/usePermission.ts`
+- `components/PermissionGate.tsx`
+- `contexts/PermissionContext.tsx`
+
+---
 
 ### Added - Independence & Leverage Phase 1 (Session: Claude Opus 4.5)
 - **Users & Roles Types**: Added `ClubUser`, `ClubRole`, `UserRole`, `Permission` types to `types.ts`
