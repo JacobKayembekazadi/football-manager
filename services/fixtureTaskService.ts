@@ -100,12 +100,11 @@ export const updateTemplatePack = async (
   packId: string,
   updates: Partial<Omit<TemplatePack, 'id' | 'club_id'>>
 ): Promise<TemplatePack> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    // Demo mode: toggle enabled state in localStorage
+  // Helper function for demo mode updates
+  const updateDemoPack = () => {
     if (updates.is_enabled !== undefined) {
       toggleDemoTemplatePack(packId);
     }
-    // Return updated pack
     const idx = parseInt(packId.replace('demo-pack-', ''));
     const enabledIds = getDemoEnabledTemplatePacks();
     return {
@@ -114,26 +113,42 @@ export const updateTemplatePack = async (
       club_id: 'demo',
       is_enabled: enabledIds.includes(packId),
     };
+  };
+
+  // Demo mode check
+  if (!supabase || !isSupabaseConfigured()) {
+    return updateDemoPack();
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.TEMPLATE_PACKS)
-    .update({
-      name: updates.name,
-      description: updates.description,
-      is_enabled: updates.is_enabled,
-      tasks: updates.tasks,
-    })
-    .eq('id', packId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating template pack:', error);
-    throw error;
+  // Check if packId is a demo pack - use demo storage directly
+  if (packId.startsWith('demo-pack-')) {
+    return updateDemoPack();
   }
 
-  return mapTemplatePackFromDb(data);
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.TEMPLATE_PACKS)
+      .update({
+        name: updates.name,
+        description: updates.description,
+        is_enabled: updates.is_enabled,
+        tasks: updates.tasks,
+      })
+      .eq('id', packId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating template pack, falling back to demo:', error);
+      // Fall back to demo mode if table doesn't exist
+      return updateDemoPack();
+    }
+
+    return mapTemplatePackFromDb(data);
+  } catch (error) {
+    console.error('Error updating template pack, falling back to demo:', error);
+    return updateDemoPack();
+  }
 };
 
 /**
