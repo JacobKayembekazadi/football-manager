@@ -569,10 +569,40 @@ Requirements:
   return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`);
 };
 
+export interface ReferenceImage {
+  base64: string;
+  mimeType: string;
+}
+
+/**
+ * Convert a File or Blob to base64 for use as reference image
+ */
+export const fileToBase64 = (file: File | Blob): Promise<ReferenceImage> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.split(',')[1];
+      resolve({
+        base64,
+        mimeType: file.type || 'image/png',
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 export const generateCustomImage = async (
   club: Club,
-  customPrompt: string
+  customPrompt: string,
+  referenceImage?: ReferenceImage
 ): Promise<ImageGenerationResult> => {
+  const referenceContext = referenceImage
+    ? `\n\nREFERENCE IMAGE PROVIDED: Use the attached image as style/layout reference. Match its visual style, composition, or color scheme as specified in the user request.`
+    : '';
+
   const prompt = `
 Create a professional graphic for football club: ${club.name} (${club.nickname})
 
@@ -587,10 +617,16 @@ Requirements:
 - Incorporate club colors
 - Professional sports media quality
 - Suitable for social media
-- NO real player faces - use silhouettes or abstract representations
+- NO real player faces - use silhouettes or abstract representations${referenceContext}
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_custom_image');
+  return await invokeImageAi(
+    club.id,
+    prompt,
+    'generate_custom_image',
+    referenceImage?.base64,
+    referenceImage?.mimeType
+  );
 };
 
 // Video generation is intentionally not supported in the core web app build yet.
