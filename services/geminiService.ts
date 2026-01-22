@@ -171,21 +171,31 @@ export const chatWithAi = async (
   history: { role: string; content: string }[] = []
 ): Promise<string> => {
   const systemInstruction = `
-${getCommonSystemPrompt(club)}
-You are "The Gaffer", a helpful AI assistant for the club admin.
-You help with writing captions, emails to sponsors, tactical ideas, analysis, and more.
-Be helpful and stay in character as a club insider.
+You are "The Gaffer" - a friendly, knowledgeable assistant for ${club.name} football club.
 
-FORMATTING RULES:
-- Use **bold** for emphasis and key points
-- Use bullet points (- item) for lists
-- Use numbered lists (1. item) for steps or rankings
-- Use tables when comparing data (| Header1 | Header2 |)
-- Use > for quotes or important callouts
-- Use headers (## Title) to organize longer responses
-- Keep responses well-structured and visually scannable
-- For social media posts, provide ready-to-copy text
-- For analysis, use clear sections and data presentation
+YOUR PERSONALITY:
+- Speak naturally like a helpful colleague, not a robot or sci-fi character
+- Be warm, direct, and professional
+- You know football inside out
+- Keep responses concise but useful
+
+WHAT YOU HELP WITH:
+- Writing social media posts, captions, tweets
+- Drafting emails to sponsors and partners
+- Match analysis and tactical ideas
+- Player assessments and squad planning
+- Any club admin tasks
+
+SQUAD CONTEXT:
+${club.players.map((p) => `${p.name} (#${p.number}, ${p.position})`).join(', ')}
+
+FORMATTING (use when helpful):
+- **Bold** for emphasis
+- Bullet points for lists
+- Tables for comparisons
+- Keep it scannable
+
+IMPORTANT: Just respond helpfully. No roleplay, no dramatic intros, no sci-fi speak.
 `;
 
   const historyText =
@@ -359,7 +369,7 @@ Format: HTML-ready text (paragraphs, bolding).
   return await invokeAi(club.id, prompt, 'newsletter');
 };
 
-// --- IMAGE GENERATION (Gemini 2.5 Flash Image) ---
+// --- IMAGE GENERATION (Imagen 3) ---
 
 export interface ImageGenerationResult {
   imageBase64: string;
@@ -367,21 +377,24 @@ export interface ImageGenerationResult {
   description?: string;
 }
 
-export type ImageGenerationType = 
-  | 'matchday_graphic' 
-  | 'player_card' 
-  | 'social_post' 
-  | 'announcement' 
+export type ImageGenerationType =
+  | 'matchday_graphic'
+  | 'player_card'
+  | 'social_post'
+  | 'announcement'
   | 'celebration'
   | 'custom';
 
-// Image generation via Vercel serverless function
+export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+
+// Image generation via Vercel serverless function (uses Imagen 3)
 const invokeImageAi = async (
   clubId: string,
   prompt: string,
   action: string,
   referenceImageBase64?: string,
-  referenceMimeType?: string
+  referenceMimeType?: string,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
   const response = await fetch('/api/ai-generate-image', {
     method: 'POST',
@@ -392,6 +405,7 @@ const invokeImageAi = async (
       referenceMimeType,
       clubId,
       action,
+      aspectRatio,
     }),
   });
 
@@ -458,7 +472,8 @@ Requirements:
 - Use abstract football imagery, geometric shapes, or silhouettes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`);
+  // Use 1:1 for Instagram, best for social media
+  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`, undefined, undefined, '1:1');
 };
 
 export const generateResultGraphic = async (
@@ -501,7 +516,7 @@ Requirements:
 - NO real player faces - use silhouettes or abstract shapes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_result_graphic');
+  return await invokeImageAi(club.id, prompt, 'generate_result_graphic', undefined, undefined, '1:1');
 };
 
 export const generatePlayerSpotlight = async (
@@ -540,7 +555,8 @@ Requirements:
 - Trading card / FIFA-style layout
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight');
+  // Portrait style for player cards
+  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight', undefined, undefined, '3:4');
 };
 
 export const generateAnnouncementGraphic = async (
@@ -577,7 +593,7 @@ Requirements:
 - NO real photographs - use abstract/geometric design
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`);
+  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`, undefined, undefined, '1:1');
 };
 
 export interface ReferenceImage {
@@ -608,7 +624,8 @@ export const fileToBase64 = (file: File | Blob): Promise<ReferenceImage> => {
 export const generateCustomImage = async (
   club: Club,
   customPrompt: string,
-  referenceImage?: ReferenceImage
+  referenceImage?: ReferenceImage,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
   const referenceContext = referenceImage
     ? `\n\nREFERENCE IMAGE PROVIDED: Use the attached image as style/layout reference. Match its visual style, composition, or color scheme as specified in the user request.`
@@ -636,7 +653,8 @@ Requirements:
     prompt,
     'generate_custom_image',
     referenceImage?.base64,
-    referenceImage?.mimeType
+    referenceImage?.mimeType,
+    aspectRatio
   );
 };
 
