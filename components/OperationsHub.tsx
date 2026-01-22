@@ -31,6 +31,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Club, Fixture, Player } from '../types';
+import EmptyState from './EmptyState';
 import {
   Broadcast,
   BroadcastChannel,
@@ -273,9 +274,13 @@ const BroadcastSection: React.FC<{ club: Club; fixtures: Fixture[] }> = ({ club,
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-400 uppercase">Recent Broadcasts</h3>
         {broadcasts.length === 0 ? (
-          <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
-            <MessageSquare className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">No broadcasts sent yet</p>
+          <div className="border border-dashed border-white/10 rounded-xl">
+            <EmptyState
+              icon={MessageSquare}
+              title="No broadcasts sent yet"
+              description="Send updates to your squad via WhatsApp, Email, or SMS"
+              variant="compact"
+            />
           </div>
         ) : (
           <div className="space-y-2">
@@ -1209,9 +1214,13 @@ const ScoutingSection: React.FC<{ club: Club; fixtures: Fixture[] }> = ({ club, 
       )}
 
       {!showForm && !selectedNote && notes.length === 0 && upcomingOpponents.length === 0 && (
-        <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
-          <Target className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">No scouting notes yet</p>
+        <div className="border border-dashed border-white/10 rounded-xl">
+          <EmptyState
+            icon={Target}
+            title="No scouting notes yet"
+            description="Add notes on upcoming opponents to prepare for matches"
+            variant="compact"
+          />
         </div>
       )}
     </div>

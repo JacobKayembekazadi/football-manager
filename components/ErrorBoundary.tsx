@@ -1,11 +1,13 @@
 /**
  * Error Boundary Component
- * 
+ *
  * Catches React errors and displays a fallback UI.
+ * Integrates with Sentry for error reporting.
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Send } from 'lucide-react';
+import * as Sentry from '@sentry/react';
 
 interface Props {
   children: ReactNode;
@@ -16,6 +18,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  errorReported: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -25,19 +28,29 @@ class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      errorReported: false,
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
       error,
       errorInfo: null,
+      errorReported: false,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Report to Sentry
+    Sentry.withScope((scope) => {
+      scope.setTag('errorBoundary', 'true');
+      scope.setExtra('componentStack', errorInfo.componentStack);
+      Sentry.captureException(error);
+    });
+
     this.setState({
       error,
       errorInfo,
@@ -49,7 +62,28 @@ class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      errorReported: false,
     });
+  };
+
+  handleReportFeedback = () => {
+    // Open Sentry feedback dialog if available
+    const eventId = Sentry.lastEventId();
+    if (eventId) {
+      Sentry.showReportDialog({
+        eventId,
+        title: 'Report Issue',
+        subtitle: 'Help us fix this problem',
+        subtitle2: 'Tell us what happened before this error occurred.',
+        labelName: 'Name',
+        labelEmail: 'Email',
+        labelComments: 'What were you doing?',
+        labelSubmit: 'Send Report',
+        labelClose: 'Close',
+        successMessage: 'Thank you for your feedback!',
+      });
+      this.setState({ errorReported: true });
+    }
   };
 
   render() {
@@ -93,20 +127,36 @@ class ErrorBoundary extends Component<Props, State> {
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={this.handleReset}
-                className="flex-1 py-3 bg-neon-blue text-black font-bold uppercase rounded hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
-              >
-                <RefreshCw size={16} />
-                Try Again
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="flex-1 py-3 border border-white/10 text-white font-bold uppercase rounded hover:bg-white/10 transition-colors"
-              >
-                Reload Page
-              </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <button
+                  onClick={this.handleReset}
+                  className="flex-1 py-3 bg-neon-blue text-black font-bold uppercase rounded hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={16} />
+                  Try Again
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex-1 py-3 border border-white/10 text-white font-bold uppercase rounded hover:bg-white/10 transition-colors"
+                >
+                  Reload Page
+                </button>
+              </div>
+              {import.meta.env.VITE_SENTRY_DSN && !this.state.errorReported && (
+                <button
+                  onClick={this.handleReportFeedback}
+                  className="w-full py-3 border border-orange-500/30 text-orange-400 font-bold uppercase rounded hover:bg-orange-500/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Send size={16} />
+                  Report Issue
+                </button>
+              )}
+              {this.state.errorReported && (
+                <p className="text-center text-sm text-green-400">
+                  Thank you! Your report has been submitted.
+                </p>
+              )}
             </div>
           </div>
         </div>

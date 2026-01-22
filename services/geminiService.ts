@@ -61,32 +61,174 @@ Rules:
 - If a player is mentioned in the prompt, refer to them by name or nickname.
 `;
 
-// AI invocation via Vercel serverless function
-const invokeAi = async (clubId: string, prompt: string, action: string, model = 'gemini-2.0-flash'): Promise<string> => {
+// AI timeout in milliseconds (30 seconds)
+const AI_TIMEOUT_MS = 30000;
+
+// Maximum retry attempts for transient failures
+const MAX_RETRIES = 2;
+
+// Delay between retries (with exponential backoff)
+const RETRY_DELAY_MS = 1000;
+
+/**
+ * Custom error for AI-related failures
+ */
+class AIError extends Error {
+  constructor(
+    message: string,
+    public readonly userMessage: string,
+    public readonly isRetryable: boolean = false
+  ) {
+    super(message);
+    this.name = 'AIError';
+  }
+}
+
+/**
+ * Fetch with timeout support
+ */
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit,
+  timeoutMs: number
+): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const response = await fetch('/api/ai-generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        model,
-        provider: AI_PROVIDER,
-        clubId,
-        action,
-      }),
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
     });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'AI generation failed');
+/**
+ * Sleep helper for retry delays
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// AI invocation via Vercel serverless function with timeout and retry
+const invokeAi = async (
+  clubId: string,
+  prompt: string,
+  action: string,
+  model = 'gemini-2.0-flash'
+): Promise<string> => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Add exponential backoff delay for retries
+      if (attempt > 0) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        console.log(`[AI] Retry attempt ${attempt}/${MAX_RETRIES} after ${delay}ms delay`);
+        await sleep(delay);
+      }
+
+      const response = await fetchWithTimeout(
+        '/api/ai-generate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            model,
+            provider: AI_PROVIDER,
+            clubId,
+            action,
+          }),
+        },
+        AI_TIMEOUT_MS
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+
+        // Check if error is retryable (5xx server errors, rate limits)
+        const isRetryable =
+          response.status >= 500 || response.status === 429;
+
+        throw new AIError(
+          errorMessage,
+          getAIErrorMessage(response.status, errorMessage),
+          isRetryable
+        );
+      }
+
+      const data = await response.json();
+      if (!data?.text) {
+        throw new AIError(
+          'Empty response from AI',
+          'AI returned an empty response. Please try again.',
+          true
+        );
+      }
+
+      return data.text as string;
+    } catch (error) {
+      lastError = error as Error;
+
+      // Handle timeout errors
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn(`[AI] Request timed out after ${AI_TIMEOUT_MS}ms`);
+        lastError = new AIError(
+          'AI request timed out',
+          'The AI is taking too long to respond. Please try again in a moment.',
+          true
+        );
+      }
+
+      // Check if we should retry
+      if (error instanceof AIError && !error.isRetryable) {
+        break; // Non-retryable error, stop immediately
+      }
+
+      // Log retry attempt
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[AI] Attempt ${attempt + 1} failed:`, error);
+      }
     }
+  }
 
-    const data = await response.json();
-    if (!data?.text) return 'Failed to generate content.';
-    return data.text as string;
-  } catch (error) {
-    console.error('AI invocation error:', error);
-    return 'AI unavailable. Please try again.';
+  // All retries exhausted
+  console.error('[AI] All retry attempts failed:', lastError);
+
+  if (lastError instanceof AIError) {
+    return lastError.userMessage;
+  }
+
+  return 'AI is temporarily unavailable. Please try again in a few moments.';
+};
+
+/**
+ * Get user-friendly error message based on HTTP status and error details
+ */
+const getAIErrorMessage = (status: number, errorDetails: string): string => {
+  switch (status) {
+    case 401:
+    case 403:
+      return 'AI authentication failed. Please check your API configuration.';
+    case 429:
+      return 'AI rate limit reached. Please wait a moment and try again.';
+    case 500:
+    case 502:
+    case 503:
+      return 'AI service is temporarily unavailable. Please try again shortly.';
+    case 504:
+      return 'AI request timed out. Please try a shorter request.';
+    default:
+      if (errorDetails.toLowerCase().includes('quota')) {
+        return 'AI usage quota exceeded. Please check your billing settings.';
+      }
+      if (errorDetails.toLowerCase().includes('invalid')) {
+        return 'Invalid AI request. Please try different content.';
+      }
+      return 'AI generation failed. Please try again.';
   }
 };
 
@@ -560,7 +702,10 @@ export type ImageGenerationType =
 
 export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 
-// Image generation via Vercel serverless function (uses Imagen 3)
+// Image generation timeout (60 seconds - images take longer)
+const IMAGE_TIMEOUT_MS = 60000;
+
+// Image generation via Vercel serverless function (uses Imagen 3) with timeout and retry
 const invokeImageAi = async (
   clubId: string,
   prompt: string,
@@ -569,32 +714,113 @@ const invokeImageAi = async (
   referenceMimeType?: string,
   aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
-  const response = await fetch('/api/ai-generate-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt,
-      referenceImageBase64,
-      referenceMimeType,
-      clubId,
-      action,
-      aspectRatio,
-    }),
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Image generation failed');
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Add delay for retries
+      if (attempt > 0) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        console.log(`[Image AI] Retry attempt ${attempt}/${MAX_RETRIES} after ${delay}ms delay`);
+        await sleep(delay);
+      }
+
+      const response = await fetchWithTimeout(
+        '/api/ai-generate-image',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            referenceImageBase64,
+            referenceMimeType,
+            clubId,
+            action,
+            aspectRatio,
+          }),
+        },
+        IMAGE_TIMEOUT_MS
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+        const isRetryable = response.status >= 500 || response.status === 429;
+
+        throw new AIError(
+          errorMessage,
+          getImageErrorMessage(response.status, errorMessage),
+          isRetryable
+        );
+      }
+
+      const data = await response.json();
+      if (!data?.imageBase64) {
+        throw new AIError(
+          'Empty image response',
+          'Image generation returned no data. Please try again.',
+          true
+        );
+      }
+
+      return {
+        imageBase64: data.imageBase64,
+        mimeType: data.mimeType || 'image/png',
+        description: data.description,
+      };
+    } catch (error) {
+      lastError = error as Error;
+
+      // Handle timeout
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn(`[Image AI] Request timed out after ${IMAGE_TIMEOUT_MS}ms`);
+        lastError = new AIError(
+          'Image generation timed out',
+          'Image generation is taking too long. Please try a simpler design or try again later.',
+          true
+        );
+      }
+
+      // Check if retryable
+      if (error instanceof AIError && !error.isRetryable) {
+        break;
+      }
+
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[Image AI] Attempt ${attempt + 1} failed:`, error);
+      }
+    }
   }
 
-  const data = await response.json();
-  if (!data?.imageBase64) throw new Error('Failed to generate image.');
+  // All retries exhausted - throw the error so callers can handle it
+  console.error('[Image AI] All retry attempts failed:', lastError);
 
-  return {
-    imageBase64: data.imageBase64,
-    mimeType: data.mimeType || 'image/png',
-    description: data.description,
-  };
+  if (lastError instanceof AIError) {
+    throw new Error(lastError.userMessage);
+  }
+
+  throw new Error('Image generation failed. Please try again.');
+};
+
+/**
+ * Get user-friendly error message for image generation failures
+ */
+const getImageErrorMessage = (status: number, errorDetails: string): string => {
+  switch (status) {
+    case 400:
+      if (errorDetails.toLowerCase().includes('safety')) {
+        return 'Image request was blocked for safety reasons. Please try different content.';
+      }
+      return 'Invalid image request. Please try different content.';
+    case 429:
+      return 'Image generation rate limit reached. Please wait and try again.';
+    case 500:
+    case 502:
+    case 503:
+      return 'Image service is temporarily unavailable. Please try again shortly.';
+    default:
+      return 'Image generation failed. Please try again.';
+  }
 };
 
 export const generateMatchdayGraphic = async (

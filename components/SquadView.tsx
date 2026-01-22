@@ -5,6 +5,7 @@ import PlayerCard from './PlayerCard';
 import TacticsBoard from './TacticsBoard';
 import RadarChart from './RadarChart';
 import PlayerFormModal from './PlayerFormModal';
+import ConfirmationDialog from './ConfirmationDialog';
 import EmptyState, { EMPTY_STATE_PRESETS } from './EmptyState';
 import { useToast } from './Toast';
 import { generatePlayerAnalysis, generatePlayerSpotlight, ImageGenerationResult } from '../services/geminiService';
@@ -36,6 +37,14 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [generatedCard, setGeneratedCard] = useState<ImageGenerationResult | null>(null);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; playerId: string | null; playerName: string }>({
+    isOpen: false,
+    playerId: null,
+    playerName: '',
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Auto-generate analysis when player is selected if missing
   useEffect(() => {
@@ -137,17 +146,30 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
       setIsFormOpen(true);
   };
 
-  const handleDeletePlayer = async (playerId: string) => {
-      if (confirm('Are you sure you want to delete this player unit? Data cannot be recovered.')) {
-          try {
-              await deletePlayer(playerId);
-              setPlayers(safePlayers.filter(p => p.id !== playerId));
-              toast.success('Player deleted successfully.');
-          } catch (error) {
-              console.error('Error deleting player:', error);
-              toast.error('Failed to delete player. Please try again.');
-          }
-      }
+  const handleDeletePlayer = (playerId: string) => {
+    const player = safePlayers.find((p) => p.id === playerId);
+    setDeleteConfirm({
+      isOpen: true,
+      playerId,
+      playerName: player?.name || 'this player',
+    });
+  };
+
+  const confirmDeletePlayer = async () => {
+    if (!deleteConfirm.playerId) return;
+
+    setIsDeleting(true);
+    try {
+      await deletePlayer(deleteConfirm.playerId);
+      setPlayers(safePlayers.filter((p) => p.id !== deleteConfirm.playerId));
+      toast.success('Player deleted successfully.');
+      setDeleteConfirm({ isOpen: false, playerId: null, playerName: '' });
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      toast.error('Failed to delete player. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSavePlayer = async (player: Player) => {
@@ -629,6 +651,19 @@ const SquadView: React.FC<SquadViewProps> = ({ players, setPlayers, club }) => {
             </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, playerId: null, playerName: '' })}
+        onConfirm={confirmDeletePlayer}
+        title="Delete Player"
+        message={`Are you sure you want to delete ${deleteConfirm.playerName}? This action cannot be undone and all player data will be permanently removed.`}
+        confirmText="Delete Player"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

@@ -1,31 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Layout from './components/Layout';
 import ContentCard from './components/ContentCard';
 import ContentEditorModal from './components/ContentEditorModal';
 import AutoPublisher from './components/AutoPublisher';
-import ViralScout from './components/ViralScout';
-import SquadView from './components/SquadView';
-import AvailabilityView from './components/AvailabilityView';
-import EquipmentView from './components/EquipmentView';
-import FixtureTasks from './components/FixtureTasks';
-import AiAssistant from './components/AiAssistant';
 import MatchReportModal from './components/MatchReportModal';
-import SponsorNexus from './components/SponsorNexus';
-import CommsArray from './components/CommsArray';
-import ContentHub from './components/ContentHub';
-import SettingsView from './components/SettingsView';
-import OperationsHub from './components/OperationsHub';
-import FormationBuilder from './components/FormationBuilder';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
-import ImageGeneratorModal from './components/ImageGeneratorModal';
 import OnboardingManager from './components/OnboardingManager';
-import EducationView from './components/EducationView';
 import FixtureFormModal from './components/FixtureFormModal';
-import InboxView from './components/InboxView';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
+
+// Lazy-loaded components for better initial load performance
+const ViralScout = lazy(() => import('./components/ViralScout'));
+const SquadView = lazy(() => import('./components/SquadView'));
+const AvailabilityView = lazy(() => import('./components/AvailabilityView'));
+const EquipmentView = lazy(() => import('./components/EquipmentView'));
+const FixtureTasks = lazy(() => import('./components/FixtureTasks'));
+const AiAssistant = lazy(() => import('./components/AiAssistant'));
+const SponsorNexus = lazy(() => import('./components/SponsorNexus'));
+const CommsArray = lazy(() => import('./components/CommsArray'));
+const ContentHub = lazy(() => import('./components/ContentHub'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+const OperationsHub = lazy(() => import('./components/OperationsHub'));
+const FormationBuilder = lazy(() => import('./components/FormationBuilder'));
+const ImageGeneratorModal = lazy(() => import('./components/ImageGeneratorModal'));
+const EducationView = lazy(() => import('./components/EducationView'));
+const InboxView = lazy(() => import('./components/InboxView'));
 import { ToastProvider, useToast } from './components/Toast';
 import QuickActionFAB from './components/QuickActionFAB';
 import { handleError } from './utils/errorHandler';
@@ -2174,69 +2176,72 @@ const AppAuthed: React.FC<{
             }}
           />
         )}
-        {activeTab === 'availability' && currentClub && (
-          <AvailabilityView
-            club={currentClub}
-            fixtures={fixtures}
-          />
-        )}
-        {activeTab === 'squad' && currentClub && (
-          <SquadView
-            players={currentClub.players}
-            setPlayers={handleUpdatePlayers}
-            club={currentClub}
-          />
-        )}
-        {activeTab === 'content' && currentClub && (
-          <ContentHub
-            club={currentClub}
-            contentItems={contentItems}
-            fixtures={fixtures}
-            onUpdateContent={async (updatedItem) => {
-              await handleUpdateContent(updatedItem);
-            }}
-            onDeleteContent={async (contentId) => {
-              await deleteContentItem(contentId);
-              await refetchContent();
-            }}
-            onRefetchContent={refetchContent}
-          />
-        )}
-        {activeTab === 'finance' && currentClub && (
-          <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
-        )}
-        {activeTab === 'settings' && currentClub && (
-          <SettingsView club={currentClub} onLogout={() => {}} />
-        )}
-        {activeTab === 'inbox' && currentClub && (
-          <InboxView
-            club={currentClub}
-            fixtures={fixtures}
-            onNavigate={setActiveTab}
-          />
-        )}
-        {activeTab === 'equipment' && currentClub && (
-          <EquipmentView
-            club={currentClub}
-            fixtures={fixtures}
-          />
-        )}
-        {activeTab === 'templates' && currentClub && (
-          <TemplatesView fixtures={fixtures} clubId={currentClub.id} />
-        )}
-        {activeTab === 'operations' && currentClub && (
-          <OperationsHub
-            club={currentClub}
-            fixtures={fixtures}
-          />
-        )}
-        {activeTab === 'formation' && currentClub && (
-          <FormationBuilder
-            club={currentClub}
-            fixtures={fixtures}
-          />
-        )}
-        {currentClub && <AiAssistant club={currentClub} />}
+        {/* Lazy-loaded views wrapped in Suspense */}
+        <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><LoadingSpinner /></div>}>
+          {activeTab === 'availability' && currentClub && (
+            <AvailabilityView
+              club={currentClub}
+              fixtures={fixtures}
+            />
+          )}
+          {activeTab === 'squad' && currentClub && (
+            <SquadView
+              players={currentClub.players}
+              setPlayers={handleUpdatePlayers}
+              club={currentClub}
+            />
+          )}
+          {activeTab === 'content' && currentClub && (
+            <ContentHub
+              club={currentClub}
+              contentItems={contentItems}
+              fixtures={fixtures}
+              onUpdateContent={async (updatedItem) => {
+                await handleUpdateContent(updatedItem);
+              }}
+              onDeleteContent={async (contentId) => {
+                await deleteContentItem(contentId);
+                await refetchContent();
+              }}
+              onRefetchContent={refetchContent}
+            />
+          )}
+          {activeTab === 'finance' && currentClub && (
+            <SponsorNexus club={currentClub} sponsors={sponsors} onRefetchSponsors={refetchSponsors} />
+          )}
+          {activeTab === 'settings' && currentClub && (
+            <SettingsView club={currentClub} onLogout={() => {}} />
+          )}
+          {activeTab === 'inbox' && currentClub && (
+            <InboxView
+              club={currentClub}
+              fixtures={fixtures}
+              onNavigate={setActiveTab}
+            />
+          )}
+          {activeTab === 'equipment' && currentClub && (
+            <EquipmentView
+              club={currentClub}
+              fixtures={fixtures}
+            />
+          )}
+          {activeTab === 'templates' && currentClub && (
+            <TemplatesView fixtures={fixtures} clubId={currentClub.id} />
+          )}
+          {activeTab === 'operations' && currentClub && (
+            <OperationsHub
+              club={currentClub}
+              fixtures={fixtures}
+            />
+          )}
+          {activeTab === 'formation' && currentClub && (
+            <FormationBuilder
+              club={currentClub}
+              fixtures={fixtures}
+            />
+          )}
+          {currentClub && <AiAssistant club={currentClub} />}
+        </Suspense>
 
         {/* Onboarding Manager - handles welcome modal + tour */}
         {currentClub?.org_id && (
