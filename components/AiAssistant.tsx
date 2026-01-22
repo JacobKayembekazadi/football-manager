@@ -2,8 +2,31 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Club } from '../types';
 import { chatWithAi } from '../services/geminiService';
 import { getOrCreateLatestConversation, getMessages, addMessage, Message } from '../services/conversationService';
+import { executeAction } from '../services/aiActionService';
+import { AIAction, AIResponse } from '../types/aiActions';
 import { Send, X, Bot, Loader2, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
+import ActionConfirmation from './ActionConfirmation';
+
+/**
+ * Extract JSON from AI response that may be wrapped in markdown code blocks
+ */
+const extractJson = (text: string): string => {
+  // Try to find JSON in markdown code block
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Try to find JSON object directly
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0];
+  }
+
+  // Return original text as fallback
+  return text.trim();
+};
 
 interface AiAssistantProps {
   club: Club;
@@ -19,6 +42,10 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Action state
+  const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
 
   // Load conversation history when component mounts or club changes
   useEffect(() => {
@@ -122,23 +149,42 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
         .slice(-10);
       historyForAI.push({ role: 'user', content: userText });
 
-      const response = await chatWithAi(club, userText, historyForAI);
+      const rawResponse = await chatWithAi(club, userText, historyForAI);
+
+      // Parse the JSON response
+      let parsedResponse: AIResponse;
+      let displayContent: string;
+
+      try {
+        const jsonStr = extractJson(rawResponse);
+        parsedResponse = JSON.parse(jsonStr);
+        displayContent = parsedResponse.response;
+      } catch {
+        // Fallback for non-JSON responses (backwards compatibility)
+        parsedResponse = { response: rawResponse };
+        displayContent = rawResponse;
+      }
 
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         conversation_id: conversationId,
         role: 'assistant',
-        content: response,
+        content: displayContent,
         created_at: new Date().toISOString(),
       };
 
       if (!isLocalMode) {
-        const savedAiMsg = await addMessage(conversationId, 'assistant', response);
+        const savedAiMsg = await addMessage(conversationId, 'assistant', displayContent);
         if (savedAiMsg) {
           aiMsg.id = savedAiMsg.id;
         }
       }
       setMessages(prev => [...prev, aiMsg]);
+
+      // If action detected, set pending action
+      if (parsedResponse.action) {
+        setPendingAction(parsedResponse.action);
+      }
     } catch (error) {
       console.error('Error in chat:', error);
       const errorMsg: Message = {
@@ -151,6 +197,65 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle action confirmation
+  const handleActionConfirm = async () => {
+    if (!pendingAction || !conversationId) return;
+
+    setIsExecutingAction(true);
+
+    try {
+      const result = await executeAction(club.id, pendingAction);
+
+      // Add result message to chat
+      const resultMsg: Message = {
+        id: crypto.randomUUID(),
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: result.success
+          ? `✅ ${result.message}`
+          : `❌ ${result.message}${result.error ? `: ${result.error}` : ''}`,
+        created_at: new Date().toISOString(),
+      };
+
+      const isLocalMode = conversationId === 'local';
+      if (!isLocalMode) {
+        await addMessage(conversationId, 'assistant', resultMsg.content);
+      }
+
+      setMessages(prev => [...prev, resultMsg]);
+    } catch (error) {
+      console.error('Action execution error:', error);
+      const errorMsg: Message = {
+        id: crypto.randomUUID(),
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: '❌ Failed to execute action. Please try again.',
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setPendingAction(null);
+      setIsExecutingAction(false);
+    }
+  };
+
+  // Handle action cancellation
+  const handleActionCancel = () => {
+    setPendingAction(null);
+
+    // Add cancellation message
+    if (conversationId) {
+      const cancelMsg: Message = {
+        id: crypto.randomUUID(),
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: 'No problem, I\'ve cancelled that action. Is there anything else I can help with?',
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, cancelMsg]);
     }
   };
 
@@ -261,6 +366,19 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
                     </div>
                   </div>
                 )}
+
+                {/* Action Confirmation - Fullscreen */}
+                {pendingAction && (
+                  <div className="max-w-md">
+                    <ActionConfirmation
+                      action={pendingAction}
+                      onConfirm={handleActionConfirm}
+                      onCancel={handleActionCancel}
+                      isExecuting={isExecutingAction}
+                    />
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
             )}
@@ -396,6 +514,17 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
               </div>
             </div>
           )}
+
+          {/* Action Confirmation - Compact */}
+          {pendingAction && (
+            <ActionConfirmation
+              action={pendingAction}
+              onConfirm={handleActionConfirm}
+              onCancel={handleActionCancel}
+              isExecuting={isExecutingAction}
+            />
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 

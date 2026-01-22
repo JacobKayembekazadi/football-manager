@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Club } from '../types';
 import { generateNewsletter, generateNewsArticle } from '../services/geminiService';
-import { Radio, Newspaper, Send, Sparkles, Copy, Check, FileText, Loader2 } from 'lucide-react';
+import { Radio, Newspaper, Send, Sparkles, Copy, Check, FileText, Loader2, RefreshCw, X } from 'lucide-react';
 import CollapsibleSection from './CollapsibleSection';
 
 interface CommsArrayProps {
@@ -25,9 +25,26 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
   // Mobile accordion state - only one section expanded at a time on mobile
   const [expandedSection, setExpandedSection] = useState<string | null>('news');
 
+  // Copy feedback state
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
   const handleSectionToggle = (sectionId: string, isExpanded: boolean) => {
     // Accordion behavior: if opening a section, close others
     setExpandedSection(isExpanded ? sectionId : null);
+  };
+
+  const handleCopy = async (text: string, itemId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemId);
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleClearNewsletter = () => {
+    setGeneratedNewsletter('');
   };
 
   // --- Handlers ---
@@ -109,20 +126,56 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
 
             {generatedArticle && (
                 <div className="space-y-4 animate-slide-up">
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 md:p-4">
-                        <h4 className="text-xs font-bold text-purple-500 uppercase mb-2">Website Article</h4>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 md:p-4 relative group">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-purple-500 uppercase">Website Article</h4>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(generatedArticle.article, 'article')}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                                title="Copy article"
+                            >
+                                {copiedItem === 'article' ? (
+                                    <Check size={14} className="text-green-500" />
+                                ) : (
+                                    <Copy size={14} className="text-slate-400" />
+                                )}
+                            </button>
+                        </div>
                         <div className="h-px w-full bg-white/10 mb-3"></div>
-                        <div className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-line max-h-48 md:max-h-none overflow-y-auto">
+                        <div className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-line max-h-48 md:max-h-64 overflow-y-auto custom-scrollbar">
                             {generatedArticle.article}
                         </div>
                     </div>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 md:p-4">
-                        <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">Social Caption</h4>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 md:p-4 relative group">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-blue-400 uppercase">Social Caption</h4>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(generatedArticle.social, 'social')}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                                title="Copy social post"
+                            >
+                                {copiedItem === 'social' ? (
+                                    <Check size={14} className="text-green-500" />
+                                ) : (
+                                    <Copy size={14} className="text-slate-400" />
+                                )}
+                            </button>
+                        </div>
                         <div className="h-px w-full bg-white/10 mb-3"></div>
-                        <p className="text-xs text-slate-300 font-mono">
+                        <p className="text-sm text-slate-300 font-mono leading-relaxed">
                             {generatedArticle.social}
                         </p>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => setGeneratedArticle(null)}
+                        className="w-full py-2 text-xs text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                        <RefreshCw size={12} />
+                        Generate Another
+                    </button>
                 </div>
             )}
           </div>
@@ -178,11 +231,52 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
             </div>
 
             {generatedNewsletter ? (
-                <div className="flex-1 bg-white text-black p-4 md:p-6 rounded-xl overflow-y-auto font-serif shadow-inner animate-fade-in relative max-h-64 md:max-h-none">
-                    <div className="absolute top-2 right-2 flex gap-2">
-                         <button type="button" aria-label="Copy newsletter" title="Copy newsletter" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"><Copy size={14} /></button>
+                <div className="flex-1 flex flex-col gap-3 animate-fade-in">
+                    {/* Newsletter Preview */}
+                    <div className="flex-1 bg-white text-black p-4 md:p-6 rounded-xl overflow-y-auto shadow-inner relative max-h-64 md:max-h-80 custom-scrollbar">
+                        <div className="newsletter-content" dangerouslySetInnerHTML={{__html: generatedNewsletter}}></div>
                     </div>
-                    <div className="whitespace-pre-line text-sm pr-12" dangerouslySetInnerHTML={{__html: generatedNewsletter}}></div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // Strip HTML tags for plain text copy
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = generatedNewsletter;
+                                handleCopy(tempDiv.textContent || '', 'newsletter-text');
+                            }}
+                            className="flex-1 py-2.5 min-h-[44px] bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+                            title="Copy as plain text"
+                        >
+                            {copiedItem === 'newsletter-text' ? (
+                                <><Check size={14} className="text-green-400" /> Copied!</>
+                            ) : (
+                                <><Copy size={14} /> Copy Text</>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleCopy(generatedNewsletter, 'newsletter-html')}
+                            className="flex-1 py-2.5 min-h-[44px] bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-lg text-sm font-medium hover:bg-amber-500/30 transition-colors flex items-center justify-center gap-2"
+                            title="Copy as HTML"
+                        >
+                            {copiedItem === 'newsletter-html' ? (
+                                <><Check size={14} className="text-green-400" /> Copied!</>
+                            ) : (
+                                <><Copy size={14} /> Copy HTML</>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleClearNewsletter}
+                            className="py-2.5 px-3 min-h-[44px] bg-white/5 text-slate-400 rounded-lg hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
+                            title="Start over"
+                        >
+                            <RefreshCw size={14} />
+                        </button>
+                    </div>
                 </div>
             ) : (
                  <button
