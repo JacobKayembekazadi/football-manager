@@ -1,7 +1,8 @@
 import { Fixture, Club, ContentType, Player, Sponsor } from '../types';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
 
-// LangSmith tracing is server-side only - Edge Function handles tracing
+// AI provider configuration - defaults to Gemini, can be overridden
+type AIProvider = 'gemini' | 'openai' | 'anthropic';
+const AI_PROVIDER: AIProvider = (import.meta.env.VITE_AI_PROVIDER as AIProvider) || 'gemini';
 
 interface GenerationContext {
   matchType?: string;
@@ -34,22 +35,34 @@ Rules:
 - If a player is mentioned in the prompt, refer to them by name or nickname.
 `;
 
-// LangSmith tracing happens in Edge Function (server-side)
-const invokeAi = async (clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return 'AI unavailable (Supabase not configured).';
+// AI invocation via Vercel serverless function
+const invokeAi = async (clubId: string, prompt: string, action: string, model = 'gemini-2.0-flash'): Promise<string> => {
+  try {
+    const response = await fetch('/api/ai-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        model,
+        provider: AI_PROVIDER,
+        clubId,
+        action,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'AI generation failed');
+    }
+
+    const data = await response.json();
+    if (!data?.text) return 'Failed to generate content.';
+    return data.text as string;
+  } catch (error) {
+    console.error('AI invocation error:', error);
+    return 'AI unavailable. Please try again.';
   }
-
-  const { data, error } = await supabase.functions.invoke('ai-generate', {
-    body: { clubId, prompt, model, action },
-  });
-
-  if (error) throw error;
-  if (!data?.text) return 'Failed to generate content.';
-  return data.text as string;
 };
-
-// Note: LangSmith tracing is handled server-side in the Edge Function
 
 export const generateContent = async (
   club: Club,
@@ -351,7 +364,7 @@ export type ImageGenerationType =
   | 'celebration'
   | 'custom';
 
-// LangSmith tracing happens server-side in Edge Function
+// Image generation via Vercel serverless function
 const invokeImageAi = async (
   clubId: string,
   prompt: string,
@@ -359,17 +372,26 @@ const invokeImageAi = async (
   referenceImageBase64?: string,
   referenceMimeType?: string
 ): Promise<ImageGenerationResult> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Image generation unavailable (Supabase not configured).');
-  }
-
-  const { data, error } = await supabase.functions.invoke('ai-generate-image', {
-    body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
+  const response = await fetch('/api/ai-generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      referenceImageBase64,
+      referenceMimeType,
+      clubId,
+      action,
+    }),
   });
 
-  if (error) throw error;
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Image generation failed');
+  }
+
+  const data = await response.json();
   if (!data?.imageBase64) throw new Error('Failed to generate image.');
-  
+
   return {
     imageBase64: data.imageBase64,
     mimeType: data.mimeType || 'image/png',
