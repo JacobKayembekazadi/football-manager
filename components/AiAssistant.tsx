@@ -156,7 +156,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
 
       {/* Chat Interface - positioned above mobile bottom nav */}
       <div className={`
-            fixed bottom-20 md:bottom-6 right-4 md:right-6 w-[calc(100vw-2rem)] md:w-[380px] h-[calc(100vh-10rem)] md:h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col transition-all duration-300 transform origin-bottom-right overflow-hidden
+            fixed bottom-20 md:bottom-6 right-4 md:right-6 left-4 md:left-auto w-auto md:w-[380px] max-h-[70vh] md:max-h-[550px] h-[70vh] md:h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col transition-all duration-300 transform origin-bottom-right overflow-hidden
             ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-10 pointer-events-none'}
         `}>
         {/* Header */}

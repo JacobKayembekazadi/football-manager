@@ -62,7 +62,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
 
             {/* More Menu Panel */}
             {showMoreMenu && (
-                <div className="fixed bottom-20 left-4 right-4 bg-slate-800 border border-slate-700 rounded-2xl z-50 md:hidden overflow-hidden animate-slide-up">
+                <div className="fixed bottom-20 left-4 right-4 max-h-[60vh] bg-slate-800 border border-slate-700 rounded-2xl z-50 md:hidden overflow-hidden animate-slide-up">
                     <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                         <span className="text-sm font-bold text-white">More</span>
                         <button

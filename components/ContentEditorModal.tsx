@@ -83,10 +83,10 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
     >
       <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose} aria-hidden="true"></div>
 
-      <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] overflow-hidden flex flex-col max-h-[85vh] md:max-h-[90vh]">
 
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
+        <div className="p-4 md:p-6 border-b border-white/10 flex items-center justify-between bg-black/50">
             <div className="flex items-center gap-3">
                 <div className="p-2 rounded bg-white/5 border border-white/10 text-blue-400" aria-hidden="true">
                     <Wand2 size={20} />
@@ -102,7 +102,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             
             {/* Editor Pane */}
-            <div className="flex-1 flex flex-col p-6 border-r border-white/5">
+            <div className="flex-1 flex flex-col p-4 md:p-6 border-r border-white/5">
                 <div className="flex justify-between items-center mb-4">
                     <label className="text-[10px] font-mono text-slate-500 uppercase">Content Payload</label>
                     <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
 
             {/* AI Control Pane */}
             <div className="w-full md:w-80 bg-black/40 flex flex-col">
-                <div className="p-6 border-b border-white/5">
+                <div className="p-4 md:p-6 border-b border-white/5">
                     <h4 className="text-xs font-bold text-purple-500 uppercase mb-4 flex items-center gap-2">
                         <Sparkles size={14} /> AI Remix Engine
                     </h4>
