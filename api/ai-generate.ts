@@ -6,7 +6,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 type Provider = 'gemini' | 'openai' | 'anthropic';
 
@@ -77,13 +77,15 @@ export default async function handler(
 async function generateWithGemini(prompt: string, model: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured');
+    throw new Error('GEMINI_API_KEY not configured. Add it in Vercel Dashboard → Settings → Environment Variables');
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const gemini = genAI.getGenerativeModel({ model });
-  const result = await gemini.generateContent(prompt);
-  return result.response.text();
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model,
+    contents: prompt,
+  });
+  return response.text || '';
 }
 
 async function generateWithOpenAI(prompt: string, model: string): Promise<string> {

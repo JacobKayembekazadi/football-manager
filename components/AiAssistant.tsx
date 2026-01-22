@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Club } from '../types';
 import { chatWithAi } from '../services/geminiService';
 import { getOrCreateLatestConversation, getMessages, addMessage, Message } from '../services/conversationService';
-import { MessageSquare, Send, X, Bot, Loader2, Sparkles } from 'lucide-react';
+import { Send, X, Bot, Loader2 } from 'lucide-react';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface AiAssistantProps {
   club: Club;
@@ -156,7 +157,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
 
       {/* Chat Interface - positioned above mobile bottom nav */}
       <div className={`
-            fixed bottom-20 md:bottom-6 right-4 md:right-6 w-[calc(100vw-2rem)] md:w-[380px] h-[calc(100vh-10rem)] md:h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col transition-all duration-300 transform origin-bottom-right overflow-hidden
+            fixed bottom-20 md:bottom-6 right-4 md:right-6 left-4 md:left-auto w-auto md:w-[380px] max-h-[70vh] md:max-h-[550px] h-[70vh] md:h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col transition-all duration-300 transform origin-bottom-right overflow-hidden
             ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-10 pointer-events-none'}
         `}>
         {/* Header */}
@@ -187,12 +188,16 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
             messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`
-                                max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm
+                                max-w-[90%] rounded-2xl shadow-sm
                                 ${msg.role === 'user'
-                    ? 'bg-brand-600 text-white rounded-br-none'
-                    : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none'}
+                    ? 'bg-green-600 text-white rounded-br-none px-4 py-3 text-sm'
+                    : 'bg-white border border-slate-200 rounded-bl-none px-4 py-3'}
                             `}>
-                  {msg.content || (msg as any).text}
+                  {msg.role === 'user' ? (
+                    msg.content || (msg as any).text
+                  ) : (
+                    <MarkdownRenderer content={msg.content || (msg as any).text || ''} className="text-sm" />
+                  )}
                 </div>
               </div>
             ))
@@ -216,12 +221,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask for a tweet, email, idea..."
-              className="w-full bg-slate-100 border-none rounded-full pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all outline-none"
+              className="w-full bg-slate-100 border-none rounded-full pl-4 pr-12 py-3 text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-green-500 focus:bg-white transition-all outline-none"
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-1 top-1 bottom-1 w-10 h-10 bg-brand-600 rounded-full flex items-center justify-center text-white hover:bg-brand-700 disabled:opacity-50 disabled:hover:bg-brand-600 transition-colors"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white hover:bg-green-700 disabled:opacity-50 disabled:hover:bg-green-600 transition-colors"
             >
               <Send size={16} />
             </button>
