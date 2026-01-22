@@ -369,7 +369,7 @@ Format: HTML-ready text (paragraphs, bolding).
   return await invokeAi(club.id, prompt, 'newsletter');
 };
 
-// --- IMAGE GENERATION (Gemini 2.5 Flash Image) ---
+// --- IMAGE GENERATION (Imagen 3) ---
 
 export interface ImageGenerationResult {
   imageBase64: string;
@@ -377,21 +377,24 @@ export interface ImageGenerationResult {
   description?: string;
 }
 
-export type ImageGenerationType = 
-  | 'matchday_graphic' 
-  | 'player_card' 
-  | 'social_post' 
-  | 'announcement' 
+export type ImageGenerationType =
+  | 'matchday_graphic'
+  | 'player_card'
+  | 'social_post'
+  | 'announcement'
   | 'celebration'
   | 'custom';
 
-// Image generation via Vercel serverless function
+export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+
+// Image generation via Vercel serverless function (uses Imagen 3)
 const invokeImageAi = async (
   clubId: string,
   prompt: string,
   action: string,
   referenceImageBase64?: string,
-  referenceMimeType?: string
+  referenceMimeType?: string,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
   const response = await fetch('/api/ai-generate-image', {
     method: 'POST',
@@ -402,6 +405,7 @@ const invokeImageAi = async (
       referenceMimeType,
       clubId,
       action,
+      aspectRatio,
     }),
   });
 
@@ -468,7 +472,8 @@ Requirements:
 - Use abstract football imagery, geometric shapes, or silhouettes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`);
+  // Use 1:1 for Instagram, best for social media
+  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`, undefined, undefined, '1:1');
 };
 
 export const generateResultGraphic = async (
@@ -511,7 +516,7 @@ Requirements:
 - NO real player faces - use silhouettes or abstract shapes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_result_graphic');
+  return await invokeImageAi(club.id, prompt, 'generate_result_graphic', undefined, undefined, '1:1');
 };
 
 export const generatePlayerSpotlight = async (
@@ -550,7 +555,8 @@ Requirements:
 - Trading card / FIFA-style layout
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight');
+  // Portrait style for player cards
+  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight', undefined, undefined, '3:4');
 };
 
 export const generateAnnouncementGraphic = async (
@@ -587,7 +593,7 @@ Requirements:
 - NO real photographs - use abstract/geometric design
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`);
+  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`, undefined, undefined, '1:1');
 };
 
 export interface ReferenceImage {
@@ -618,7 +624,8 @@ export const fileToBase64 = (file: File | Blob): Promise<ReferenceImage> => {
 export const generateCustomImage = async (
   club: Club,
   customPrompt: string,
-  referenceImage?: ReferenceImage
+  referenceImage?: ReferenceImage,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
   const referenceContext = referenceImage
     ? `\n\nREFERENCE IMAGE PROVIDED: Use the attached image as style/layout reference. Match its visual style, composition, or color scheme as specified in the user request.`
@@ -646,7 +653,8 @@ Requirements:
     prompt,
     'generate_custom_image',
     referenceImage?.base64,
-    referenceImage?.mimeType
+    referenceImage?.mimeType,
+    aspectRatio
   );
 };
 
