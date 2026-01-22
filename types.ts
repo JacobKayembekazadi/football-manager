@@ -40,6 +40,53 @@ export interface OrgMember {
   updated_at?: string;
 }
 
+// ============================================================================
+// Club Users & Roles (Independence & Leverage)
+// ============================================================================
+
+export type ClubUserStatus = 'active' | 'inactive' | 'unavailable';
+
+export type ClubRoleName = 'Admin' | 'Coach' | 'Ops' | 'Media' | 'Kit' | 'Finance';
+
+export interface ClubUser {
+  id: string;
+  club_id: string;
+  user_id?: string;           // Links to Supabase auth.users (null for demo)
+  email: string;
+  name: string;
+  avatar_url?: string;
+  status: ClubUserStatus;
+  created_at: string;
+  // Populated from UserRole join
+  roles?: ClubRole[];
+  primary_role?: ClubRole;
+}
+
+export interface ClubRole {
+  id: string;
+  club_id: string;
+  name: ClubRoleName | string; // Core roles + custom
+  color: string;              // Tailwind color for badges (e.g., 'red', 'blue')
+  is_system: boolean;         // Prevent deletion of core roles
+}
+
+export interface UserRole {
+  id: string;
+  user_id: string;            // ClubUser.id
+  role_id: string;            // ClubRole.id
+  is_primary: boolean;        // User's main role for default assignment
+}
+
+// Permission system (Phase 2)
+export type PermissionModule = 'fixtures' | 'content' | 'equipment' | 'squad' | 'finance' | 'settings' | 'templates';
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve';
+
+export interface Permission {
+  role_id: string;
+  module: PermissionModule;
+  action: PermissionAction;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -833,6 +880,90 @@ export const INITIAL_SPONSORS: Sponsor[] = [
   },
 ];
 
+// ============================================================================
+// Initial Roles & Users (Independence & Leverage)
+// ============================================================================
+
+export const INITIAL_ROLES: ClubRole[] = [
+  { id: generateDemoUUID('role', 1), club_id: DEMO_UUIDS.CLUB, name: 'Admin', color: 'red', is_system: true },
+  { id: generateDemoUUID('role', 2), club_id: DEMO_UUIDS.CLUB, name: 'Coach', color: 'blue', is_system: true },
+  { id: generateDemoUUID('role', 3), club_id: DEMO_UUIDS.CLUB, name: 'Ops', color: 'purple', is_system: true },
+  { id: generateDemoUUID('role', 4), club_id: DEMO_UUIDS.CLUB, name: 'Media', color: 'pink', is_system: true },
+  { id: generateDemoUUID('role', 5), club_id: DEMO_UUIDS.CLUB, name: 'Kit', color: 'amber', is_system: true },
+  { id: generateDemoUUID('role', 6), club_id: DEMO_UUIDS.CLUB, name: 'Finance', color: 'green', is_system: false },
+];
+
+export const INITIAL_CLUB_USERS: ClubUser[] = [
+  {
+    id: generateDemoUUID('clubuser', 1),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'jacob@pitchside.ai',
+    name: 'Jacob Kayembe',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[0], INITIAL_ROLES[1]], // Admin + Coach
+    primary_role: INITIAL_ROLES[0], // Admin
+  },
+  {
+    id: generateDemoUUID('clubuser', 2),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'sarah@example.com',
+    name: 'Sarah Mitchell',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2]], // Ops
+    primary_role: INITIAL_ROLES[2],
+  },
+  {
+    id: generateDemoUUID('clubuser', 3),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'mike@example.com',
+    name: 'Mike Thompson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[3]], // Media
+    primary_role: INITIAL_ROLES[3],
+  },
+  {
+    id: generateDemoUUID('clubuser', 4),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'emma@example.com',
+    name: 'Emma Wilson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[4]], // Kit
+    primary_role: INITIAL_ROLES[4],
+  },
+  {
+    id: generateDemoUUID('clubuser', 5),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'david@example.com',
+    name: 'David Chen',
+    avatar_url: undefined,
+    status: 'unavailable', // Example unavailable user
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2], INITIAL_ROLES[5]], // Ops + Finance
+    primary_role: INITIAL_ROLES[2],
+  },
+];
+
+// Helper to get role color class
+export const getRoleColorClass = (color: string): string => {
+  const colorMap: Record<string, string> = {
+    red: 'bg-red-500/20 text-red-400 border-red-500/30',
+    blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    pink: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    amber: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    green: 'bg-green-500/20 text-green-400 border-green-500/30',
+  };
+  return colorMap[color] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+};
+
 // --- ADMIN TASKS (Ops Queue) - DEPRECATED ---
 // Removed as part of pivot to Commercial & Media Operating System
 // Mock data completely removed - AdminTask interface and INITIAL_TASKS export deleted
@@ -848,7 +979,14 @@ export const INITIAL_SPONSORS: Sponsor[] = [
 export interface TemplateTask {
   label: string;
   sort_order: number;
+  // Phase 4: Default ownership for volunteer-proof templates
+  default_owner_role?: ClubRoleName;
+  default_backup_role?: ClubRoleName;
+  offset_hours?: number;  // Hours before kickoff when task is due
 }
+
+// Phase 4: Auto-apply setting for volunteer-proof templates
+export type TemplateAutoApply = 'never' | 'home' | 'away' | 'always';
 
 export interface TemplatePack {
   id: string;
@@ -856,6 +994,9 @@ export interface TemplatePack {
   name: string;
   description?: string;
   is_enabled: boolean;
+  // Phase 4: Volunteer-proof Templates
+  auto_apply?: TemplateAutoApply;      // When to auto-apply this pack
+  default_owner_role?: ClubRoleName;   // Default owner role for all tasks in pack
   tasks: TemplateTask[];
   created_at?: string;
   updated_at?: string;
@@ -873,6 +1014,11 @@ export interface FixtureTask {
   sort_order: number;
   created_at?: string;
   updated_at?: string;
+  // Phase 3: Task Ownership
+  owner_user_id?: string;       // Assigned owner (ClubUser.id)
+  backup_user_id?: string;      // Backup person (ClubUser.id)
+  owner_role?: ClubRoleName;    // Fallback: anyone with this role can claim
+  due_at?: string;              // ISO timestamp for when task is due
 }
 
 // ============================================================================
@@ -1001,70 +1147,210 @@ export const DEFAULT_TEMPLATE_PACKS: Omit<TemplatePack, 'id' | 'club_id'>[] = [
     name: 'Matchday Pack (Home)',
     description: 'Essential tasks for home matches',
     is_enabled: true,
+    auto_apply: 'home',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm referee and officials', sort_order: 1 },
-      { label: 'Prepare matchday programme', sort_order: 2 },
-      { label: 'Check pitch and goal nets', sort_order: 3 },
-      { label: 'Set up refreshments', sort_order: 4 },
-      { label: 'Post lineup graphic on social', sort_order: 5 },
-      { label: 'Brief stewards and volunteers', sort_order: 6 },
+      { label: 'Confirm referee and officials', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Prepare matchday programme', sort_order: 2, default_owner_role: 'Media' },
+      { label: 'Check pitch and goal nets', sort_order: 3, default_owner_role: 'Ops' },
+      { label: 'Set up refreshments', sort_order: 4, default_owner_role: 'Ops' },
+      { label: 'Post lineup graphic on social', sort_order: 5, default_owner_role: 'Media' },
+      { label: 'Brief stewards and volunteers', sort_order: 6, default_owner_role: 'Ops' },
     ]
   },
   {
     name: 'Matchday Pack (Away)',
     description: 'Essential tasks for away matches',
     is_enabled: true,
+    auto_apply: 'away',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm transport arrangements', sort_order: 1 },
-      { label: 'Check away kit is clean and packed', sort_order: 2 },
-      { label: 'Send travel details to players', sort_order: 3 },
-      { label: 'Post lineup graphic on social', sort_order: 4 },
-      { label: 'Confirm meeting time and location', sort_order: 5 },
+      { label: 'Confirm transport arrangements', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Check away kit is clean and packed', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Send travel details to players', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Post lineup graphic on social', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Confirm meeting time and location', sort_order: 5, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Training Night Pack',
     description: 'Pre-training session tasks',
     is_enabled: false,
+    auto_apply: 'never',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Set up training cones and equipment', sort_order: 1 },
-      { label: 'Check first aid kit', sort_order: 2 },
-      { label: 'Confirm session plan with coach', sort_order: 3 },
-      { label: 'Take attendance', sort_order: 4 },
+      { label: 'Set up training cones and equipment', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Check first aid kit', sort_order: 2, default_owner_role: 'Ops' },
+      { label: 'Confirm session plan with coach', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Take attendance', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Squad Availability Pack',
     description: 'Collect and track player availability',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Send availability request to group', sort_order: 1 },
-      { label: 'Chase non-responders', sort_order: 2 },
-      { label: 'Confirm final squad', sort_order: 3 },
-      { label: 'Notify unavailable players', sort_order: 4 },
+      { label: 'Send availability request to group', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Chase non-responders', sort_order: 2, default_owner_role: 'Coach' },
+      { label: 'Confirm final squad', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Notify unavailable players', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Kit & Equipment Pack',
     description: 'Kit management before and after match',
     is_enabled: false,
+    auto_apply: 'always',
+    default_owner_role: 'Kit',
     tasks: [
-      { label: 'Collect dirty kit from last match', sort_order: 1 },
-      { label: 'Send kit for laundry', sort_order: 2 },
-      { label: 'Check kit stock levels', sort_order: 3 },
-      { label: 'Prepare match kit', sort_order: 4 },
+      { label: 'Collect dirty kit from last match', sort_order: 1, default_owner_role: 'Kit' },
+      { label: 'Send kit for laundry', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Check kit stock levels', sort_order: 3, default_owner_role: 'Kit' },
+      { label: 'Prepare match kit', sort_order: 4, default_owner_role: 'Kit' },
     ]
   },
   {
     name: 'Media Pack',
     description: 'Content tasks for match coverage',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Media',
     tasks: [
-      { label: 'Write match preview', sort_order: 1 },
-      { label: 'Create matchday graphic', sort_order: 2 },
-      { label: 'Post pre-match content', sort_order: 3 },
-      { label: 'Post full-time result', sort_order: 4 },
-      { label: 'Write match report', sort_order: 5 },
+      { label: 'Write match preview', sort_order: 1, default_owner_role: 'Media', offset_hours: -48 },
+      { label: 'Create matchday graphic', sort_order: 2, default_owner_role: 'Media', offset_hours: -24 },
+      { label: 'Post pre-match content', sort_order: 3, default_owner_role: 'Media', offset_hours: -2 },
+      { label: 'Post full-time result', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Write match report', sort_order: 5, default_owner_role: 'Media' },
     ]
   },
 ];
+
+// ============================================================================
+// Phase 5: Audit Trail
+// ============================================================================
+
+export type AuditEventType =
+  | 'task.created'
+  | 'task.claimed'
+  | 'task.completed'
+  | 'task.reopened'
+  | 'task.reassigned'
+  | 'task.blocked'
+  | 'content.approved'
+  | 'content.published'
+  | 'fixture.created'
+  | 'fixture.updated'
+  | 'handover.executed'
+  | 'user.marked_unavailable'
+  | 'user.status_changed';
+
+export interface AuditEvent {
+  id: string;
+  club_id: string;
+  fixture_id?: string;
+  task_id?: string;
+  actor_user_id: string;
+  event_type: AuditEventType;
+  payload: Record<string, any>;  // Event-specific data
+  created_at: string;
+}
+
+// Helper to get human-readable event descriptions
+export const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
+  'task.created': 'created a task',
+  'task.claimed': 'claimed a task',
+  'task.completed': 'completed a task',
+  'task.reopened': 'reopened a task',
+  'task.reassigned': 'reassigned a task',
+  'task.blocked': 'marked a task as blocked',
+  'content.approved': 'approved content',
+  'content.published': 'published content',
+  'fixture.created': 'created a fixture',
+  'fixture.updated': 'updated a fixture',
+  'handover.executed': 'executed a handover',
+  'user.marked_unavailable': 'marked themselves unavailable',
+  'user.status_changed': 'changed user status',
+};
+
+// Event type icons for UI
+export const AUDIT_EVENT_ICONS: Record<AuditEventType, string> = {
+  'task.created': 'Plus',
+  'task.claimed': 'Hand',
+  'task.completed': 'CheckCircle2',
+  'task.reopened': 'RotateCcw',
+  'task.reassigned': 'UserPlus',
+  'task.blocked': 'AlertCircle',
+  'content.approved': 'ThumbsUp',
+  'content.published': 'Send',
+  'fixture.created': 'Calendar',
+  'fixture.updated': 'Edit',
+  'handover.executed': 'ArrowRightLeft',
+  'user.marked_unavailable': 'UserX',
+  'user.status_changed': 'User',
+};
+
+// ============================================================================
+// Phase 6: Quick Handover
+// ============================================================================
+
+export type HandoverScope = 'all' | 'fixture' | 'pack';
+export type HandoverTarget = 'user' | 'role' | 'backup';
+
+export interface HandoverRequest {
+  fromUserId: string;
+  scope: HandoverScope;
+  fixtureId?: string;        // Required if scope is 'fixture'
+  templatePackId?: string;   // Required if scope is 'pack'
+  target: HandoverTarget;
+  toUserId?: string;         // Required if target is 'user'
+  toRole?: ClubRoleName;     // Required if target is 'role'
+}
+
+export interface HandoverResult {
+  success: boolean;
+  tasksAffected: number;
+  errors?: string[];
+}
+
+// Optional auto-handover rules for future implementation
+export type HandoverTrigger = 'owner_unavailable' | 'overdue_4h' | 'no_response_24h';
+export type HandoverAction = 'assign_backup' | 'assign_role' | 'notify_admin';
+
+export interface HandoverRule {
+  id: string;
+  club_id: string;
+  trigger: HandoverTrigger;
+  action: HandoverAction;
+  notify: boolean;
+  is_enabled: boolean;
+}
+
+// ============================================================================
+// Phase 7: Exception Alerts
+// ============================================================================
+
+export type RiskLevel = 'ok' | 'warning' | 'critical';
+
+export interface TaskRisk {
+  task: FixtureTask;
+  level: RiskLevel;
+  reasons: string[];
+  fixture?: Fixture;
+}
+
+export interface RiskSummary {
+  critical: number;
+  warning: number;
+  ok: number;
+  total: number;
+  criticalTasks: TaskRisk[];
+  warningTasks: TaskRisk[];
+}
+
+// Risk thresholds (in hours)
+export const RISK_THRESHOLDS = {
+  WARNING_HOURS: 2,    // Warning if due in < 2 hours
+  CRITICAL_HOURS: 0,   // Critical if overdue
+} as const;

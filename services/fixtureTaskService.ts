@@ -5,7 +5,7 @@
  */
 
 import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
-import { FixtureTask, TemplatePack, TemplateTask, DEFAULT_TEMPLATE_PACKS } from '../types';
+import { FixtureTask, TemplatePack, TemplateTask, DEFAULT_TEMPLATE_PACKS, ClubRoleName, ClubUser } from '../types';
 import {
   getDemoFixtureTasks,
   saveDemoFixtureTask,
@@ -15,6 +15,7 @@ import {
   toggleDemoTemplatePack,
   generateDemoId,
 } from './demoStorageService';
+import { getClubUsers } from './userService';
 
 // ============================================================================
 // Template Packs
@@ -257,30 +258,62 @@ export const getTasksForFixtures = async (fixtureIds: string[]): Promise<Fixture
 };
 
 /**
+ * Phase 4: Find first available user with a specific primary role
+ */
+const findUserByRole = (users: ClubUser[], roleName: ClubRoleName): ClubUser | undefined => {
+  return users.find(u =>
+    u.status === 'active' &&
+    u.primary_role?.name === roleName
+  );
+};
+
+/**
+ * Phase 4: Calculate due date based on offset hours from kickoff
+ */
+const calculateDueDate = (kickoffTime: string, offsetHours?: number): string | undefined => {
+  if (offsetHours === undefined) return undefined;
+  const kickoff = new Date(kickoffTime);
+  kickoff.setHours(kickoff.getHours() + offsetHours);
+  return kickoff.toISOString();
+};
+
+/**
  * Generate tasks for a fixture from enabled templates
+ * Phase 4: Now supports auto-assignment based on default roles
  */
 export const generateTasksFromTemplates = async (
   clubId: string,
   fixtureId: string,
-  venue: 'Home' | 'Away'
+  venue: 'Home' | 'Away',
+  kickoffTime?: string
 ): Promise<FixtureTask[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return generateDemoTasksFromTemplates(clubId, fixtureId, venue);
+    return generateDemoTasksFromTemplates(clubId, fixtureId, venue, kickoffTime);
   }
 
   // Get enabled template packs
   const packs = await getTemplatePacks(clubId);
   const enabledPacks = packs.filter(p => p.is_enabled);
 
-  // Filter packs based on venue if applicable
+  // Phase 4: Filter packs based on auto_apply setting and venue
   const relevantPacks = enabledPacks.filter(p => {
+    // Check auto_apply setting first
+    if (p.auto_apply === 'never') return false;
+    if (p.auto_apply === 'home' && venue !== 'Home') return false;
+    if (p.auto_apply === 'away' && venue !== 'Away') return false;
+    // 'always' applies to both
+
+    // Legacy: Also check name for backwards compatibility
     const nameLower = p.name.toLowerCase();
-    if (nameLower.includes('(home)') && venue !== 'Home') return false;
-    if (nameLower.includes('(away)') && venue !== 'Away') return false;
+    if (nameLower.includes('(home)') && venue !== 'Home' && !p.auto_apply) return false;
+    if (nameLower.includes('(away)') && venue !== 'Away' && !p.auto_apply) return false;
     return true;
   });
 
-  // Collect all tasks from relevant packs
+  // Phase 4: Get club users for auto-assignment
+  const users = await getClubUsers(clubId);
+
+  // Collect all tasks from relevant packs with auto-assignment
   const tasksToCreate: Array<{
     club_id: string;
     fixture_id: string;
@@ -288,11 +321,23 @@ export const generateTasksFromTemplates = async (
     label: string;
     is_completed: boolean;
     sort_order: number;
+    owner_user_id?: string;
+    owner_role?: string;
+    due_at?: string;
   }> = [];
 
   let sortOrder = 0;
   for (const pack of relevantPacks) {
     for (const task of pack.tasks) {
+      // Phase 4: Determine owner role (task-level overrides pack-level)
+      const ownerRole = task.default_owner_role || pack.default_owner_role;
+
+      // Phase 4: Find user with matching primary role for auto-assignment
+      const assignedUser = ownerRole ? findUserByRole(users, ownerRole) : undefined;
+
+      // Phase 4: Calculate due date if kickoff time and offset provided
+      const dueAt = kickoffTime ? calculateDueDate(kickoffTime, task.offset_hours) : undefined;
+
       tasksToCreate.push({
         club_id: clubId,
         fixture_id: fixtureId,
@@ -300,6 +345,9 @@ export const generateTasksFromTemplates = async (
         label: task.label,
         is_completed: false,
         sort_order: sortOrder++,
+        owner_user_id: assignedUser?.id,
+        owner_role: ownerRole,
+        due_at: dueAt,
       });
     }
   }
@@ -453,7 +501,16 @@ export const deleteFixtureTask = async (taskId: string): Promise<void> => {
  */
 export const updateFixtureTask = async (
   taskId: string,
-  updates: { label?: string; sort_order?: number; status?: 'pending' | 'in_progress' | 'done' }
+  updates: {
+    label?: string;
+    sort_order?: number;
+    status?: 'pending' | 'in_progress' | 'done';
+    // Phase 3: Task ownership fields
+    owner_user_id?: string | null;
+    backup_user_id?: string | null;
+    owner_role?: string | null;
+    due_at?: string | null;
+  }
 ): Promise<FixtureTask> => {
   // Demo mode function
   const updateDemoTask = () => {
@@ -508,6 +565,9 @@ const mapTemplatePackFromDb = (row: any): TemplatePack => ({
   name: row.name,
   description: row.description,
   is_enabled: row.is_enabled,
+  // Phase 4: Volunteer-proof Templates fields
+  auto_apply: row.auto_apply,
+  default_owner_role: row.default_owner_role,
   tasks: (row.tasks || []) as TemplateTask[],
   created_at: row.created_at,
   updated_at: row.updated_at,
@@ -523,6 +583,11 @@ const mapFixtureTaskFromDb = (row: any): FixtureTask => ({
   completed_by: row.completed_by,
   completed_at: row.completed_at,
   sort_order: row.sort_order,
+  // Phase 3: Task Ownership fields
+  owner_user_id: row.owner_user_id,
+  backup_user_id: row.backup_user_id,
+  owner_role: row.owner_role,
+  due_at: row.due_at,
   created_at: row.created_at,
   updated_at: row.updated_at,
 });
