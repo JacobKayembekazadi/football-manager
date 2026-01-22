@@ -8,6 +8,7 @@
  * - Lists (ordered and unordered)
  * - Links
  * - Blockquotes
+ * - Dark mode support (add 'prose-invert' to className)
  */
 
 import React from 'react';
@@ -18,6 +19,24 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
+  const isDark = className.includes('prose-invert');
+
+  // Dynamic colors based on mode
+  const colors = {
+    text: isDark ? 'text-slate-300' : 'text-slate-700',
+    textMuted: isDark ? 'text-slate-400' : 'text-slate-600',
+    heading: isDark ? 'text-white' : 'text-slate-800',
+    link: isDark ? 'text-green-400' : 'text-blue-600',
+    code: isDark ? 'bg-white/10 text-green-400' : 'bg-slate-200 text-pink-600',
+    codeBlock: isDark ? 'bg-black/40' : 'bg-slate-900',
+    codeLang: isDark ? 'bg-black/60 text-slate-400' : 'bg-slate-800 text-slate-400',
+    blockquote: isDark ? 'border-green-500 bg-green-500/10' : 'border-blue-400 bg-blue-50',
+    tableBg: isDark ? 'bg-white/5' : 'bg-white',
+    tableHeader: isDark ? 'bg-white/10' : 'bg-slate-100',
+    tableBorder: isDark ? 'border-white/10' : 'border-slate-200',
+    tableRowAlt: isDark ? 'bg-white/5' : 'bg-slate-50',
+  };
+
   const renderMarkdown = (text: string): React.ReactNode[] => {
     const lines = text.split('\n');
     const elements: React.ReactNode[] = [];
@@ -33,7 +52,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         elements.push(
           <ListTag key={`list-${i}`} className={`${listItems.type === 'ol' ? 'list-decimal' : 'list-disc'} ml-4 my-2 space-y-1`}>
             {listItems.items.map((item, idx) => (
-              <li key={idx} className="text-slate-700">{parseInline(item)}</li>
+              <li key={idx} className={colors.text}>{parseInline(item)}</li>
             ))}
           </ListTag>
         );
@@ -48,11 +67,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
 
         elements.push(
           <div key={`table-${i}`} className="overflow-x-auto my-3">
-            <table className="min-w-full border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-100">
+            <table className={`min-w-full border ${colors.tableBorder} rounded-lg overflow-hidden`}>
+              <thead className={colors.tableHeader}>
                 <tr>
                   {headerRow.map((cell, idx) => (
-                    <th key={idx} className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b border-slate-200">
+                    <th key={idx} className={`px-3 py-2 text-left text-xs font-semibold ${colors.textMuted} border-b ${colors.tableBorder}`}>
                       {parseInline(cell.trim())}
                     </th>
                   ))}
@@ -60,9 +79,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
               </thead>
               <tbody>
                 {dataRows.map((row, rowIdx) => (
-                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? colors.tableBg : colors.tableRowAlt}>
                     {row.map((cell, cellIdx) => (
-                      <td key={cellIdx} className="px-3 py-2 text-sm text-slate-700 border-b border-slate-100">
+                      <td key={cellIdx} className={`px-3 py-2 text-sm ${colors.text} border-b ${colors.tableBorder}`}>
                         {parseInline(cell.trim())}
                       </td>
                     ))}
@@ -82,9 +101,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         elements.push(
           <div key={`code-${i}`} className="my-3 rounded-lg overflow-hidden">
             {codeBlock.lang && (
-              <div className="bg-slate-800 px-3 py-1 text-xs text-slate-400">{codeBlock.lang}</div>
+              <div className={`${colors.codeLang} px-3 py-1 text-xs`}>{codeBlock.lang}</div>
             )}
-            <pre className="bg-slate-900 p-3 overflow-x-auto">
+            <pre className={`${colors.codeBlock} p-3 overflow-x-auto`}>
               <code className="text-sm text-green-400 font-mono">{codeBlock.code.join('\n')}</code>
             </pre>
           </div>
@@ -133,19 +152,19 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       // Headers
       if (line.startsWith('### ')) {
         flushList();
-        elements.push(<h4 key={i} className="text-sm font-bold text-slate-800 mt-3 mb-1">{parseInline(line.slice(4))}</h4>);
+        elements.push(<h4 key={i} className={`text-sm font-bold ${colors.heading} mt-3 mb-1`}>{parseInline(line.slice(4))}</h4>);
         i++;
         continue;
       }
       if (line.startsWith('## ')) {
         flushList();
-        elements.push(<h3 key={i} className="text-base font-bold text-slate-800 mt-3 mb-1">{parseInline(line.slice(3))}</h3>);
+        elements.push(<h3 key={i} className={`text-base font-bold ${colors.heading} mt-3 mb-1`}>{parseInline(line.slice(3))}</h3>);
         i++;
         continue;
       }
       if (line.startsWith('# ')) {
         flushList();
-        elements.push(<h2 key={i} className="text-lg font-bold text-slate-800 mt-3 mb-2">{parseInline(line.slice(2))}</h2>);
+        elements.push(<h2 key={i} className={`text-lg font-bold ${colors.heading} mt-3 mb-2`}>{parseInline(line.slice(2))}</h2>);
         i++;
         continue;
       }
@@ -154,7 +173,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       if (line.startsWith('> ')) {
         flushList();
         elements.push(
-          <blockquote key={i} className="border-l-4 border-blue-400 pl-3 my-2 italic text-slate-600 bg-blue-50 py-2 pr-3 rounded-r">
+          <blockquote key={i} className={`border-l-4 ${colors.blockquote} pl-3 my-2 italic py-2 pr-3 rounded-r`}>
             {parseInline(line.slice(2))}
           </blockquote>
         );
@@ -165,7 +184,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       // Horizontal rule
       if (line.match(/^---+$/) || line.match(/^\*\*\*+$/)) {
         flushList();
-        elements.push(<hr key={i} className="my-3 border-slate-200" />);
+        elements.push(<hr key={i} className={`my-3 ${colors.tableBorder}`} />);
         i++;
         continue;
       }
@@ -203,7 +222,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
 
       // Regular paragraph
       flushList();
-      elements.push(<p key={i} className="text-slate-700 my-1">{parseInline(line)}</p>);
+      elements.push(<p key={i} className={`${colors.text} my-1`}>{parseInline(line)}</p>);
       i++;
     }
 
@@ -216,7 +235,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
   };
 
   const parseInline = (text: string): React.ReactNode => {
-    // Process inline elements: bold, italic, code, links
     const parts: React.ReactNode[] = [];
     let remaining = text;
     let key = 0;
@@ -245,7 +263,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       if (codeMatch) {
         if (codeMatch[1]) parts.push(codeMatch[1]);
         parts.push(
-          <code key={key++} className="bg-slate-200 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600">
+          <code key={key++} className={`${colors.code} px-1.5 py-0.5 rounded text-sm font-mono`}>
             {codeMatch[2]}
           </code>
         );
@@ -258,7 +276,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       if (linkMatch) {
         if (linkMatch[1]) parts.push(linkMatch[1]);
         parts.push(
-          <a key={key++} href={linkMatch[3]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          <a key={key++} href={linkMatch[3]} target="_blank" rel="noopener noreferrer" className={`${colors.link} hover:underline`}>
             {linkMatch[2]}
           </a>
         );
