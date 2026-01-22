@@ -13,6 +13,70 @@ All notable changes to this project are documented here. LLMs working on this pr
 
 ## 2026-01-22
 
+### Added - Multi-Provider Image Generation (Session: Claude Opus 4.5)
+- **Provider Abstraction**: Created modular image provider system with common interface
+- **Intelligent Routing**: Routes image requests to best provider based on content type
+- **Ideogram Integration**: Added Ideogram 2.0 for text-heavy graphics (scores, matchday info)
+- **Fallback Chain**: Automatic fallback when providers fail (Ideogram → Imagen → Gemini)
+
+### Routing Strategy
+| Image Type | Primary Provider | Reason |
+|------------|------------------|--------|
+| Result Graphics | Ideogram | Best text rendering for scores |
+| Matchday Graphics | Ideogram | Accurate team names, dates |
+| Player Spotlights | Imagen 3 | Visual quality |
+| Announcements | Imagen 3 | Balance of text + visuals |
+| Custom Images | Imagen 3 | General purpose |
+
+### Files Added
+- `api/lib/imageProviders/types.ts` - Shared interfaces and types
+- `api/lib/imageProviders/router.ts` - Provider routing and fallback logic
+- `api/lib/imageProviders/imagen.ts` - Google Imagen 3 provider
+- `api/lib/imageProviders/ideogram.ts` - Ideogram 2.0 provider
+- `api/lib/imageProviders/gemini.ts` - Gemini 2.0 Flash fallback provider
+- `api/lib/imageProviders/index.ts` - Module exports
+
+### Files Modified
+- `api/ai-generate-image.ts` - Refactored to use provider router
+- `docs/ARCHITECTURE.md` - Added AI image generation section
+- `docs/CONTEXT.md` - Updated tech stack
+- `package.json` - Added @vercel/node dev dependency
+
+### Configuration
+- `GEMINI_API_KEY` (required) - Used for Imagen 3 and Gemini fallback
+- `IDEOGRAM_API_KEY` (optional) - Enables Ideogram for text-heavy graphics
+
+---
+
+### Fixed - Mobile UI Responsiveness (Session: Claude Opus 4.5)
+- **CollapsibleSection Component**: Created reusable collapsible panel with accordion behavior on mobile
+- **CommsArray Mobile**: Both panels now collapsible, accordion behavior (one at a time)
+- **ContentPipeline Mobile**: Stats cards wrap properly, pipeline columns scroll horizontally with snap
+- **OperationsHub Mobile**: Removed min-width constraints, responsive grids, proper touch targets
+- **FormationBuilder Mobile**: Added bottom sheet for player selection, pitch fills screen width
+- **Layout Bottom Padding**: Added `pb-24` on mobile to prevent content being clipped by bottom nav
+
+### Mobile UI Fixes Summary
+| Page | Issue Fixed | Solution |
+|------|-------------|----------|
+| Content (Posts) | Panels too tall | CollapsibleSection with accordion |
+| Content (Assets) | Stats overlap | Horizontal scroll + flex-wrap |
+| Operations Hub | Form overlaps | Responsive grids, no min-widths |
+| Formation Builder | Sidebar unusable | Bottom sheet on mobile |
+| All Pages | Bottom nav clips content | Added pb-24 padding |
+
+### Files Added
+- `components/CollapsibleSection.tsx` - Reusable collapsible panel component
+
+### Files Modified
+- `components/CommsArray.tsx` - Wrapped panels in CollapsibleSection
+- `components/ContentPipeline.tsx` - Responsive stats, horizontal scroll pipeline
+- `components/OperationsHub.tsx` - Responsive grids, touch targets
+- `components/FormationBuilder.tsx` - Mobile bottom sheet, responsive header
+- `components/Layout.tsx` - Bottom padding for mobile nav
+
+---
+
 ### Changed - AI Provider Migration (Session: Claude Opus 4.5)
 - **Vercel Serverless Functions**: Migrated AI calls from Supabase Edge Functions to Vercel
 - **Multi-Provider Support**: Text generation now supports Gemini, OpenAI, and Anthropic

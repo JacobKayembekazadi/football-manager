@@ -84,21 +84,23 @@ const OperationsHub: React.FC<OperationsHubProps> = ({ club, fixtures }) => {
       </div>
 
       {/* Section Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0 custom-scrollbar">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
             <button
               key={section.id}
+              type="button"
               onClick={() => setActiveSection(section.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 px-3 md:px-4 py-2.5 min-h-[44px] rounded-lg font-medium whitespace-nowrap transition-all text-sm ${
                 activeSection === section.id
                   ? 'bg-green-500 text-black'
                   : 'bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
               }`}
             >
               <Icon size={16} />
-              {section.label}
+              <span className="hidden xs:inline">{section.label}</span>
+              <span className="xs:hidden">{section.label.split(' ')[0]}</span>
             </button>
           );
         })}
@@ -225,13 +227,13 @@ const BroadcastSection: React.FC<{ club: Club; fixtures: Fixture[] }> = ({ club,
         />
 
         {/* Options */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <div>
             <label className="text-[10px] font-mono text-slate-500 uppercase block mb-1">Send To</label>
             <select
               value={channel}
               onChange={(e) => setChannel(e.target.value as BroadcastChannel)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none min-h-[44px]"
             >
               <option value="all">All Players ({club.players.length})</option>
               <option value="available">Available Players</option>
@@ -241,12 +243,12 @@ const BroadcastSection: React.FC<{ club: Club; fixtures: Fixture[] }> = ({ club,
           </div>
 
           {channel !== 'all' && (
-            <div className="flex-1 min-w-[200px]">
+            <div>
               <label className="text-[10px] font-mono text-slate-500 uppercase block mb-1">For Fixture</label>
               <select
                 value={selectedFixture}
                 onChange={(e) => setSelectedFixture(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none min-h-[44px]"
               >
                 <option value="">Select fixture...</option>
                 {upcomingFixtures.map(f => (
@@ -725,18 +727,18 @@ const ExpensesSection: React.FC<{ club: Club }> = ({ club }) => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+      <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 md:gap-4">
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 md:p-4 flex xs:block items-center justify-between">
           <p className="text-[10px] text-slate-500 uppercase">Total Income</p>
-          <p className="text-2xl font-bold text-green-400">£{summary.totalIncome.toLocaleString()}</p>
+          <p className="text-xl md:text-2xl font-bold text-green-400">£{summary.totalIncome.toLocaleString()}</p>
         </div>
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 md:p-4 flex xs:block items-center justify-between">
           <p className="text-[10px] text-slate-500 uppercase">Total Expenses</p>
-          <p className="text-2xl font-bold text-red-400">£{summary.totalExpenses.toLocaleString()}</p>
+          <p className="text-xl md:text-2xl font-bold text-red-400">£{summary.totalExpenses.toLocaleString()}</p>
         </div>
-        <div className={`${summary.balance >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'} border rounded-xl p-4`}>
+        <div className={`${summary.balance >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'} border rounded-xl p-3 md:p-4 flex xs:block items-center justify-between`}>
           <p className="text-[10px] text-slate-500 uppercase">Balance</p>
-          <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`text-xl md:text-2xl font-bold ${summary.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {summary.balance >= 0 ? '+' : ''}£{summary.balance.toLocaleString()}
           </p>
         </div>
@@ -785,7 +787,7 @@ const ExpensesSection: React.FC<{ club: Club }> = ({ club }) => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <div>
               <label className="text-[10px] font-mono text-slate-500 uppercase block mb-1">Amount (£)</label>
               <input
@@ -793,7 +795,7 @@ const ExpensesSection: React.FC<{ club: Club }> = ({ club }) => {
                 value={formAmount}
                 onChange={(e) => setFormAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none min-h-[44px]"
               />
             </div>
             <div>
@@ -801,21 +803,21 @@ const ExpensesSection: React.FC<{ club: Club }> = ({ club }) => {
               <select
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value as ExpenseCategory)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none min-h-[44px]"
               >
                 {Object.entries(categoryLabels).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="text-[10px] font-mono text-slate-500 uppercase block mb-1">Description</label>
               <input
                 type="text"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="e.g., Pitch hire for match"
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none min-h-[44px]"
               />
             </div>
             <div>
@@ -824,7 +826,7 @@ const ExpensesSection: React.FC<{ club: Club }> = ({ club }) => {
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none min-h-[44px]"
               />
             </div>
           </div>

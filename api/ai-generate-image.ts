@@ -1,12 +1,22 @@
 /**
  * Vercel Serverless Function: AI Image Generation
  *
- * Uses Google Imagen 3 for high-quality image generation
- * Set GEMINI_API_KEY in Vercel dashboard
+ * Multi-provider image generation with intelligent routing:
+ * - Ideogram 2.0: Best for text-heavy graphics (scores, matchday info)
+ * - Imagen 3: Best for visual quality (player cards, announcements)
+ * - Gemini 2.0 Flash: Fallback option
+ *
+ * Environment Variables (Vercel Dashboard):
+ * - GEMINI_API_KEY: Required - Used for Imagen 3 and Gemini
+ * - IDEOGRAM_API_KEY: Optional - Enables Ideogram for text-heavy graphics
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Modality } from '@google/genai';
+import {
+  generateWithRouter,
+  getPrimaryProvider,
+  type AspectRatio,
+} from './lib/imageProviders';
 
 interface RequestBody {
   prompt: string;
@@ -14,7 +24,7 @@ interface RequestBody {
   referenceMimeType?: string;
   clubId?: string;
   action?: string;
-  aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+  aspectRatio?: AspectRatio;
 }
 
 export default async function handler(
@@ -34,102 +44,58 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey) {
     return res.status(500).json({
-      error: 'GEMINI_API_KEY not configured. Add it in Vercel Dashboard → Settings → Environment Variables'
+      error:
+        'GEMINI_API_KEY not configured. Add it in Vercel Dashboard → Settings → Environment Variables',
     });
   }
 
+  const ideogramApiKey = process.env.IDEOGRAM_API_KEY;
+
   try {
-    const { prompt, referenceImageBase64, referenceMimeType, aspectRatio = '1:1' } =
-      req.body as RequestBody;
+    const {
+      prompt,
+      referenceImageBase64,
+      referenceMimeType,
+      action = 'generate_custom_image',
+      aspectRatio = '1:1',
+    } = req.body as RequestBody;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    // Log which provider will be attempted first
+    const primaryProvider = getPrimaryProvider(action);
+    console.log(`[ai-generate-image] Action: ${action}, Primary provider: ${primaryProvider}`);
 
-    // Try Imagen 3 first, fall back to Gemini 2.0 Flash for image generation
-    let imageBase64 = '';
-    let mimeType = 'image/png';
-    let description = '';
+    // Generate image using router with fallback chain
+    const result = await generateWithRouter({
+      action,
+      options: {
+        prompt,
+        aspectRatio,
+        referenceImageBase64,
+        referenceMimeType,
+      },
+      config: {
+        geminiApiKey,
+        ideogramApiKey,
+      },
+    });
 
-    try {
-      // Use Imagen 3 for best quality
-      const response = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-002',
-        prompt: prompt,
-        config: {
-          numberOfImages: 1,
-          aspectRatio: aspectRatio,
-          // Safety settings for generated content
-          safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
-        },
-      });
-
-      // Extract image from Imagen response
-      if (response.generatedImages && response.generatedImages.length > 0) {
-        const generatedImage = response.generatedImages[0];
-        if (generatedImage.image?.imageBytes) {
-          imageBase64 = generatedImage.image.imageBytes;
-          mimeType = 'image/png';
-        }
-      }
-    } catch (imagenError) {
-      console.log('Imagen 3 not available, falling back to Gemini 2.0 Flash:', imagenError);
-
-      // Fallback to Gemini 2.0 Flash with image generation
-      const contents: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> = [
-        { text: prompt },
-      ];
-
-      // Add reference image if provided
-      if (referenceImageBase64 && referenceMimeType) {
-        contents.push({
-          inlineData: {
-            data: referenceImageBase64,
-            mimeType: referenceMimeType,
-          },
-        });
-      }
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents,
-        config: {
-          responseModalities: [Modality.TEXT, Modality.IMAGE],
-        },
-      });
-
-      // Extract image from Gemini response
-      const parts = response.candidates?.[0]?.content?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData) {
-          imageBase64 = part.inlineData.data || '';
-          mimeType = part.inlineData.mimeType || 'image/png';
-        }
-        if (part.text) {
-          description = part.text;
-        }
-      }
-    }
-
-    if (!imageBase64) {
-      return res.status(200).json({
-        error: 'Image generation not available for this prompt',
-        description: 'The model could not generate an image for this request.',
-      });
-    }
+    console.log(`[ai-generate-image] Generated successfully with provider: ${result.provider}`);
 
     return res.status(200).json({
-      imageBase64,
-      mimeType,
-      description,
+      imageBase64: result.imageBase64,
+      mimeType: result.mimeType,
+      description: result.description,
+      provider: result.provider, // Include for debugging/analytics
     });
   } catch (error) {
-    console.error('Image generation error:', error);
+    console.error('[ai-generate-image] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return res.status(500).json({ error: `Image generation failed: ${message}` });
   }
