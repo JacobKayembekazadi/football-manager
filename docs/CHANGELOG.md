@@ -11,6 +11,29 @@ All notable changes to this project are documented here. LLMs working on this pr
 
 ---
 
+## 2026-01-22
+
+### Changed - AI Provider Migration (Session: Claude Opus 4.5)
+- **Vercel Serverless Functions**: Migrated AI calls from Supabase Edge Functions to Vercel
+- **Multi-Provider Support**: Text generation now supports Gemini, OpenAI, and Anthropic
+- **Simpler Key Management**: API keys now configured via Vercel dashboard instead of Supabase CLI
+
+### Files Added
+- `api/ai-generate.ts` - Text generation serverless function
+- `api/ai-generate-image.ts` - Image generation serverless function
+
+### Files Modified
+- `services/geminiService.ts` - Now calls Vercel routes instead of Supabase Edge Functions
+- `vercel.json` - Added API route handling
+- `package.json` - Added @vercel/node dependency
+
+### Configuration
+- Set `GEMINI_API_KEY` in Vercel dashboard for Gemini (default)
+- Optionally set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` for other providers
+- Set `VITE_AI_PROVIDER` env var to switch providers: `gemini`, `openai`, or `anthropic`
+
+---
+
 ## 2026-01-21
 
 ### Added - Independence & Leverage Phase 7: Exception Alerts (Session: Claude Opus 4.5)
