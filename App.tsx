@@ -11,6 +11,7 @@ import OnboardingManager from './components/OnboardingManager';
 import FixtureFormModal from './components/FixtureFormModal';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
+import EmptyState from './components/EmptyState';
 
 // Lazy-loaded components for better initial load performance
 const ViralScout = lazy(() => import('./components/ViralScout'));
@@ -990,6 +991,44 @@ const TemplatesView: React.FC<{ fixtures: Fixture[]; clubId: string }> = ({ fixt
   const enabledPacks = templatePacks.filter(p => p.is_enabled);
   const nextFixture = fixtures.filter(f => f.status === 'SCHEDULED')[0];
   const totalTaskCount = enabledPacks.reduce((sum, pack) => sum + (pack.tasks?.length || 0), 0);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Matchday Task Templates</h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Enable templates below to auto-populate your to-do list on the Dashboard
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state - no templates available
+  if (templatePacks.length === 0) {
+    return (
+      <div className="space-y-6 pb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Matchday Task Templates</h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Enable templates below to auto-populate your to-do list on the Dashboard
+          </p>
+        </div>
+        <div className="border border-dashed border-white/10 rounded-xl">
+          <EmptyState
+            icon={ClipboardList}
+            title="No Templates Available"
+            description="Template packs will appear here once configured"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-8">
