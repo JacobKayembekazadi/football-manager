@@ -571,6 +571,79 @@ export const updateFixtureTask = async (
 };
 
 // ============================================================================
+// Continue Button Support
+// ============================================================================
+
+/**
+ * Get the next incomplete task across upcoming fixtures
+ * Returns the task with its fixture context for navigation
+ */
+export interface NextTaskResult {
+  task: FixtureTask;
+  fixture: import('../types').Fixture;
+}
+
+export const getNextIncompleteTask = async (
+  clubId: string,
+  currentFixtureId?: string
+): Promise<NextTaskResult | null> => {
+  // Import fixture service dynamically to avoid circular dependency
+  const { getFixtures } = await import('./fixtureService');
+
+  // Get upcoming fixtures sorted by kickoff time
+  const fixtures = await getFixtures(clubId);
+  const now = new Date();
+  const upcomingFixtures = fixtures
+    .filter(f => new Date(f.kickoff_time) >= now && f.status === 'SCHEDULED')
+    .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
+
+  if (upcomingFixtures.length === 0) {
+    return null;
+  }
+
+  // Get all tasks for upcoming fixtures
+  const fixtureIds = upcomingFixtures.map(f => f.id);
+  const allTasks = await getTasksForFixtures(fixtureIds);
+
+  // Filter to incomplete tasks
+  const incompleteTasks = allTasks.filter(t => !t.is_completed);
+
+  if (incompleteTasks.length === 0) {
+    return null;
+  }
+
+  // Sort tasks: prioritize current fixture, then by fixture kickoff time, then sort_order
+  const sortedTasks = incompleteTasks.sort((a, b) => {
+    // If currentFixtureId provided, prioritize tasks in same fixture
+    if (currentFixtureId) {
+      const aIsCurrent = a.fixture_id === currentFixtureId;
+      const bIsCurrent = b.fixture_id === currentFixtureId;
+      if (aIsCurrent && !bIsCurrent) return -1;
+      if (!aIsCurrent && bIsCurrent) return 1;
+    }
+
+    // Then sort by fixture kickoff time
+    const fixtureA = upcomingFixtures.find(f => f.id === a.fixture_id);
+    const fixtureB = upcomingFixtures.find(f => f.id === b.fixture_id);
+    const timeA = fixtureA ? new Date(fixtureA.kickoff_time).getTime() : Infinity;
+    const timeB = fixtureB ? new Date(fixtureB.kickoff_time).getTime() : Infinity;
+    if (timeA !== timeB) return timeA - timeB;
+
+    // Finally sort by sort_order within same fixture
+    return a.sort_order - b.sort_order;
+  });
+
+  const nextTask = sortedTasks[0];
+  const fixture = upcomingFixtures.find(f => f.id === nextTask.fixture_id);
+
+  if (!fixture) {
+    return null;
+  }
+
+  return { task: nextTask, fixture };
+};
+
+// ============================================================================
 // Mappers
 // ============================================================================
 

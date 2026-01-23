@@ -826,7 +826,7 @@ const getImageErrorMessage = (status: number, errorDetails: string): string => {
 export const generateMatchdayGraphic = async (
   club: Club,
   fixture: Fixture,
-  style: 'hype' | 'minimal' | 'retro' | 'neon' = 'neon'
+  style: 'hype' | 'minimal' | 'retro' | 'neon' = 'minimal'
 ): Promise<ImageGenerationResult> => {
   const matchDate = new Date(fixture.kickoff_time);
   const formattedDate = matchDate.toLocaleDateString('en-GB', {
@@ -843,7 +843,7 @@ export const generateMatchdayGraphic = async (
     hype: 'bold, dynamic, high-energy with dramatic lighting, motion blur effects, and intense colors',
     minimal: 'clean, modern, minimalist design with lots of white space, simple typography',
     retro: 'vintage football poster style, textured paper effect, classic typography, muted warm colors',
-    neon: 'cyberpunk aesthetic, neon glow effects, dark background with bright cyan and magenta accents, futuristic',
+    neon: 'modern sports design, bold typography, dark background with vibrant accent colors, professional',
   };
 
   const prompt = `
@@ -902,7 +902,7 @@ ${scorersText ? `SCORERS: ${scorersText}` : ''}
 ${fixture.man_of_the_match ? `MAN OF THE MATCH: ${fixture.man_of_the_match}` : ''}
 COMPETITION: ${fixture.competition || 'League'}
 
-DESIGN STYLE: Cyberpunk/neon aesthetic with ${result === 'WIN' ? 'celebratory, triumphant' : result === 'DRAW' ? 'neutral, balanced' : 'determined, resilient'} mood.
+DESIGN STYLE: Modern sports design with ${result === 'WIN' ? 'celebratory, triumphant' : result === 'DRAW' ? 'neutral, balanced' : 'determined, resilient'} mood.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}
@@ -941,7 +941,7 @@ STATS (0-99 scale):
 
 FORM: ${player.form}/10
 
-DESIGN STYLE: Modern sports card aesthetic, cyberpunk/neon elements, dark background with glowing accents.
+DESIGN STYLE: Modern sports card aesthetic, clean design, dark background with vibrant accents.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}
@@ -979,7 +979,7 @@ HEADLINE: ${title}
 SUBTEXT: ${subtitle}
 TYPE: ${type.toUpperCase()}
 
-DESIGN STYLE: ${typeStyles[type]}. Cyberpunk/modern aesthetic with neon accents.
+DESIGN STYLE: ${typeStyles[type]}. Modern professional sports aesthetic.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}

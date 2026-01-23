@@ -18,11 +18,13 @@ import {
 import { FixtureTask, Fixture, ClubUser } from '../types';
 import { getTasksForFixtures, toggleTaskCompletion } from '../services/fixtureTaskService';
 import { getFixtures } from '../services/fixtureService';
+import ContinueButton from './ContinueButton';
 
 interface MyTasksProps {
   clubId: string;
   currentUser: ClubUser;
   onTaskComplete?: () => void;
+  onNavigateToTask?: (fixtureId: string, taskId: string) => void;
 }
 
 interface TaskWithFixture extends FixtureTask {
@@ -33,10 +35,12 @@ const MyTasks: React.FC<MyTasksProps> = ({
   clubId,
   currentUser,
   onTaskComplete,
+  onNavigateToTask,
 }) => {
   const [tasks, setTasks] = useState<TaskWithFixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadMyTasks();
@@ -99,6 +103,7 @@ const MyTasks: React.FC<MyTasksProps> = ({
       setTasks(prev =>
         prev.map(t => (t.id === task.id ? { ...updated, fixture: task.fixture } : t))
       );
+      setRefreshTrigger(prev => prev + 1); // Trigger continue button refresh
       onTaskComplete?.();
     } catch (error) {
       console.error('Error toggling task:', error);
@@ -256,6 +261,18 @@ const MyTasks: React.FC<MyTasksProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Continue Button */}
+      {onNavigateToTask && (
+        <div className="mt-4">
+          <ContinueButton
+            clubId={clubId}
+            onNavigate={onNavigateToTask}
+            refreshTrigger={refreshTrigger}
+            variant="default"
+          />
+        </div>
+      )}
     </div>
   );
 };

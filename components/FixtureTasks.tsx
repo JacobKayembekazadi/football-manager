@@ -32,6 +32,7 @@ import {
 import { getClubUsers } from '../services/userService';
 import UserAvatar from './UserAvatar';
 import TaskOwnerSelector from './TaskOwnerSelector';
+import ContinueButton from './ContinueButton';
 
 interface FixtureTasksProps {
   fixture: Fixture;
@@ -39,6 +40,8 @@ interface FixtureTasksProps {
   currentUserId?: string;
   showOwnership?: boolean;
   onTasksChange?: () => void;
+  onNavigateToTask?: (fixtureId: string, taskId: string) => void;
+  showContinueButton?: boolean;
 }
 
 const FixtureTasks: React.FC<FixtureTasksProps> = ({
@@ -47,6 +50,8 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   currentUserId,
   showOwnership = true,
   onTasksChange,
+  onNavigateToTask,
+  showContinueButton = false,
 }) => {
   const [tasks, setTasks] = useState<FixtureTask[]>([]);
   const [users, setUsers] = useState<ClubUser[]>([]);
@@ -55,6 +60,7 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   const [showAddTask, setShowAddTask] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -87,6 +93,7 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
     try {
       const updated = await toggleTaskCompletion(task.id, !task.is_completed);
       setTasks(prev => prev.map(t => (t.id === task.id ? updated : t)));
+      setRefreshTrigger(prev => prev + 1); // Trigger continue button refresh
       onTasksChange?.();
     } catch (error) {
       console.error('Error toggling task:', error);
@@ -377,6 +384,17 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
         >
           <Plus size={14} /> Add Task
         </button>
+      )}
+
+      {/* Continue Button */}
+      {showContinueButton && onNavigateToTask && (
+        <ContinueButton
+          clubId={clubId}
+          currentFixtureId={fixture.id}
+          onNavigate={onNavigateToTask}
+          refreshTrigger={refreshTrigger}
+          variant="default"
+        />
       )}
     </div>
   );
