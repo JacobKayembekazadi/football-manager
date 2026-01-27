@@ -4,7 +4,8 @@ import { ContentItem, Fixture, Club, ContentGenStatus } from '../types';
 import ContentCard from './ContentCard';
 import ContentEditorModal from './ContentEditorModal';
 import ImageGeneratorModal from './ImageGeneratorModal';
-import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock, Image as ImageIcon, Plus } from 'lucide-react';
+import ContentTemplateModal from './ContentTemplateModal';
+import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock, Image as ImageIcon, Plus, FileText } from 'lucide-react';
 
 interface ContentPipelineProps {
   contentItems: ContentItem[];
@@ -30,6 +31,7 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
   const [filterType, setFilterType] = useState<'ALL' | 'SOCIAL' | 'WEB' | 'GRAPHICS'>('ALL');
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   // Filter Logic
   const filteredItems = contentItems.filter(item => {
@@ -61,8 +63,8 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
         {/* Header HUD */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
             <div>
-                <h2 className="text-3xl font-display font-bold text-white glow-text">HOLO-<span className="text-amber-500">CONTENT</span></h2>
-                <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Automation.</p>
+                <h2 className="text-3xl font-display font-bold text-white glow-text">Content <span className="text-amber-500">Hub</span></h2>
+                <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Management</p>
             </div>
 
             <div className="flex gap-4">
@@ -71,7 +73,14 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 <StatsCard label="Live Assets" value={publishedItems.length} icon={Send} color="text-blue-400" />
             </div>
 
-            <div className="flex gap-3 ml-auto xl:ml-0">
+            <div className="flex gap-3 ml-auto xl:ml-0 flex-wrap">
+                <button
+                    onClick={() => setShowTemplateModal(true)}
+                    className="flex items-center gap-2 bg-green-500/10 border border-green-500/50 text-green-500 px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-green-500/20 transition-all shadow-[0_0_15px_rgba(34,197,94,0.2)] hover:shadow-[0_0_25px_rgba(34,197,94,0.4)]"
+                >
+                    <FileText size={18} />
+                    Templates
+                </button>
                 <button
                     onClick={() => setShowImageGenerator(true)}
                     className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/50 text-purple-500 px-5 py-4 rounded-xl font-display font-bold uppercase hover:bg-purple-500/20 transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
@@ -230,6 +239,18 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 club={club}
                 fixtures={fixtures}
                 onClose={() => setShowImageGenerator(false)}
+            />
+        )}
+
+        {/* Content Template Modal */}
+        {showTemplateModal && (
+            <ContentTemplateModal
+                club={club}
+                onClose={() => setShowTemplateModal(false)}
+                onContentCreated={(newContent) => {
+                    onUpdateContent(newContent);
+                    setShowTemplateModal(false);
+                }}
             />
         )}
     </div>

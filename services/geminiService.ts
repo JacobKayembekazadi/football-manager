@@ -30,9 +30,12 @@ ${club.players.map((p) => `#${p.number} ${p.name} (${p.position})`).join(', ')}
 
 Rules:
 - Keep it punchy and engaging.
-- No robotic AI phrases like "Here is a tweet".
+- No robotic AI phrases like "Here is a tweet" or "Certainly!".
+- No sci-fi language, futuristic speak, or game-like commentary.
+- Write like a real grassroots football club media officer would.
 - Use emojis sparingly but effectively.
 - If a player is mentioned in the prompt, refer to them by name or nickname.
+- Sound authentic - supporters should feel this was written by someone who cares about the club.
 `;
 
 // AI invocation via Vercel serverless function
@@ -368,6 +371,175 @@ Format: HTML-ready text (paragraphs, bolding).
 `;
   return await invokeAi(club.id, prompt, 'newsletter');
 };
+
+// --- CONTENT TEMPLATES ---
+
+export type ContentTemplate = 'match_report' | 'player_signing' | 'training_update';
+export type ContentTone = 'normal' | 'formal' | 'casual';
+
+export interface TemplateContext {
+  // Match Report
+  opponent?: string;
+  score?: string;
+  scorers?: string[];
+  venue?: string;
+  competition?: string;
+  highlights?: string;
+  manOfTheMatch?: string;
+
+  // Player Signing
+  playerName?: string;
+  position?: string;
+  previousClub?: string;
+  contractLength?: string;
+  transferFee?: string;
+  shirtNumber?: string;
+
+  // Training Update
+  sessionType?: string;
+  focusArea?: string;
+  playerUpdates?: string;
+  injuryNews?: string;
+  managerQuotes?: string;
+}
+
+const getTemplatePrompt = (
+  club: Club,
+  template: ContentTemplate,
+  context: TemplateContext,
+  tone: ContentTone = 'normal'
+): string => {
+  const toneGuide = {
+    normal: 'Professional but warm, like a club media officer writing for fans',
+    formal: 'Official and professional, suitable for press releases and formal announcements',
+    casual: 'Friendly and conversational, like chatting with supporters at the bar',
+  };
+
+  const baseContext = `
+You are the Media Officer for ${club.name} (${club.nickname}).
+Club tone: ${club.tone_context}
+Writing style: ${toneGuide[tone]}
+
+IMPORTANT RULES:
+- Write like a real grassroots/non-league football club
+- Sound authentic - like this was written by someone who works at the club
+- No futuristic language, no sci-fi references, no "systems online" speak
+- Use football terminology naturally
+- Be genuine and relatable to supporters
+`;
+
+  if (template === 'match_report') {
+    return `${baseContext}
+
+TASK: Write a match report for our official website/social media.
+
+MATCH DETAILS:
+- Opponent: ${context.opponent || '[Opponent]'}
+- Score: ${context.score || '[Score]'}
+- Scorers: ${context.scorers?.join(', ') || 'None recorded'}
+- Venue: ${context.venue || 'Home'}
+- Competition: ${context.competition || 'League'}
+${context.manOfTheMatch ? `- Man of the Match: ${context.manOfTheMatch}` : ''}
+${context.highlights ? `- Key moments: ${context.highlights}` : ''}
+
+OUTPUT FORMAT:
+Write a 200-250 word match report that:
+1. Opens with the result and overall narrative (dominant win, hard-fought draw, tough defeat, etc.)
+2. Highlights key moments and goalscorers
+3. Mentions standout performers
+4. Ends with what's next for the team
+
+Sound like a real club - not a fantasy game. Supporters should read this and feel connected to their team.
+`;
+  }
+
+  if (template === 'player_signing') {
+    return `${baseContext}
+
+TASK: Write a player signing announcement for social media and website.
+
+SIGNING DETAILS:
+- Player Name: ${context.playerName || '[Player Name]'}
+- Position: ${context.position || '[Position]'}
+- Previous Club: ${context.previousClub || 'Undisclosed'}
+${context.contractLength ? `- Contract: ${context.contractLength}` : ''}
+${context.shirtNumber ? `- Shirt Number: #${context.shirtNumber}` : ''}
+${context.transferFee ? `- Fee: ${context.transferFee}` : ''}
+
+OUTPUT FORMAT:
+Write a signing announcement (150-200 words) that:
+1. Welcomes the player to the club
+2. Briefly mentions their background/previous clubs
+3. Includes a quote from the manager about why they're excited
+4. Includes a quote from the player about joining
+5. Notes their squad number if provided
+
+Keep it professional but exciting - this is news supporters want to hear. Sound like a real club announcement, not a video game transfer.
+`;
+  }
+
+  if (template === 'training_update') {
+    return `${baseContext}
+
+TASK: Write a training ground update for social media/website.
+
+TRAINING DETAILS:
+- Session Type: ${context.sessionType || 'Regular training'}
+- Focus: ${context.focusArea || 'General preparation'}
+${context.playerUpdates ? `- Player news: ${context.playerUpdates}` : ''}
+${context.injuryNews ? `- Injury updates: ${context.injuryNews}` : ''}
+${context.managerQuotes ? `- Manager said: "${context.managerQuotes}"` : ''}
+
+OUTPUT FORMAT:
+Write a training update (100-150 words) that:
+1. Sets the scene - what the squad has been working on
+2. Mentions any returning players or fitness updates
+3. Builds anticipation for the next match
+4. Keeps fans engaged with behind-the-scenes feel
+
+This should feel like a peek behind the curtain for supporters. Authentic, not scripted.
+`;
+  }
+
+  return baseContext;
+};
+
+/**
+ * Generate content from a template with specific context
+ */
+export const generateFromTemplate = async (
+  club: Club,
+  template: ContentTemplate,
+  context: TemplateContext,
+  tone: ContentTone = 'normal'
+): Promise<string> => {
+  const prompt = getTemplatePrompt(club, template, context, tone);
+  return await invokeAi(club.id, prompt, `template:${template}`);
+};
+
+/**
+ * Get available content templates with descriptions
+ */
+export const getContentTemplates = (): { id: ContentTemplate; label: string; description: string; icon: string }[] => [
+  {
+    id: 'match_report',
+    label: 'Match Report',
+    description: 'Full-time report for website and social media',
+    icon: 'clipboard',
+  },
+  {
+    id: 'player_signing',
+    label: 'Player Signing',
+    description: 'New player announcement with quotes',
+    icon: 'user-plus',
+  },
+  {
+    id: 'training_update',
+    label: 'Training Update',
+    description: 'Behind-the-scenes training ground news',
+    icon: 'dumbbell',
+  },
+];
 
 // --- IMAGE GENERATION (Imagen 3) ---
 

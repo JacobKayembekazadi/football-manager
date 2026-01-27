@@ -18,11 +18,14 @@ import {
 import { FixtureTask, Fixture, ClubUser } from '../types';
 import { getTasksForFixtures, toggleTaskCompletion } from '../services/fixtureTaskService';
 import { getFixtures } from '../services/fixtureService';
+import ContinueButton from './ContinueButton';
 
 interface MyTasksProps {
   clubId: string;
   currentUser: ClubUser;
   onTaskComplete?: () => void;
+  onTaskSelect?: (task: FixtureTask) => void;
+  onAllComplete?: () => void;
 }
 
 interface TaskWithFixture extends FixtureTask {
@@ -33,6 +36,8 @@ const MyTasks: React.FC<MyTasksProps> = ({
   clubId,
   currentUser,
   onTaskComplete,
+  onTaskSelect,
+  onAllComplete,
 }) => {
   const [tasks, setTasks] = useState<TaskWithFixture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,101 +166,116 @@ const MyTasks: React.FC<MyTasksProps> = ({
   }
 
   return (
-    <div className="glass-card p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <ListTodo size={18} className="text-blue-500" />
-          <h3 className="text-white font-semibold">My Tasks</h3>
-          <span className="text-xs text-slate-500">
-            {completedCount}/{totalCount} done
-          </span>
-        </div>
-        {totalCount > 0 && (
+    <div className="flex flex-col h-full">
+      <div className="glass-card p-6 flex-1">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-500 transition-all duration-300"
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
-              />
-            </div>
+            <ListTodo size={18} className="text-blue-500" />
+            <h3 className="text-white font-semibold">My Tasks</h3>
+            <span className="text-xs text-slate-500">
+              {completedCount}/{totalCount} done
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* Task List */}
-      <div className="space-y-2">
-        {tasks.map(task => (
-          <div
-            key={task.id}
-            className={`p-3 rounded-lg border transition-all ${
-              task.is_completed
-                ? 'bg-green-500/5 border-green-500/20'
-                : isBackup(task)
-                ? 'bg-amber-500/5 border-amber-500/20'
-                : 'bg-slate-800/50 border-white/10 hover:border-white/20'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {/* Checkbox */}
-              <button
-                onClick={() => handleToggleTask(task)}
-                disabled={togglingId === task.id}
-                className="flex-shrink-0 mt-0.5"
-              >
-                {togglingId === task.id ? (
-                  <Loader2 size={18} className="animate-spin text-slate-400" />
-                ) : task.is_completed ? (
-                  <CheckCircle2 size={18} className="text-green-500" />
-                ) : (
-                  <Circle size={18} className="text-slate-500 hover:text-white" />
-                )}
-              </button>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-sm ${
-                      task.is_completed ? 'text-slate-400 line-through' : 'text-white'
-                    }`}
-                  >
-                    {task.label}
-                  </span>
-                  {isBackup(task) && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                      Backup
-                    </span>
-                  )}
-                </div>
-
-                {/* Fixture Info */}
-                {task.fixture && (
-                  <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                    <span className="font-medium">{task.fixture.opponent}</span>
-                    <span className="flex items-center gap-1">
-                      <Calendar size={10} />
-                      {formatDateTime(task.fixture.kickoff_time)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin size={10} />
-                      {task.fixture.venue}
-                    </span>
-                  </div>
-                )}
-
-                {/* Due date warning */}
-                {task.due_at && !task.is_completed && new Date(task.due_at) < new Date() && (
-                  <div className="flex items-center gap-1 mt-1 text-xs text-red-400">
-                    <AlertCircle size={10} />
-                    Overdue
-                  </div>
-                )}
+          {totalCount > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-300"
+                  style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                />
               </div>
             </div>
-          </div>
-        ))}
+          )}
+        </div>
+
+        {/* Task List */}
+        <div className="space-y-2">
+          {tasks.map(task => (
+            <div
+              key={task.id}
+              className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                task.is_completed
+                  ? 'bg-green-500/5 border-green-500/20'
+                  : isBackup(task)
+                  ? 'bg-amber-500/5 border-amber-500/20'
+                  : 'bg-slate-800/50 border-white/10 hover:border-white/20'
+              }`}
+              onClick={() => onTaskSelect?.(task)}
+            >
+              <div className="flex items-start gap-3">
+                {/* Checkbox */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleTask(task);
+                  }}
+                  disabled={togglingId === task.id}
+                  className="flex-shrink-0 mt-0.5"
+                >
+                  {togglingId === task.id ? (
+                    <Loader2 size={18} className="animate-spin text-slate-400" />
+                  ) : task.is_completed ? (
+                    <CheckCircle2 size={18} className="text-green-500" />
+                  ) : (
+                    <Circle size={18} className="text-slate-500 hover:text-white" />
+                  )}
+                </button>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-sm ${
+                        task.is_completed ? 'text-slate-400 line-through' : 'text-white'
+                      }`}
+                    >
+                      {task.label}
+                    </span>
+                    {isBackup(task) && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                        Backup
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Fixture Info */}
+                  {task.fixture && (
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                      <span className="font-medium">{task.fixture.opponent}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar size={10} />
+                        {formatDateTime(task.fixture.kickoff_time)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin size={10} />
+                        {task.fixture.venue}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Due date warning */}
+                  {task.due_at && !task.is_completed && new Date(task.due_at) < new Date() && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                      <AlertCircle size={10} />
+                      Overdue
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Persistent Continue Button */}
+      {tasks.length > 0 && (
+        <ContinueButton
+          tasks={tasks}
+          onContinue={(nextTask) => onTaskSelect?.(nextTask as FixtureTask)}
+          onAllComplete={onAllComplete}
+        />
+      )}
     </div>
   );
 };

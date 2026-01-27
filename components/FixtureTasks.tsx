@@ -32,6 +32,7 @@ import {
 import { getClubUsers } from '../services/userService';
 import UserAvatar from './UserAvatar';
 import TaskOwnerSelector from './TaskOwnerSelector';
+import ContinueButton from './ContinueButton';
 
 interface FixtureTasksProps {
   fixture: Fixture;
@@ -39,6 +40,9 @@ interface FixtureTasksProps {
   currentUserId?: string;
   showOwnership?: boolean;
   onTasksChange?: () => void;
+  onTaskSelect?: (task: FixtureTask) => void;
+  onAllComplete?: () => void;
+  showContinueButton?: boolean;
 }
 
 const FixtureTasks: React.FC<FixtureTasksProps> = ({
@@ -47,6 +51,9 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   currentUserId,
   showOwnership = true,
   onTasksChange,
+  onTaskSelect,
+  onAllComplete,
+  showContinueButton = false,
 }) => {
   const [tasks, setTasks] = useState<FixtureTask[]>([]);
   const [users, setUsers] = useState<ClubUser[]>([]);
@@ -377,6 +384,16 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
         >
           <Plus size={14} /> Add Task
         </button>
+      )}
+
+      {/* Persistent Continue Button */}
+      {showContinueButton && tasks.length > 0 && (
+        <ContinueButton
+          tasks={tasks}
+          onContinue={(nextTask) => onTaskSelect?.(nextTask as FixtureTask)}
+          onAllComplete={onAllComplete}
+          className="mt-4"
+        />
       )}
     </div>
   );
