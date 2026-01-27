@@ -12,6 +12,7 @@ import FixtureFormModal from './components/FixtureFormModal';
 import QuickStartChecklist from './components/QuickStartChecklist';
 import DemoDataBanner from './components/DemoDataBanner';
 import EmptyState from './components/EmptyState';
+import ContinueButton from './components/ContinueButton';
 
 // Lazy-loaded components for better initial load performance
 const ViralScout = lazy(() => import('./components/ViralScout'));
@@ -1174,15 +1175,18 @@ const HypeEngine: React.FC<{
   onCreateFixture: (fixture: Omit<Fixture, 'id'>) => Promise<void>,
   onDeleteFixture: (fixtureId: string) => Promise<void>,
   onUpdateContent: (updatedItem: ContentItem) => Promise<void>,
-  onDeleteContent: (contentId: string) => Promise<void>
-}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype, onCreateFixture, onDeleteFixture, onUpdateContent, onDeleteContent }) => {
+  onDeleteContent: (contentId: string) => Promise<void>,
+  // Lifted state for global Continue button
+  expandedTasksFixture: string | null,
+  setExpandedTasksFixture: (id: string | null) => void,
+  onTasksChange?: () => void
+}> = ({ fixtures, club, contentItems, onRefetchFixtures, onGenerateReport, onGenerateHype, onCreateFixture, onDeleteFixture, onUpdateContent, onDeleteContent, expandedTasksFixture, setExpandedTasksFixture, onTasksChange }) => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'archive'>('upcoming');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedFixtureForReport, setSelectedFixtureForReport] = useState<Fixture | null>(null);
   const [isFixtureModalOpen, setIsFixtureModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedContentFixture, setExpandedContentFixture] = useState<string | null>(null);
-  const [expandedTasksFixture, setExpandedTasksFixture] = useState<string | null>(null);
   const [selectedContentItem, setSelectedContentItem] = useState<ContentItem | null>(null);
   const [isMatchdayMode, setIsMatchdayMode] = useState(false);
 
@@ -1455,7 +1459,7 @@ const HypeEngine: React.FC<{
             const contextValue = hypeContexts[fixture.id] || 'Standard League Match';
 
             return (
-              <div key={fixture.id} className="glass-card p-0 rounded-2xl overflow-hidden border border-white/5 relative group">
+              <div key={fixture.id} id={`fixture-${fixture.id}`} className="glass-card p-0 rounded-2xl overflow-hidden border border-white/5 relative group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
                 <div className="p-6 flex flex-col lg:flex-row gap-8 items-center">
 
@@ -1614,6 +1618,8 @@ const HypeEngine: React.FC<{
                     <FixtureTasks
                       fixture={fixture}
                       clubId={club.id}
+                      onTasksChange={onTasksChange}
+                      showContinueButton={false}
                     />
                   </div>
                 )}
@@ -1888,6 +1894,10 @@ const AppAuthed: React.FC<{
   const [isDemoDataActive, setIsDemoDataActive] = useState(false);
   const [isCheckingData, setIsCheckingData] = useState(true);
   const { error: showError } = useToast();
+
+  // Global task navigation state (lifted from HypeEngine for Continue button)
+  const [expandedTasksFixture, setExpandedTasksFixture] = useState<string | null>(null);
+  const [continueButtonRefresh, setContinueButtonRefresh] = useState(0);
 
   const CLUB_ID = clubId;
 
@@ -2213,6 +2223,9 @@ const AppAuthed: React.FC<{
               await deleteContentItem(contentId);
               await refetchContent();
             }}
+            expandedTasksFixture={expandedTasksFixture}
+            setExpandedTasksFixture={setExpandedTasksFixture}
+            onTasksChange={() => setContinueButtonRefresh(prev => prev + 1)}
           />
         )}
         {/* Lazy-loaded views wrapped in Suspense */}
@@ -2280,6 +2293,43 @@ const AppAuthed: React.FC<{
             />
           )}
           {currentClub && <AiAssistant club={currentClub} fixtures={fixtures} contentItems={contentItems} sponsors={sponsors} />}
+
+          {/* Global Persistent Continue Button */}
+          {currentClub && (
+            <ContinueButton
+              clubId={currentClub.id}
+              variant="global"
+              refreshTrigger={continueButtonRefresh}
+              onNavigate={(fixtureId, _taskId) => {
+                // Navigate to Match Hub and expand the fixture's tasks
+                setActiveTab('matchday');
+                setExpandedTasksFixture(fixtureId);
+                // Scroll to the fixture after a short delay for tab switch
+                setTimeout(() => {
+                  const fixtureElement = document.getElementById(`fixture-${fixtureId}`);
+                  fixtureElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+              }}
+              onSuggestedAction={(action) => {
+                // Handle suggested actions from "Done for today" card
+                switch (action) {
+                  case 'schedule':
+                    setActiveTab('matchday');
+                    break;
+                  case 'squad':
+                    setActiveTab('availability');
+                    break;
+                  case 'content':
+                    setActiveTab('content');
+                    break;
+                  case 'dashboard':
+                  default:
+                    setActiveTab('dashboard');
+                    break;
+                }
+              }}
+            />
+          )}
         </Suspense>
 
         {/* Onboarding Manager - handles welcome modal + tour */}

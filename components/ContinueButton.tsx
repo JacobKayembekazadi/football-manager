@@ -6,21 +6,23 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Calendar, Users, FileText, TrendingUp } from 'lucide-react';
 import { getNextIncompleteTask, NextTaskResult } from '../services/fixtureTaskService';
 
 interface ContinueButtonProps {
   clubId: string;
   currentFixtureId?: string;
   onNavigate: (fixtureId: string, taskId: string) => void;
+  onSuggestedAction?: (action: string) => void; // For "Done for today" suggestions
   refreshTrigger?: number; // Increment to trigger refresh
-  variant?: 'default' | 'compact';
+  variant?: 'default' | 'compact' | 'global'; // Added 'global' variant for app-level use
 }
 
 const ContinueButton: React.FC<ContinueButtonProps> = ({
   clubId,
   currentFixtureId,
   onNavigate,
+  onSuggestedAction,
   refreshTrigger = 0,
   variant = 'default',
 }) => {
@@ -107,17 +109,88 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     );
   }
 
+  // Suggested actions for "Done for today" card
+  const suggestedActions = [
+    { id: 'schedule', icon: Calendar, label: 'Schedule a fixture', color: 'text-blue-400' },
+    { id: 'squad', icon: Users, label: 'Check squad availability', color: 'text-purple-400' },
+    { id: 'content', icon: FileText, label: 'Create some content', color: 'text-amber-400' },
+    { id: 'dashboard', icon: TrendingUp, label: 'View dashboard', color: 'text-green-400' },
+  ];
+
+  // "Done for today" card
   if (allDone) {
+    // Compact variant - simple inline message
+    if (variant === 'compact') {
+      return (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 text-sm rounded-lg">
+          <CheckCircle2 size={14} />
+          <span>All done!</span>
+        </div>
+      );
+    }
+
+    // Default/Global variant - full card with suggestions
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent">
-        <div className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-green-500/10 border border-green-500/30 text-green-500 rounded-xl">
-          <CheckCircle2 size={18} />
-          <span className="font-semibold">All done!</span>
+      <div className={`${variant === 'global' ? 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-20 md:w-80 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}`}>
+        <div className={`bg-slate-900/95 backdrop-blur-xl border border-green-500/30 rounded-2xl overflow-hidden shadow-2xl ${variant === 'global' ? '' : ''}`}>
+          {/* Header */}
+          <div className="p-4 bg-green-500/10 border-b border-green-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                <CheckCircle2 size={20} className="text-green-500" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Done for today!</h3>
+                <p className="text-xs text-slate-400">All tasks completed</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Suggested Actions */}
+          <div className="p-3">
+            <p className="text-xs text-slate-500 mb-2 px-1">What's next?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {suggestedActions.map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => onSuggestedAction?.(action.id)}
+                  className="flex items-center gap-2 p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                >
+                  <action.icon size={14} className={action.color} />
+                  <span className="text-xs text-slate-300">{action.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Global variant - floating button
+  if (variant === 'global') {
+    return (
+      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-20 md:w-80 z-30">
+        <button
+          onClick={handleClick}
+          className="w-full flex items-center justify-between gap-3 px-5 py-3 bg-green-500 hover:bg-green-400 text-black font-semibold rounded-xl transition-all shadow-lg shadow-green-500/30"
+        >
+          <div className="flex flex-col items-start">
+            <span className="text-[10px] text-green-900/70 font-normal uppercase tracking-wide">Continue</span>
+            <span className="text-sm">{formatTaskLabel(nextTask?.task.label || '', 25)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-green-900/60">vs {nextTask?.fixture.opponent}</span>
+            </div>
+            <ArrowRight size={18} />
+          </div>
+        </button>
+      </div>
+    );
+  }
+
+  // Default variant - sticky footer
   return (
     <div className="sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent">
       <button
