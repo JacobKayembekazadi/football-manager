@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Club, ContentItem, Fixture, ContentGenStatus, ContentType } from '../types';
 import CommsArray from './CommsArray';
 import ContentPipeline from './ContentPipeline';
+import EmptyState, { EMPTY_STATE_PRESETS } from './EmptyState';
 import { useToast } from './Toast';
 import { FileText, Image, Calendar, Loader2, Plus, Sparkles } from 'lucide-react';
 import { generateContent } from '../services/geminiService';
@@ -252,12 +253,11 @@ const ContentHub: React.FC<ContentHubProps> = ({
                                     );
                                 })
                             ) : (
-                                <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-700/50">
-                                    <Calendar size={48} className="mx-auto text-slate-500 mb-4" />
-                                    <h4 className="text-lg font-semibold text-slate-300">No Fixtures Yet</h4>
-                                    <p className="text-sm text-slate-500 mt-2">
-                                        Add fixtures in Match Hub to start planning content
-                                    </p>
+                                <div className="bg-slate-800/30 rounded-xl border border-slate-700/50">
+                                    <EmptyState
+                                        {...EMPTY_STATE_PRESETS.fixtures}
+                                        description="Add fixtures in Match Hub to start planning content"
+                                    />
                                 </div>
                             )}
                         </div>

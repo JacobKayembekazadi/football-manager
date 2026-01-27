@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Club, Player, Fixture, AvailabilityStatus } from '../types';
 import { getAvailabilityForFixture } from '../services/availabilityService';
+import { departmentAlerts } from '../services/notificationService';
 
 // Common formations with position coordinates (percentage-based)
 const FORMATIONS: Record<string, { name: string; positions: { x: number; y: number; role: string }[] }> = {
@@ -255,6 +256,15 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
     setSavedFormations(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
+    // Notify other departments about tactical decision
+    const fixture = fixtures.find(f => f.id === selectedFixture);
+    const fixtureInfo = fixture ? `for ${fixture.opponent} match` : '';
+    departmentAlerts.tacticalDecision(
+      club.id,
+      `Formation saved: ${formationName} (${selectedFormation}) ${fixtureInfo}. Lineup confirmed.`,
+      selectedFixture || undefined
+    );
+
     setShowSaveModal(false);
     setFormationName('');
 
@@ -291,23 +301,25 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Shirt className="text-green-500" size={24} />
-            Formation Builder
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
+        <div className="flex items-center justify-between sm:block">
+          <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+            <Shirt className="text-green-500" size={20} />
+            <span className="hidden xs:inline">Formation Builder</span>
+            <span className="xs:hidden">Formation</span>
           </h2>
-          <p className="text-sm text-slate-400">
-            {assignedCount}/11 positions filled
+          <p className="text-sm text-slate-400 sm:mt-0">
+            {assignedCount}/11 filled
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Formation Selector */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowFormationDropdown(!showFormationDropdown)}
-              className="px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-sm font-medium text-white hover:border-green-500/50 transition-colors flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 min-h-[44px] bg-slate-800 border border-white/10 rounded-lg text-sm font-medium text-white hover:border-green-500/50 transition-colors flex items-center gap-2"
             >
               {selectedFormation}
               <ChevronDown size={14} />
@@ -317,11 +329,12 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
                 {Object.keys(FORMATIONS).map(key => (
                   <button
                     key={key}
+                    type="button"
                     onClick={() => {
                       setSelectedFormation(key);
                       setShowFormationDropdown(false);
                     }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 transition-colors ${key === selectedFormation ? 'text-green-500' : 'text-white'}`}
+                    className={`w-full px-4 py-2 min-h-[44px] text-left text-sm hover:bg-white/10 transition-colors ${key === selectedFormation ? 'text-green-500' : 'text-white'}`}
                   >
                     {key}
                   </button>
@@ -331,20 +344,22 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
           </div>
 
           <button
+            type="button"
             onClick={clearLineup}
-            className="p-2 bg-slate-800 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:border-amber-500/50 transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] bg-slate-800 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:border-amber-500/50 transition-colors flex items-center justify-center"
             title="Clear lineup"
           >
             <RotateCcw size={18} />
           </button>
 
           <button
+            type="button"
             onClick={() => setShowSaveModal(true)}
             disabled={assignedCount === 0}
-            className="px-4 py-2 bg-green-500 text-black rounded-lg text-sm font-bold hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 min-h-[44px] bg-green-500 text-black rounded-lg text-sm font-bold hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Save size={16} />
-            Save
+            <span className="hidden xs:inline">Save</span>
           </button>
         </div>
       </div>
@@ -373,9 +388,9 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex gap-4 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
         {/* Pitch */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-h-[300px] md:min-h-0">
           <div className="absolute inset-0 bg-gradient-to-b from-green-900/30 to-green-800/30 rounded-xl border border-green-500/20 overflow-hidden">
             {/* Pitch markings */}
             <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
@@ -442,8 +457,8 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
           </div>
         </div>
 
-        {/* Player Selection Panel */}
-        <div className="w-64 flex flex-col bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
+        {/* Player Selection Panel - Desktop sidebar */}
+        <div className="hidden md:flex w-64 flex-col bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
           <div className="p-3 border-b border-white/10">
             <h3 className="text-sm font-bold text-white">
               {selectedPosition !== null
@@ -480,7 +495,61 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
             )}
           </div>
         </div>
+
+        {/* Mobile Player Selection - Bottom Sheet */}
+        {selectedPosition !== null && (
+          <div className="md:hidden fixed inset-x-0 bottom-0 z-40 animate-slide-up">
+            <div className="bg-slate-900 border-t border-white/10 rounded-t-2xl shadow-xl max-h-[50vh] flex flex-col">
+              {/* Handle bar */}
+              <div className="flex justify-center py-2">
+                <div className="w-12 h-1 bg-slate-600 rounded-full"></div>
+              </div>
+
+              {/* Header */}
+              <div className="px-4 pb-2 flex items-center justify-between border-b border-white/10">
+                <h3 className="text-sm font-bold text-white">
+                  Select {formation.positions[selectedPosition].role}
+                </h3>
+                <button
+                  onClick={() => setSelectedPosition(null)}
+                  className="p-2 text-slate-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Player List */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-safe">
+                {getAvailablePlayers(formation.positions[selectedPosition].role).map(player => (
+                  <button
+                    key={player.id}
+                    onClick={() => assignPlayer(selectedPosition, player.id)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 active:bg-white/20 transition-colors text-left min-h-[56px]"
+                  >
+                    <div className={`w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold ${getAvailabilityColor(player.id)}`}>
+                      {player.number}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{player.name}</p>
+                      <p className="text-xs text-slate-500">{player.position} - Form: {player.form.toFixed(1)}</p>
+                    </div>
+                    {player.position === getPositionType(formation.positions[selectedPosition].role) && (
+                      <Check size={16} className="text-green-500 flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Mobile hint - shown when no position selected */}
+      {selectedPosition === null && (
+        <p className="md:hidden text-center text-xs text-slate-500 py-2">
+          Tap a position on the pitch to assign a player
+        </p>
+      )}
 
       {/* Saved Formations */}
       {savedFormations.length > 0 && (

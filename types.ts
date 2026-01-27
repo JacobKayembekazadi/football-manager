@@ -40,6 +40,53 @@ export interface OrgMember {
   updated_at?: string;
 }
 
+// ============================================================================
+// Club Users & Roles (Independence & Leverage)
+// ============================================================================
+
+export type ClubUserStatus = 'active' | 'inactive' | 'unavailable';
+
+export type ClubRoleName = 'Admin' | 'Coach' | 'Ops' | 'Media' | 'Kit' | 'Finance';
+
+export interface ClubUser {
+  id: string;
+  club_id: string;
+  user_id?: string;           // Links to Supabase auth.users (null for demo)
+  email: string;
+  name: string;
+  avatar_url?: string;
+  status: ClubUserStatus;
+  created_at: string;
+  // Populated from UserRole join
+  roles?: ClubRole[];
+  primary_role?: ClubRole;
+}
+
+export interface ClubRole {
+  id: string;
+  club_id: string;
+  name: ClubRoleName | string; // Core roles + custom
+  color: string;              // Tailwind color for badges (e.g., 'red', 'blue')
+  is_system: boolean;         // Prevent deletion of core roles
+}
+
+export interface UserRole {
+  id: string;
+  user_id: string;            // ClubUser.id
+  role_id: string;            // ClubRole.id
+  is_primary: boolean;        // User's main role for default assignment
+}
+
+// Permission system (Phase 2)
+export type PermissionModule = 'fixtures' | 'content' | 'equipment' | 'squad' | 'finance' | 'settings' | 'templates';
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve';
+
+export interface Permission {
+  role_id: string;
+  module: PermissionModule;
+  action: PermissionAction;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -518,13 +565,13 @@ export const INITIAL_PLAYERS: Player[] = [
 
 export const MOCK_CLUB: Club = {
   id: DEMO_UUIDS.club,
-  name: 'Neon City FC',
-  nickname: 'The Cyberpunks',
-  slug: 'neon-city-fc',
-  tone_context: 'Futuristic, relentless, high-tech. We use data to win. Our fans are early adopters. Bold, confident, but never arrogant. We celebrate innovation and teamwork.',
+  name: 'Riverside Athletic FC',
+  nickname: 'The Riverside',
+  slug: 'riverside-athletic-fc',
+  tone_context: 'Professional, community-focused, ambitious. We celebrate our players and fans. Clear, friendly communication that reflects our values of teamwork and local pride.',
   players: INITIAL_PLAYERS,
-  primary_color: '#00f3ff',
-  secondary_color: '#bc13fe',
+  primary_color: '#10b981',
+  secondary_color: '#1e293b',
 };
 
 // --- FIXTURES (3 Months: Sept-Dec 2024) ---
@@ -536,7 +583,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 1),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Phoenix Rising',
+    opponent: 'Eastfield United',
     kickoff_time: daysAgo(98), // Sept 1
     status: 'COMPLETED',
     result_home: 2,
@@ -545,7 +592,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 42500,
     stats: { home_possession: 58, away_possession: 42, home_shots: 14, away_shots: 8, home_xg: 2.1, away_xg: 0.9 }
   },
@@ -553,7 +600,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 2),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Steelforge United',
+    opponent: 'Oakwood Rovers',
     kickoff_time: daysAgo(91), // Sept 8
     status: 'COMPLETED',
     result_home: 0,
@@ -562,7 +609,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones', 'Luka Modrić', 'Marcus Thorn'],
     man_of_the_match: 'Kevin De Bruyne',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 28000,
     stats: { home_possession: 38, away_possession: 62, home_shots: 6, away_shots: 18, home_xg: 0.7, away_xg: 2.8 }
   },
@@ -570,7 +617,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 3),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Quantum FC',
+    opponent: 'Greendale Town',
     kickoff_time: daysAgo(84), // Sept 15
     status: 'COMPLETED',
     result_home: 2,
@@ -579,7 +626,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Sam Miller', 'Erling Haaland'],
     man_of_the_match: 'Sam Miller',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 43200,
     stats: { home_possession: 55, away_possession: 45, home_shots: 16, away_shots: 10, home_xg: 2.4, away_xg: 1.8 }
   },
@@ -587,7 +634,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 4),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Binary Stars',
+    opponent: 'Millbrook Athletic',
     kickoff_time: daysAgo(77), // Sept 22
     status: 'COMPLETED',
     result_home: 1,
@@ -596,7 +643,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Billy Bones', 'Jude Chen', 'Jay Patel'],
     man_of_the_match: 'Jude Chen',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 18500,
     stats: { home_possession: 42, away_possession: 58, home_shots: 7, away_shots: 19, home_xg: 1.2, away_xg: 3.5 }
   },
@@ -604,7 +651,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 5),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Nebula City',
+    opponent: 'Westbridge FC',
     kickoff_time: daysAgo(70), // Sept 29
     status: 'COMPLETED',
     result_home: 3,
@@ -613,7 +660,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Luka Modrić'],
     man_of_the_match: 'Viktor Volkov',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44100,
     stats: { home_possession: 62, away_possession: 38, home_shots: 20, away_shots: 4, home_xg: 3.2, away_xg: 0.4 }
   },
@@ -621,7 +668,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 6),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Metro Wanderers',
+    opponent: 'Borough City',
     kickoff_time: daysAgo(63), // Oct 6 - Cup R2
     status: 'COMPLETED',
     result_home: 4,
@@ -630,7 +677,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Erling Haaland', 'Erling Haaland', 'Rico Santos', 'Tomás Vega'],
     man_of_the_match: 'Erling Haaland',
     venue: 'Home',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
     attendance: 31000,
     stats: { home_possession: 68, away_possession: 32, home_shots: 22, away_shots: 6, home_xg: 4.1, away_xg: 1.0 }
   },
@@ -638,7 +685,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 7),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Titan Rovers',
+    opponent: 'Parkside Rangers',
     kickoff_time: daysAgo(56), // Oct 13
     status: 'COMPLETED',
     result_home: 1,
@@ -647,7 +694,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones'],
     man_of_the_match: 'Virgil Ironside',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 35000,
     stats: { home_possession: 45, away_possession: 55, home_shots: 9, away_shots: 15, home_xg: 1.1, away_xg: 2.3 }
   },
@@ -655,7 +702,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 8),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Apex Athletic',
+    opponent: 'Lakeside FC',
     kickoff_time: daysAgo(49), // Oct 20
     status: 'COMPLETED',
     result_home: 2,
@@ -664,7 +711,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Sam Miller', 'Marcus Thorn'],
     man_of_the_match: 'Kevin De Bruyne',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44800,
     stats: { home_possession: 60, away_possession: 40, home_shots: 17, away_shots: 6, home_xg: 2.5, away_xg: 0.6 }
   },
@@ -672,7 +719,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 9),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Vector Valley',
+    opponent: 'Central United',
     kickoff_time: daysAgo(42), // Oct 27
     status: 'COMPLETED',
     result_home: 0,
@@ -681,7 +728,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Kieran Torres', 'Luka Modrić'],
     man_of_the_match: 'Luka Modrić',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 22000,
     stats: { home_possession: 40, away_possession: 60, home_shots: 8, away_shots: 14, home_xg: 0.8, away_xg: 2.0 }
   },
@@ -689,7 +736,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 10),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Cipher Town',
+    opponent: 'Northgate Town',
     kickoff_time: daysAgo(35), // Nov 3
     status: 'COMPLETED',
     result_home: 5,
@@ -698,7 +745,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Marcus Thorn', 'Kevin De Bruyne', 'Jude Chen'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 45000,
     stats: { home_possession: 65, away_possession: 35, home_shots: 24, away_shots: 5, home_xg: 4.8, away_xg: 0.9 }
   },
@@ -706,7 +753,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 11),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Apex Athletic',
+    opponent: 'Lakeside FC',
     kickoff_time: daysAgo(28), // Nov 10 - Cup R3
     status: 'COMPLETED',
     result_home: 1,
@@ -715,7 +762,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones'],
     man_of_the_match: 'Marco Silva',
     venue: 'Away',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
     attendance: 29000,
     stats: { home_possession: 48, away_possession: 52, home_shots: 11, away_shots: 13, home_xg: 1.1, away_xg: 1.3 }
   },
@@ -723,7 +770,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 12),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Orbital United',
+    opponent: 'Hillcrest FC',
     kickoff_time: daysAgo(21), // Nov 17 - BIG GAME
     status: 'COMPLETED',
     result_home: 1,
@@ -732,7 +779,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Marcus Thorn'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 52000,
     stats: { home_possession: 42, away_possession: 58, home_shots: 8, away_shots: 17, home_xg: 1.2, away_xg: 3.4 }
   },
@@ -740,7 +787,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 13),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Grid FC',
+    opponent: 'Seaside Athletic',
     kickoff_time: daysAgo(14), // Nov 24
     status: 'COMPLETED',
     result_home: 2,
@@ -749,7 +796,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Luka Modrić', 'Erling Haaland'],
     man_of_the_match: 'Jay Patel',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44500,
     stats: { home_possession: 54, away_possession: 46, home_shots: 13, away_shots: 11, home_xg: 1.9, away_xg: 1.2 }
   },
@@ -757,7 +804,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 14),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Nova Dynamic',
+    opponent: 'Meadowbrook FC',
     kickoff_time: daysAgo(7), // Dec 1
     status: 'COMPLETED',
     result_home: 0,
@@ -766,7 +813,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: [],
     man_of_the_match: 'Viktor Volkov',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 19500,
     stats: { home_possession: 32, away_possession: 68, home_shots: 4, away_shots: 21, home_xg: 0.3, away_xg: 2.8 }
   },
@@ -776,42 +823,42 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 15),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Phoenix Rising',
+    opponent: 'Eastfield United',
     kickoff_time: hoursFromNow(3), // TODAY - 3 hours from now
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 38000,
   },
   // Matchweek 16
   {
     id: generateDemoUUID('fixture', 16),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Steelforge United',
+    opponent: 'Oakwood Rovers',
     kickoff_time: daysFromNow(10), // Dec 21
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
   },
   // Cup Quarter-Final
   {
     id: generateDemoUUID('fixture', 17),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Quantum FC',
+    opponent: 'Greendale Town',
     kickoff_time: daysFromNow(17), // Dec 28 - Cup QF
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
   },
   // Matchweek 17 - New Years Day
   {
     id: generateDemoUUID('fixture', 18),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Binary Stars',
+    opponent: 'Millbrook Athletic',
     kickoff_time: daysFromNow(21), // Jan 1
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
   },
 ];
 
@@ -825,7 +872,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'THORN HAT-TRICK SINKS ORBITAL IN TITLE SIX-POINTER',
-    body: `# NEON CITY 3-1 ORBITAL UNITED\n\nMarcus Thorn produced a devastating hat-trick as Neon City FC dismantled league leaders Orbital United at their own ground in the biggest win of the season.\n\nThe Cyberpunks made their intentions clear from the first whistle, with De Bruyne pulling the strings in midfield. Thorn opened the scoring on 23 minutes, latching onto a defense-splitting pass before coolly slotting past the keeper.\n\nOrbital equalized before half-time, but Neon City's response was emphatic. Thorn restored the lead with a bullet header from Torres's cross, before completing his hat-trick with a stunning chip in the 78th minute - assisted by a piece of De Bruyne wizardry.\n\n**Manager's Reaction:** "This is what we've been building towards. The players executed the plan perfectly. Marcus is in the form of his life, but this was a complete team performance."\n\n**Man of the Match:** Marcus Thorn (3 goals)`,
+    body: `# RIVERSIDE 3-1 ORBITAL UNITED\n\nMarcus Thorn produced a devastating hat-trick as Riverside Athletic FC dismantled league leaders Hillcrest FC at their own ground in the biggest win of the season.\n\nThe Riverside made their intentions clear from the first whistle, with De Bruyne pulling the strings in midfield. Thorn opened the scoring on 23 minutes, latching onto a defense-splitting pass before coolly slotting past the keeper.\n\nOrbital equalized before half-time, but Riverside Athletic's response was emphatic. Thorn restored the lead with a bullet header from Torres's cross, before completing his hat-trick with a stunning chip in the 78th minute - assisted by a piece of De Bruyne wizardry.\n\n**Manager's Reaction:** "This is what we've been building towards. The players executed the plan perfectly. Marcus is in the form of his life, but this was a complete team performance."\n\n**Man of the Match:** Marcus Thorn (3 goals)`,
     status: 'PUBLISHED',
     created_at: daysAgo(20),
   },
@@ -835,7 +882,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 12),
     type: 'SOCIAL',
     platform: 'Twitter',
-    body: `🔥 FULL TIME: Orbital 1-3 NEON CITY\n\n⚽ Thorn 23' \n⚽ Thorn 58'\n⚽ Thorn 78'\n\nStatement. Made. 💜⚡\n\n#NeonCityFC #CyberLeague #ThornOnFire`,
+    body: `🔥 FULL TIME: Orbital 1-3 RIVERSIDE\n\n⚽ Thorn 23' \n⚽ Thorn 58'\n⚽ Thorn 78'\n\nStatement. Made. 💜⚡\n\n#RiversideAFC #TheLeague #ThornOnFire`,
     status: 'PUBLISHED',
     created_at: daysAgo(21),
   },
@@ -846,7 +893,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'FIVE-STAR CYBERPUNKS CRUSH CIPHER TOWN',
-    body: `# NEON CITY 5-1 CIPHER TOWN\n\nNeon City FC produced their most complete performance of the campaign, with Marcus Thorn claiming another match ball in a comprehensive victory.\n\nThe home side were relentless from start to finish, with Thorn opening his account inside 10 minutes. De Bruyne doubled the lead with a sublime free-kick before Thorn struck twice more before the break.\n\nJude Chen capped off the scoring with his second goal of the season, continuing his impressive breakthrough campaign.\n\n**Key Stats:**\n- 24 shots (12 on target)\n- 65% possession\n- 4.8 xG\n\n**Next Up:** Galaxy Cup Round 3 vs Apex Athletic`,
+    body: `# RIVERSIDE 5-1 CIPHER TOWN\n\nRiverside Athletic FC produced their most complete performance of the campaign, with Marcus Thorn claiming another match ball in a comprehensive victory.\n\nThe home side were relentless from start to finish, with Thorn opening his account inside 10 minutes. De Bruyne doubled the lead with a sublime free-kick before Thorn struck twice more before the break.\n\nJude Chen capped off the scoring with his second goal of the season, continuing his impressive breakthrough campaign.\n\n**Key Stats:**\n- 24 shots (12 on target)\n- 65% possession\n- 4.8 xG\n\n**Next Up:** FA Cup Round 3 vs Lakeside FC`,
     status: 'PUBLISHED',
     created_at: daysAgo(34),
   },
@@ -856,7 +903,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 13),
     type: 'SOCIAL',
     platform: 'Instagram',
-    body: `Another win secured ✅\n\nModrić from the spot ⚽\nHaaland with the header 🎯\n\n2nd place LOCKED IN going into December 💪\n\n#NeonCityFC #OnTheRise`,
+    body: `Another win secured ✅\n\nModrić from the spot ⚽\nHaaland with the header 🎯\n\n2nd place LOCKED IN going into December 💪\n\n#RiversideAFC #OnTheRise`,
     status: 'PUBLISHED',
     created_at: daysAgo(13),
   },
@@ -866,7 +913,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'NEWSLETTER',
     platform: 'Email',
     title: 'November Review: Our Best Month Yet',
-    body: `Dear Cyberpunks,\n\nWhat a month November was! Here's your monthly wrap-up:\n\n📊 NOVEMBER STATS:\n- Played: 4 | Won: 3 | Drew: 1\n- Goals Scored: 11 | Goals Conceded: 3\n- League Position: 2nd (29 points)\n\n⭐ PLAYER OF THE MONTH:\nMarcus Thorn - 7 goals in 4 games. Simply unstoppable.\n\n🏆 HIGHLIGHT:\nThe 3-1 victory at Orbital was the statement win we needed. Top of the table for 48 hours before they scraped a win.\n\n🎟️ UPCOMING:\nPhoenix Rising away on December 14th - tickets on sale now!\n\nUTNC! ⚡`,
+    body: `Dear Riverside,\n\nWhat a month November was! Here's your monthly wrap-up:\n\n📊 NOVEMBER STATS:\n- Played: 4 | Won: 3 | Drew: 1\n- Goals Scored: 11 | Goals Conceded: 3\n- League Position: 2nd (29 points)\n\n⭐ PLAYER OF THE MONTH:\nMarcus Thorn - 7 goals in 4 games. Simply unstoppable.\n\n🏆 HIGHLIGHT:\nThe 3-1 victory at Orbital was the statement win we needed. Top of the table for 48 hours before they scraped a win.\n\n🎟️ UPCOMING:\nEastfield United away on December 14th - tickets on sale now!\n\nCOYRS! ⚡`,
     status: 'PUBLISHED',
     created_at: daysAgo(10),
   },
@@ -878,8 +925,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'PREVIEW',
     platform: 'Website',
-    title: 'PREVIEW: Phoenix Rising (A) - Revenge Mission',
-    body: `# PHOENIX RISING vs NEON CITY FC\n\n**When:** Saturday, December 14th - 3:00 PM\n**Where:** Flame Stadium\n**Competition:** Cyber League - Matchweek 15\n\n## THE STORY\nA return to where it all began. Phoenix Rising were our first opponents this season, and that 2-1 win set the tone for our campaign.\n\nThey'll be out for revenge on home turf, but we arrive in confident mood after beating Orbital in our last away game.\n\n## FORM GUIDE\n**Neon City:** W-D-W-W-W (13 games: W9 D2 L2)\n**Phoenix Rising:** L-W-L-D-W (Currently 8th)\n\n## KEY BATTLE\nMarcus Thorn vs their center-back pairing. They struggled to contain him in September - can they do better this time?\n\n## PREDICTED XI\nVolkov; Sterling, Miller (C), Ironside, Torres; Silva, Modrić, De Bruyne, Chen; Bones, Thorn`,
+    title: 'PREVIEW: Eastfield United (A) - Revenge Mission',
+    body: `# PHOENIX RISING vs RIVERSIDE FC\n\n**When:** Saturday, December 14th - 3:00 PM\n**Where:** Flame Stadium\n**Competition:** League - Matchweek 15\n\n## THE STORY\nA return to where it all began. Eastfield United were our first opponents this season, and that 2-1 win set the tone for our campaign.\n\nThey'll be out for revenge on home turf, but we arrive in confident mood after beating Orbital in our last away game.\n\n## FORM GUIDE\n**Riverside Athletic:** W-D-W-W-W (13 games: W9 D2 L2)\n**Eastfield United:** L-W-L-D-W (Currently 8th)\n\n## KEY BATTLE\nMarcus Thorn vs their center-back pairing. They struggled to contain him in September - can they do better this time?\n\n## PREDICTED XI\nVolkov; Sterling, Miller (C), Ironside, Torres; Silva, Modrić, De Bruyne, Chen; Bones, Thorn`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -889,7 +936,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'SOCIAL',
     platform: 'Twitter',
-    body: `🔜 MATCHDAY INCOMING\n\n🆚 Phoenix Rising\n📍 Flame Stadium\n🗓️ Saturday 3PM\n📺 Stream on CyberLeague+\n\nTime to keep the momentum going 💜⚡\n\n#NCFC #PhxNCFC`,
+    body: `🔜 MATCHDAY INCOMING\n\n🆚 Eastfield United\n📍 Flame Stadium\n🗓️ Saturday 3PM\n📺 Stream on FA Player\n\nTime to keep the momentum going 💜⚡\n\n#RAFC #EastfieldRAFC`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -899,7 +946,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'GRAPHIC_COPY',
     platform: 'Instagram',
-    body: `GAMEDAY GRAPHIC\n\n🔥 PHOENIX RISING vs NEON CITY FC 🔥\n\nSATURDAY | 3PM | FLAME STADIUM\n\n"Back where it all started"\n\n#NCFC #AwayDays`,
+    body: `GAMEDAY GRAPHIC\n\n🔥 PHOENIX RISING vs RIVERSIDE FC 🔥\n\nSATURDAY | 3PM | FLAME STADIUM\n\n"Back where it all started"\n\n#RAFC #AwayDays`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -912,7 +959,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'FRUSTRATION AT NOVA AS CHANCES GO BEGGING',
-    body: `# NOVA DYNAMIC 0-0 NEON CITY\n\n[DRAFT - NEEDS FINAL REVIEW]\n\nNeon City dominated but couldn't find the breakthrough in a frustrating goalless draw at Nova Dynamic.\n\nDespite enjoying 68% possession and creating chances worth 2.8 xG, the Cyberpunks were unable to break down a resolute home defense that sat deep and defended in numbers.\n\nMarcus Thorn had a goal controversially ruled out for offside in the second half, with replays suggesting the decision was marginal at best.\n\n**Talking Point:** Are we becoming too predictable? Teams are sitting deep against us.\n\n**Next Up:** Phoenix Rising (A) - December 14th`,
+    body: `# NOVA DYNAMIC 0-0 RIVERSIDE\n\n[DRAFT - NEEDS FINAL REVIEW]\n\nRiverside Athletic dominated but couldn't find the breakthrough in a frustrating goalless draw at Meadowbrook FC.\n\nDespite enjoying 68% possession and creating chances worth 2.8 xG, the Riverside were unable to break down a resolute home defense that sat deep and defended in numbers.\n\nMarcus Thorn had a goal controversially ruled out for offside in the second half, with replays suggesting the decision was marginal at best.\n\n**Talking Point:** Are we becoming too predictable? Teams are sitting deep against us.\n\n**Next Up:** Eastfield United (A) - December 14th`,
     status: 'DRAFT',
     created_at: daysAgo(6),
   },
@@ -932,8 +979,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 17),
     type: 'PREVIEW',
     platform: 'Website',
-    title: 'CUP QUARTER-FINAL PREVIEW: Quantum FC',
-    body: `[EARLY DRAFT - Cup QF Preview]\n\n# GALAXY CUP QUARTER-FINAL\n## NEON CITY vs QUANTUM FC\n\n**Date:** December 28th\n**Venue:** Neon Arena\n\nA chance for cup glory continues as we host Quantum FC in the last eight.\n\nWe drew 2-2 with them in the league back in September - a game where we came from behind twice. They'll be a tough test.\n\n[TODO: Add team news, ticket info, historical record]`,
+    title: 'CUP QUARTER-FINAL PREVIEW: Greendale Town',
+    body: `[EARLY DRAFT - Cup QF Preview]\n\n# GALAXY CUP QUARTER-FINAL\n## RIVERSIDE vs QUANTUM FC\n\n**Date:** December 28th\n**Venue:** Neon Arena\n\nA chance for cup glory continues as we host Greendale Town in the last eight.\n\nWe drew 2-2 with them in the league back in September - a game where we came from behind twice. They'll be a tough test.\n\n[TODO: Add team news, ticket info, historical record]`,
     status: 'DRAFT',
     created_at: daysAgo(2),
   },
@@ -943,65 +990,149 @@ export const INITIAL_CONTENT: ContentItem[] = [
 export const INITIAL_SPONSORS: Sponsor[] = [
   {
     id: generateDemoUUID('sponsor', 1),
-    name: 'CyberDyne Systems',
+    name: 'TechPro Solutions',
     sector: 'Technology',
     tier: 'Platinum',
     value: '£150,000',
     contract_end: '2026-06-30',
     status: 'Active',
-    logo_initials: 'CD'
+    logo_initials: 'TP'
   },
   {
     id: generateDemoUUID('sponsor', 2),
-    name: 'Orbital Energy Drinks',
+    name: 'FreshStart Drinks',
     sector: 'Beverage',
     tier: 'Gold',
     value: '£85,000',
     contract_end: '2025-01-31',
     status: 'Expiring',
-    logo_initials: 'OE'
+    logo_initials: 'FS'
   },
   {
     id: generateDemoUUID('sponsor', 3),
-    name: 'NeoTextile Apparel',
+    name: 'SportGear Direct',
     sector: 'Sportswear',
     tier: 'Gold',
     value: '£75,000',
     contract_end: '2025-06-30',
     status: 'Active',
-    logo_initials: 'NT'
+    logo_initials: 'SG'
   },
   {
     id: generateDemoUUID('sponsor', 4),
-    name: 'Quantum Motors',
+    name: 'LocalAuto Group',
     sector: 'Automotive',
     tier: 'Silver',
     value: '£40,000',
     contract_end: '2025-12-31',
     status: 'Active',
-    logo_initials: 'QM'
+    logo_initials: 'LA'
   },
   {
     id: generateDemoUUID('sponsor', 5),
-    name: 'DataStream Analytics',
+    name: 'Insight Analytics',
     sector: 'Tech/Data',
     tier: 'Silver',
     value: '£35,000',
     contract_end: '2025-03-31',
     status: 'Negotiating',
-    logo_initials: 'DS'
+    logo_initials: 'IA'
   },
   {
     id: generateDemoUUID('sponsor', 6),
-    name: 'GridBank Financial',
+    name: 'Community Bank',
     sector: 'Finance',
     tier: 'Platinum',
     value: '£120,000',
     contract_end: '2027-06-30',
     status: 'Active',
-    logo_initials: 'GB'
+    logo_initials: 'CB'
   },
 ];
+
+// ============================================================================
+// Initial Roles & Users (Independence & Leverage)
+// ============================================================================
+
+export const INITIAL_ROLES: ClubRole[] = [
+  { id: generateDemoUUID('role', 1), club_id: DEMO_UUIDS.CLUB, name: 'Admin', color: 'red', is_system: true },
+  { id: generateDemoUUID('role', 2), club_id: DEMO_UUIDS.CLUB, name: 'Coach', color: 'blue', is_system: true },
+  { id: generateDemoUUID('role', 3), club_id: DEMO_UUIDS.CLUB, name: 'Ops', color: 'purple', is_system: true },
+  { id: generateDemoUUID('role', 4), club_id: DEMO_UUIDS.CLUB, name: 'Media', color: 'pink', is_system: true },
+  { id: generateDemoUUID('role', 5), club_id: DEMO_UUIDS.CLUB, name: 'Kit', color: 'amber', is_system: true },
+  { id: generateDemoUUID('role', 6), club_id: DEMO_UUIDS.CLUB, name: 'Finance', color: 'green', is_system: false },
+];
+
+export const INITIAL_CLUB_USERS: ClubUser[] = [
+  {
+    id: generateDemoUUID('clubuser', 1),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'jacob@pitchside.ai',
+    name: 'Jacob Kayembe',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[0], INITIAL_ROLES[1]], // Admin + Coach
+    primary_role: INITIAL_ROLES[0], // Admin
+  },
+  {
+    id: generateDemoUUID('clubuser', 2),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'sarah@example.com',
+    name: 'Sarah Mitchell',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2]], // Ops
+    primary_role: INITIAL_ROLES[2],
+  },
+  {
+    id: generateDemoUUID('clubuser', 3),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'mike@example.com',
+    name: 'Mike Thompson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[3]], // Media
+    primary_role: INITIAL_ROLES[3],
+  },
+  {
+    id: generateDemoUUID('clubuser', 4),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'emma@example.com',
+    name: 'Emma Wilson',
+    avatar_url: undefined,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[4]], // Kit
+    primary_role: INITIAL_ROLES[4],
+  },
+  {
+    id: generateDemoUUID('clubuser', 5),
+    club_id: DEMO_UUIDS.CLUB,
+    email: 'david@example.com',
+    name: 'David Chen',
+    avatar_url: undefined,
+    status: 'unavailable', // Example unavailable user
+    created_at: new Date().toISOString(),
+    roles: [INITIAL_ROLES[2], INITIAL_ROLES[5]], // Ops + Finance
+    primary_role: INITIAL_ROLES[2],
+  },
+];
+
+// Helper to get role color class
+export const getRoleColorClass = (color: string): string => {
+  const colorMap: Record<string, string> = {
+    red: 'bg-red-500/20 text-red-400 border-red-500/30',
+    blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    pink: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    amber: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    green: 'bg-green-500/20 text-green-400 border-green-500/30',
+  };
+  return colorMap[color] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+};
 
 // --- ADMIN TASKS (Ops Queue) - DEPRECATED ---
 // Removed as part of pivot to Commercial & Media Operating System
@@ -1018,7 +1149,14 @@ export const INITIAL_SPONSORS: Sponsor[] = [
 export interface TemplateTask {
   label: string;
   sort_order: number;
+  // Phase 4: Default ownership for volunteer-proof templates
+  default_owner_role?: ClubRoleName;
+  default_backup_role?: ClubRoleName;
+  offset_hours?: number;  // Hours before kickoff when task is due
 }
+
+// Phase 4: Auto-apply setting for volunteer-proof templates
+export type TemplateAutoApply = 'never' | 'home' | 'away' | 'always';
 
 export interface TemplatePack {
   id: string;
@@ -1026,6 +1164,9 @@ export interface TemplatePack {
   name: string;
   description?: string;
   is_enabled: boolean;
+  // Phase 4: Volunteer-proof Templates
+  auto_apply?: TemplateAutoApply;      // When to auto-apply this pack
+  default_owner_role?: ClubRoleName;   // Default owner role for all tasks in pack
   tasks: TemplateTask[];
   created_at?: string;
   updated_at?: string;
@@ -1043,6 +1184,11 @@ export interface FixtureTask {
   sort_order: number;
   created_at?: string;
   updated_at?: string;
+  // Phase 3: Task Ownership
+  owner_user_id?: string;       // Assigned owner (ClubUser.id)
+  backup_user_id?: string;      // Backup person (ClubUser.id)
+  owner_role?: ClubRoleName;    // Fallback: anyone with this role can claim
+  due_at?: string;              // ISO timestamp for when task is due
 }
 
 // ============================================================================
@@ -1171,70 +1317,210 @@ export const DEFAULT_TEMPLATE_PACKS: Omit<TemplatePack, 'id' | 'club_id'>[] = [
     name: 'Matchday Pack (Home)',
     description: 'Essential tasks for home matches',
     is_enabled: true,
+    auto_apply: 'home',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm referee and officials', sort_order: 1 },
-      { label: 'Prepare matchday programme', sort_order: 2 },
-      { label: 'Check pitch and goal nets', sort_order: 3 },
-      { label: 'Set up refreshments', sort_order: 4 },
-      { label: 'Post lineup graphic on social', sort_order: 5 },
-      { label: 'Brief stewards and volunteers', sort_order: 6 },
+      { label: 'Confirm referee and officials', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Prepare matchday programme', sort_order: 2, default_owner_role: 'Media' },
+      { label: 'Check pitch and goal nets', sort_order: 3, default_owner_role: 'Ops' },
+      { label: 'Set up refreshments', sort_order: 4, default_owner_role: 'Ops' },
+      { label: 'Post lineup graphic on social', sort_order: 5, default_owner_role: 'Media' },
+      { label: 'Brief stewards and volunteers', sort_order: 6, default_owner_role: 'Ops' },
     ]
   },
   {
     name: 'Matchday Pack (Away)',
     description: 'Essential tasks for away matches',
     is_enabled: true,
+    auto_apply: 'away',
+    default_owner_role: 'Ops',
     tasks: [
-      { label: 'Confirm transport arrangements', sort_order: 1 },
-      { label: 'Check away kit is clean and packed', sort_order: 2 },
-      { label: 'Send travel details to players', sort_order: 3 },
-      { label: 'Post lineup graphic on social', sort_order: 4 },
-      { label: 'Confirm meeting time and location', sort_order: 5 },
+      { label: 'Confirm transport arrangements', sort_order: 1, default_owner_role: 'Ops' },
+      { label: 'Check away kit is clean and packed', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Send travel details to players', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Post lineup graphic on social', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Confirm meeting time and location', sort_order: 5, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Training Night Pack',
     description: 'Pre-training session tasks',
     is_enabled: false,
+    auto_apply: 'never',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Set up training cones and equipment', sort_order: 1 },
-      { label: 'Check first aid kit', sort_order: 2 },
-      { label: 'Confirm session plan with coach', sort_order: 3 },
-      { label: 'Take attendance', sort_order: 4 },
+      { label: 'Set up training cones and equipment', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Check first aid kit', sort_order: 2, default_owner_role: 'Ops' },
+      { label: 'Confirm session plan with coach', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Take attendance', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Squad Availability Pack',
     description: 'Collect and track player availability',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Coach',
     tasks: [
-      { label: 'Send availability request to group', sort_order: 1 },
-      { label: 'Chase non-responders', sort_order: 2 },
-      { label: 'Confirm final squad', sort_order: 3 },
-      { label: 'Notify unavailable players', sort_order: 4 },
+      { label: 'Send availability request to group', sort_order: 1, default_owner_role: 'Coach' },
+      { label: 'Chase non-responders', sort_order: 2, default_owner_role: 'Coach' },
+      { label: 'Confirm final squad', sort_order: 3, default_owner_role: 'Coach' },
+      { label: 'Notify unavailable players', sort_order: 4, default_owner_role: 'Coach' },
     ]
   },
   {
     name: 'Kit & Equipment Pack',
     description: 'Kit management before and after match',
     is_enabled: false,
+    auto_apply: 'always',
+    default_owner_role: 'Kit',
     tasks: [
-      { label: 'Collect dirty kit from last match', sort_order: 1 },
-      { label: 'Send kit for laundry', sort_order: 2 },
-      { label: 'Check kit stock levels', sort_order: 3 },
-      { label: 'Prepare match kit', sort_order: 4 },
+      { label: 'Collect dirty kit from last match', sort_order: 1, default_owner_role: 'Kit' },
+      { label: 'Send kit for laundry', sort_order: 2, default_owner_role: 'Kit' },
+      { label: 'Check kit stock levels', sort_order: 3, default_owner_role: 'Kit' },
+      { label: 'Prepare match kit', sort_order: 4, default_owner_role: 'Kit' },
     ]
   },
   {
     name: 'Media Pack',
     description: 'Content tasks for match coverage',
     is_enabled: true,
+    auto_apply: 'always',
+    default_owner_role: 'Media',
     tasks: [
-      { label: 'Write match preview', sort_order: 1 },
-      { label: 'Create matchday graphic', sort_order: 2 },
-      { label: 'Post pre-match content', sort_order: 3 },
-      { label: 'Post full-time result', sort_order: 4 },
-      { label: 'Write match report', sort_order: 5 },
+      { label: 'Write match preview', sort_order: 1, default_owner_role: 'Media', offset_hours: -48 },
+      { label: 'Create matchday graphic', sort_order: 2, default_owner_role: 'Media', offset_hours: -24 },
+      { label: 'Post pre-match content', sort_order: 3, default_owner_role: 'Media', offset_hours: -2 },
+      { label: 'Post full-time result', sort_order: 4, default_owner_role: 'Media' },
+      { label: 'Write match report', sort_order: 5, default_owner_role: 'Media' },
     ]
   },
 ];
+
+// ============================================================================
+// Phase 5: Audit Trail
+// ============================================================================
+
+export type AuditEventType =
+  | 'task.created'
+  | 'task.claimed'
+  | 'task.completed'
+  | 'task.reopened'
+  | 'task.reassigned'
+  | 'task.blocked'
+  | 'content.approved'
+  | 'content.published'
+  | 'fixture.created'
+  | 'fixture.updated'
+  | 'handover.executed'
+  | 'user.marked_unavailable'
+  | 'user.status_changed';
+
+export interface AuditEvent {
+  id: string;
+  club_id: string;
+  fixture_id?: string;
+  task_id?: string;
+  actor_user_id: string;
+  event_type: AuditEventType;
+  payload: Record<string, any>;  // Event-specific data
+  created_at: string;
+}
+
+// Helper to get human-readable event descriptions
+export const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
+  'task.created': 'created a task',
+  'task.claimed': 'claimed a task',
+  'task.completed': 'completed a task',
+  'task.reopened': 'reopened a task',
+  'task.reassigned': 'reassigned a task',
+  'task.blocked': 'marked a task as blocked',
+  'content.approved': 'approved content',
+  'content.published': 'published content',
+  'fixture.created': 'created a fixture',
+  'fixture.updated': 'updated a fixture',
+  'handover.executed': 'executed a handover',
+  'user.marked_unavailable': 'marked themselves unavailable',
+  'user.status_changed': 'changed user status',
+};
+
+// Event type icons for UI
+export const AUDIT_EVENT_ICONS: Record<AuditEventType, string> = {
+  'task.created': 'Plus',
+  'task.claimed': 'Hand',
+  'task.completed': 'CheckCircle2',
+  'task.reopened': 'RotateCcw',
+  'task.reassigned': 'UserPlus',
+  'task.blocked': 'AlertCircle',
+  'content.approved': 'ThumbsUp',
+  'content.published': 'Send',
+  'fixture.created': 'Calendar',
+  'fixture.updated': 'Edit',
+  'handover.executed': 'ArrowRightLeft',
+  'user.marked_unavailable': 'UserX',
+  'user.status_changed': 'User',
+};
+
+// ============================================================================
+// Phase 6: Quick Handover
+// ============================================================================
+
+export type HandoverScope = 'all' | 'fixture' | 'pack';
+export type HandoverTarget = 'user' | 'role' | 'backup';
+
+export interface HandoverRequest {
+  fromUserId: string;
+  scope: HandoverScope;
+  fixtureId?: string;        // Required if scope is 'fixture'
+  templatePackId?: string;   // Required if scope is 'pack'
+  target: HandoverTarget;
+  toUserId?: string;         // Required if target is 'user'
+  toRole?: ClubRoleName;     // Required if target is 'role'
+}
+
+export interface HandoverResult {
+  success: boolean;
+  tasksAffected: number;
+  errors?: string[];
+}
+
+// Optional auto-handover rules for future implementation
+export type HandoverTrigger = 'owner_unavailable' | 'overdue_4h' | 'no_response_24h';
+export type HandoverAction = 'assign_backup' | 'assign_role' | 'notify_admin';
+
+export interface HandoverRule {
+  id: string;
+  club_id: string;
+  trigger: HandoverTrigger;
+  action: HandoverAction;
+  notify: boolean;
+  is_enabled: boolean;
+}
+
+// ============================================================================
+// Phase 7: Exception Alerts
+// ============================================================================
+
+export type RiskLevel = 'ok' | 'warning' | 'critical';
+
+export interface TaskRisk {
+  task: FixtureTask;
+  level: RiskLevel;
+  reasons: string[];
+  fixture?: Fixture;
+}
+
+export interface RiskSummary {
+  critical: number;
+  warning: number;
+  ok: number;
+  total: number;
+  criticalTasks: TaskRisk[];
+  warningTasks: TaskRisk[];
+}
+
+// Risk thresholds (in hours)
+export const RISK_THRESHOLDS = {
+  WARNING_HOURS: 2,    // Warning if due in < 2 hours
+  CRITICAL_HOURS: 0,   // Critical if overdue
+} as const;

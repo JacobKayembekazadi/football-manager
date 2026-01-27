@@ -11,6 +11,7 @@ import { hasDemoData } from '../services/dataPresenceService';
 import { Skeleton, StatCardSkeleton } from './Skeleton';
 import { getDemoClubProfile, saveDemoClubProfile, DemoClubProfile } from '../services/demoStorageService';
 import { signOut } from '../services/authService';
+import TeamSettings from './TeamSettings';
 
 // AI Tone options
 const AI_TONES = [
@@ -610,6 +611,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ club, onLogout }) => {
           {isSavingProfile ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle size={16} />}
           {isSavingProfile ? 'Saving...' : 'Save Club Profile'}
         </button>
+      </div>
+
+      {/* Team Members Section */}
+      <div className="glass-card p-6 rounded-2xl border border-purple-500/20">
+        <TeamSettings clubId={clubId} />
       </div>
 
       {/* AI Usage Analytics */}

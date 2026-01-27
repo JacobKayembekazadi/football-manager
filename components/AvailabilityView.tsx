@@ -18,11 +18,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Player, Fixture, Club, AvailabilityStatus, PlayerAvailability } from '../types';
+import EmptyState, { EMPTY_STATE_PRESETS } from './EmptyState';
 import {
   getAvailabilityForFixture,
   setPlayerAvailability,
   initializeAvailability,
 } from '../services/availabilityService';
+import { departmentAlerts } from '../services/notificationService';
 
 interface AvailabilityViewProps {
   club: Club;
@@ -140,6 +142,21 @@ const AvailabilityView: React.FC<AvailabilityViewProps> = ({
         return [...prev, updated];
       });
 
+      // Notify departments when a player is marked as injured
+      if (status === 'injured') {
+        const player = players.find(p => p.id === playerId);
+        const fixture = fixtures.find(f => f.id === selectedFixtureId);
+        if (player) {
+          const statusText = note ? `Injured - ${note}` : 'Marked as injured';
+          departmentAlerts.injuryUpdate(
+            clubId,
+            player.name,
+            statusText,
+            fixture?.id
+          );
+        }
+      }
+
       if (notePlayerId === playerId) {
         setNotePlayerId(null);
         setNoteText('');
@@ -247,9 +264,11 @@ const AvailabilityView: React.FC<AvailabilityViewProps> = ({
       </div>
 
       {upcomingFixtures.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
-          <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400">No upcoming fixtures to track availability</p>
+        <div className="border border-dashed border-white/10 rounded-xl">
+          <EmptyState
+            {...EMPTY_STATE_PRESETS.fixtures}
+            description="No upcoming fixtures to track availability"
+          />
         </div>
       ) : (
         <>

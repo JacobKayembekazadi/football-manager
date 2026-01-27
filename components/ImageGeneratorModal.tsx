@@ -310,9 +310,31 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ club, fixture
           </button>
         </div>
 
-        <div className="flex flex-1 min-h-0">
-          {/* Sidebar - Tabs */}
-          <div className="w-64 border-r border-white/10 p-4 space-y-2 bg-black/20">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
+          {/* Mobile Tabs - Horizontal scroll */}
+          <div className="md:hidden flex gap-2 p-3 border-b border-white/10 overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setGeneratedImage(null);
+                  setError(null);
+                }}
+                className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center gap-2 text-sm transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-white/10 border border-white/20 text-white'
+                    : 'text-slate-400 hover:bg-white/5'
+                }`}
+              >
+                <tab.icon size={16} className={activeTab === tab.id ? 'text-blue-400' : ''} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop Sidebar - Tabs */}
+          <div className="hidden md:block w-64 border-r border-white/10 p-4 space-y-2 bg-black/20">
             {tabs.map(tab => (
               <button
                 key={tab.id}

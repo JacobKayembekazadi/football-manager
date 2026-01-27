@@ -5,6 +5,7 @@ import { generateSponsorReport, generateSponsorActivation, generateRenewalPitch 
 import { saveSponsorContent, createSponsor, deleteSponsor, updateSponsor } from '../services/sponsorService';
 import { generatePartnerValueReport } from '../services/sponsorPdfService';
 import SponsorFormModal from './SponsorFormModal';
+import ConfirmationDialog from './ConfirmationDialog';
 import { useToast } from './Toast';
 import { Briefcase, DollarSign, Calendar, TrendingUp, Mail, Share2, Loader2, Check, Lightbulb, Handshake, BarChart3, Target, Plus, Trash2, FileDown, Search, Filter, Edit2, X } from 'lucide-react';
 
@@ -63,6 +64,13 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
   const [filterTier, setFilterTier] = useState<'ALL' | 'Platinum' | 'Gold' | 'Silver'>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'Active' | 'Expiring' | 'Negotiating'>('ALL');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; sponsorId: string | null; sponsorName: string }>({
+    isOpen: false,
+    sponsorId: null,
+    sponsorName: '',
+  });
 
   // ROI Form State
   const [roiImpressions, setRoiImpressions] = useState<number | ''>('');
@@ -151,17 +159,31 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
     setIsSponsorModalOpen(true);
   };
 
-  const handleDeleteSponsor = async (sponsorId: string, e: React.MouseEvent) => {
+  const handleDeleteSponsor = (sponsorId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent selecting the sponsor
-    if (!confirm('Are you sure you want to delete this sponsor?')) return;
-    
-    setDeletingId(sponsorId);
+    const sponsor = sponsors.find((s) => s.id === sponsorId);
+    setDeleteConfirm({
+      isOpen: true,
+      sponsorId,
+      sponsorName: sponsor?.name || 'this sponsor',
+    });
+  };
+
+  const confirmDeleteSponsor = async () => {
+    if (!deleteConfirm.sponsorId) return;
+
+    setDeletingId(deleteConfirm.sponsorId);
     try {
-      await deleteSponsor(sponsorId);
-      if (selectedSponsor?.id === sponsorId) {
+      await deleteSponsor(deleteConfirm.sponsorId);
+      if (selectedSponsor?.id === deleteConfirm.sponsorId) {
         setSelectedSponsor(null);
       }
       if (onRefetchSponsors) await onRefetchSponsors();
+      toast.success('Sponsor deleted successfully.');
+      setDeleteConfirm({ isOpen: false, sponsorId: null, sponsorName: '' });
+    } catch (error) {
+      console.error('Error deleting sponsor:', error);
+      toast.error('Failed to delete sponsor. Please try again.');
     } finally {
       setDeletingId(null);
     }
@@ -631,6 +653,19 @@ const SponsorNexus: React.FC<SponsorNexusProps> = ({ club, sponsors, onRefetchSp
             onClose={() => { setIsSponsorModalOpen(false); setEditingSponsor(null); }}
             onSave={editingSponsor ? handleUpdateSponsor : handleCreateSponsor}
             editingSponsor={editingSponsor}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={deleteConfirm.isOpen}
+          onClose={() => setDeleteConfirm({ isOpen: false, sponsorId: null, sponsorName: '' })}
+          onConfirm={confirmDeleteSponsor}
+          title="Remove Sponsor"
+          message={`Are you sure you want to remove ${deleteConfirm.sponsorName} from your portfolio? All associated ROI data and generated content will be permanently deleted.`}
+          confirmText="Remove Sponsor"
+          cancelText="Cancel"
+          variant="danger"
+          isLoading={!!deletingId}
         />
     </div>
   );

@@ -1,7 +1,8 @@
 import { Fixture, Club, ContentType, Player, Sponsor } from '../types';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
 
-// LangSmith tracing is server-side only - Edge Function handles tracing
+// AI provider configuration - defaults to Gemini, can be overridden
+type AIProvider = 'gemini' | 'openai' | 'anthropic';
+const AI_PROVIDER: AIProvider = (import.meta.env.VITE_AI_PROVIDER as AIProvider) || 'gemini';
 
 interface GenerationContext {
   matchType?: string;
@@ -20,6 +21,32 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+/**
+ * Extract JSON from AI response that may be wrapped in markdown code blocks or have extra text
+ */
+const extractJson = (text: string): string => {
+  // Try to find JSON in markdown code block
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Try to find JSON object directly
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0];
+  }
+
+  // Try to find JSON array directly
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    return arrayMatch[0];
+  }
+
+  // Return original text as fallback
+  return text.trim();
+};
+
 const getCommonSystemPrompt = (club: Club) => `
 You are the Media Officer for ${club.name} (Nicknamed: ${club.nickname}).
 Tone: ${club.tone_context}
@@ -29,27 +56,184 @@ ${club.players.map((p) => `#${p.number} ${p.name} (${p.position})`).join(', ')}
 
 Rules:
 - Keep it punchy and engaging.
-- No robotic AI phrases like "Here is a tweet".
+- No robotic AI phrases like "Here is a tweet" or "Certainly!".
+- No sci-fi language, futuristic speak, or game-like commentary.
+- Write like a real grassroots football club media officer would.
 - Use emojis sparingly but effectively.
 - If a player is mentioned in the prompt, refer to them by name or nickname.
+- Sound authentic - supporters should feel this was written by someone who cares about the club.
 `;
 
-// LangSmith tracing happens in Edge Function (server-side)
-const invokeAi = async (clubId: string, prompt: string, action: string, model = 'gemini-2.5-flash'): Promise<string> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    return 'AI unavailable (Supabase not configured).';
+// AI timeout in milliseconds (30 seconds)
+const AI_TIMEOUT_MS = 30000;
+
+// Maximum retry attempts for transient failures
+const MAX_RETRIES = 2;
+
+// Delay between retries (with exponential backoff)
+const RETRY_DELAY_MS = 1000;
+
+/**
+ * Custom error for AI-related failures
+ */
+class AIError extends Error {
+  constructor(
+    message: string,
+    public readonly userMessage: string,
+    public readonly isRetryable: boolean = false
+  ) {
+    super(message);
+    this.name = 'AIError';
   }
+}
 
-  const { data, error } = await supabase.functions.invoke('ai-generate', {
-    body: { clubId, prompt, model, action },
-  });
+/**
+ * Fetch with timeout support
+ */
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit,
+  timeoutMs: number
+): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (error) throw error;
-  if (!data?.text) return 'Failed to generate content.';
-  return data.text as string;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
-// Note: LangSmith tracing is handled server-side in the Edge Function
+/**
+ * Sleep helper for retry delays
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// AI invocation via Vercel serverless function with timeout and retry
+const invokeAi = async (
+  clubId: string,
+  prompt: string,
+  action: string,
+  model = 'gemini-2.0-flash'
+): Promise<string> => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Add exponential backoff delay for retries
+      if (attempt > 0) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        console.log(`[AI] Retry attempt ${attempt}/${MAX_RETRIES} after ${delay}ms delay`);
+        await sleep(delay);
+      }
+
+      const response = await fetchWithTimeout(
+        '/api/ai-generate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            model,
+            provider: AI_PROVIDER,
+            clubId,
+            action,
+          }),
+        },
+        AI_TIMEOUT_MS
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+
+        // Check if error is retryable (5xx server errors, rate limits)
+        const isRetryable =
+          response.status >= 500 || response.status === 429;
+
+        throw new AIError(
+          errorMessage,
+          getAIErrorMessage(response.status, errorMessage),
+          isRetryable
+        );
+      }
+
+      const data = await response.json();
+      if (!data?.text) {
+        throw new AIError(
+          'Empty response from AI',
+          'AI returned an empty response. Please try again.',
+          true
+        );
+      }
+
+      return data.text as string;
+    } catch (error) {
+      lastError = error as Error;
+
+      // Handle timeout errors
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn(`[AI] Request timed out after ${AI_TIMEOUT_MS}ms`);
+        lastError = new AIError(
+          'AI request timed out',
+          'The AI is taking too long to respond. Please try again in a moment.',
+          true
+        );
+      }
+
+      // Check if we should retry
+      if (error instanceof AIError && !error.isRetryable) {
+        break; // Non-retryable error, stop immediately
+      }
+
+      // Log retry attempt
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[AI] Attempt ${attempt + 1} failed:`, error);
+      }
+    }
+  }
+
+  // All retries exhausted
+  console.error('[AI] All retry attempts failed:', lastError);
+
+  if (lastError instanceof AIError) {
+    return lastError.userMessage;
+  }
+
+  return 'AI is temporarily unavailable. Please try again in a few moments.';
+};
+
+/**
+ * Get user-friendly error message based on HTTP status and error details
+ */
+const getAIErrorMessage = (status: number, errorDetails: string): string => {
+  switch (status) {
+    case 401:
+    case 403:
+      return 'AI authentication failed. Please check your API configuration.';
+    case 429:
+      return 'AI rate limit reached. Please wait a moment and try again.';
+    case 500:
+    case 502:
+    case 503:
+      return 'AI service is temporarily unavailable. Please try again shortly.';
+    case 504:
+      return 'AI request timed out. Please try a shorter request.';
+    default:
+      if (errorDetails.toLowerCase().includes('quota')) {
+        return 'AI usage quota exceeded. Please check your billing settings.';
+      }
+      if (errorDetails.toLowerCase().includes('invalid')) {
+        return 'Invalid AI request. Please try different content.';
+      }
+      return 'AI generation failed. Please try again.';
+  }
+};
 
 export const generateContent = async (
   club: Club,
@@ -157,11 +341,89 @@ export const chatWithAi = async (
   message: string,
   history: { role: string; content: string }[] = []
 ): Promise<string> => {
+  // Get current date for natural language date parsing
+  const today = new Date();
+  const currentDateContext = `Today is ${today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`;
+
   const systemInstruction = `
-${getCommonSystemPrompt(club)}
-You are "The Gaffer", a helpful AI assistant for the club admin.
-You help with writing captions, emails to sponsors, or tactical ideas.
-Be brief, helpful, and stay in character as a club insider.
+You are "The Gaffer" - a friendly, knowledgeable assistant for ${club.name} football club.
+
+${currentDateContext}
+
+YOUR PERSONALITY:
+- Speak naturally like a helpful colleague, not a robot or sci-fi character
+- Be warm, direct, and professional
+- You know football inside out
+- Keep responses concise but useful
+
+WHAT YOU CAN DO:
+1. ADVISE: Answer questions, write content, provide analysis
+2. EXECUTE ACTIONS: Create fixtures, add players, manage sponsors when asked
+
+SQUAD CONTEXT:
+${club.players.map((p) => `${p.name} (#${p.number}, ${p.position}, Form: ${p.form?.toFixed(1) || '5.0'})`).join(', ')}
+
+ACTION DETECTION:
+When the user asks you to CREATE, ADD, UPDATE, CHANGE, DELETE, or REMOVE something in the system, include an "action" object in your response.
+
+AVAILABLE ACTIONS:
+- CREATE_FIXTURE: Schedule a new match (opponent, date/time, venue, competition)
+- UPDATE_FIXTURE: Record result or update match details (opponent, scores, scorers)
+- DELETE_FIXTURE: Cancel a scheduled match
+- CREATE_PLAYER: Add player to squad (name, position, number)
+- UPDATE_PLAYER: Update player details (name, form, stats)
+- DELETE_PLAYER: Remove player from squad
+- CREATE_SPONSOR: Add new sponsor (name, sector, tier, annual_value)
+- UPDATE_SPONSOR: Update sponsorship (tier, value)
+- DELETE_SPONSOR: End sponsorship partnership
+- CREATE_CONTENT: Save drafted content (type, body)
+- UPDATE_CONTENT: Change content status (DRAFT/APPROVED/PUBLISHED)
+
+DATE PARSING:
+- "next Saturday" = the coming Saturday from today
+- "this weekend" = the upcoming Saturday or Sunday
+- "tomorrow" = the day after today
+- Always convert to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
+- Default time is 15:00 if not specified
+- Default venue is "Home" if not specified
+
+RESPONSE FORMAT:
+You MUST respond with ONLY valid JSON in this exact format:
+{
+  "response": "Your friendly conversational message here",
+  "action": {
+    "type": "CREATE_FIXTURE",
+    "confidence": "high",
+    "summary": "Create home fixture vs Arsenal on Saturday at 3pm",
+    "data": {
+      "opponent": "Arsenal",
+      "kickoff_time": "2024-01-27T15:00:00",
+      "venue": "Home",
+      "competition": "League Match"
+    }
+  }
+}
+
+RULES:
+1. If NO action is needed, omit the "action" field entirely: {"response": "Your message here"}
+2. ALWAYS include a friendly "response" message
+3. Set confidence to "high" for clear requests, "medium" if inferring details, "low" if uncertain
+4. If details are missing or unclear, ask for clarification in your response (no action)
+5. For result updates: use opponent name to identify the fixture
+
+EXAMPLES:
+
+User: "How's the squad looking?"
+Response: {"response": "Looking solid! Marcus Thorn is in great form at 8.5, and the midfield is well-balanced..."}
+
+User: "Schedule a home game against Liverpool next Saturday at 3pm"
+Response: {"response": "I'll set that up for you.", "action": {"type": "CREATE_FIXTURE", "confidence": "high", "summary": "Home fixture vs Liverpool on Saturday 3pm", "data": {"opponent": "Liverpool", "kickoff_time": "2024-01-27T15:00:00", "venue": "Home", "competition": "League Match"}}}
+
+User: "We beat Arsenal 3-1, Thorn scored twice and Bones got one"
+Response: {"response": "Great result! Recording that now.", "action": {"type": "UPDATE_FIXTURE", "confidence": "high", "summary": "3-1 win vs Arsenal", "data": {"opponent": "Arsenal", "result_home": 3, "result_away": 1, "scorers": ["Marcus Thorn", "Marcus Thorn", "Billy Bones"]}}}
+
+User: "Add a new striker"
+Response: {"response": "I can add a striker to the squad. What's their name, and what number will they wear?"}
 `;
 
   const historyText =
@@ -171,8 +433,8 @@ Be brief, helpful, and stay in character as a club insider.
 
   const prompt =
     historyText.length > 0
-      ? `${systemInstruction}\n\nPrevious conversation:\n${historyText}\n\nUser: ${message}`
-      : `${systemInstruction}\n\nUser Question: ${message}`;
+      ? `${systemInstruction}\n\nPrevious conversation:\n${historyText}\n\nUser: ${message}\n\nRespond with JSON only:`
+      : `${systemInstruction}\n\nUser: ${message}\n\nRespond with JSON only:`;
 
   return await invokeAi(club.id, prompt, 'chat');
 };
@@ -238,7 +500,8 @@ Example: ["Marcus Thorn", "Billy Bones"]
 
   const text = await invokeAi(club.id, prompt, 'suggest_scorers');
   try {
-    return JSON.parse(text);
+    const jsonStr = extractJson(text);
+    return JSON.parse(jsonStr);
   } catch {
     return [];
   }
@@ -307,35 +570,293 @@ Tone: Persuasive, exclusive, ambitious.
 
 export const generateNewsArticle = async (club: Club, title: string, details: string): Promise<{ article: string; social: string }> => {
   const prompt = `
-Role: Media Officer.
-Task: Generate a website news article and a social media caption.
-Topic: ${title}
-Details: ${details}
-Club Tone: ${club.tone_context}
+You are the Media Officer for ${club.name} (${club.nickname}).
 
-Output JSON: { "article": "...", "social": "..." }
+TASK: Write an official club news article and matching social media post.
+
+TOPIC TYPE: ${title}
+KEY DETAILS: ${details}
+
+CLUB TONE: ${club.tone_context}
+
+ARTICLE REQUIREMENTS:
+- 150-250 words
+- Professional football club news style
+- Include a strong opening hook
+- Reference the club by name where appropriate
+- End with a call-to-action or forward-looking statement
+
+SOCIAL POST REQUIREMENTS:
+- Twitter/X style (max 280 chars)
+- Include 2-3 relevant emojis
+- Include relevant hashtags
+- Make it shareable and engaging
+
+CRITICAL: You MUST respond with ONLY a valid JSON object in this exact format (no markdown, no explanation):
+{"article": "Your article text here with proper paragraphs...", "social": "Your social caption here 🔥 #Hashtag"}
 `;
+
   const text = await invokeAi(club.id, prompt, 'news_article');
   try {
-    return JSON.parse(text);
-  } catch {
-    return { article: 'Error', social: 'Error' };
+    const jsonStr = extractJson(text);
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.article && parsed.social) {
+      return parsed;
+    }
+    throw new Error('Invalid structure');
+  } catch (error) {
+    console.error('News article JSON parse error:', error, 'Raw:', text);
+    // Fallback: if we got text but couldn't parse JSON, use it as article
+    if (text && text.length > 50 && !text.includes('Error')) {
+      return {
+        article: text,
+        social: `📰 News from ${club.name}! Check our website for the full story. #${club.name.replace(/\s+/g, '')}`
+      };
+    }
+    return { article: 'Generation failed. Please try again.', social: 'Generation failed.' };
   }
 };
 
 export const generateNewsletter = async (club: Club, highlights: string[]): Promise<string> => {
-  const prompt = `
-Role: Media Team.
-Task: Write a weekly newsletter for fans.
-Highlights:
-${highlights.map((h) => `- ${h}`).join('\n')}
+  const primaryColor = club.primary_color || '#10b981';
+  const secondaryColor = club.secondary_color || '#1e293b';
 
-Format: HTML-ready text (paragraphs, bolding).
+  const prompt = `
+You are the Newsletter Editor for ${club.name} (${club.nickname}).
+
+TASK: Create a beautifully formatted weekly fan newsletter.
+
+CLUB BRAND COLORS:
+- Primary: ${primaryColor}
+- Secondary: ${secondaryColor}
+
+HIGHLIGHTS TO COVER:
+${highlights.map((h, i) => `${i + 1}. ${h}`).join('\n')}
+
+CLUB TONE: ${club.tone_context}
+
+FORMAT REQUIREMENTS:
+Generate HTML with inline styles. Use this structure:
+
+1. HEADER SECTION
+   - Club name as main title styled with primary color
+   - "WEEKLY BRIEFING" subtitle
+   - Current week indicator
+
+2. MAIN CONTENT
+   - Each highlight gets its own section with:
+     - Bold heading styled with primary color
+     - 2-3 sentences of engaging content
+     - Use <hr> dividers between sections
+
+3. SIGN-OFF
+   - Encouraging message to fans
+   - "See you at the ground!" or similar
+
+STYLING RULES:
+- Use inline CSS only (style="...")
+- Primary color (${primaryColor}) for: headings, borders, accent elements
+- Use bold (<strong>) for emphasis
+- Add padding and margins for readability
+- Font: system-ui, sans-serif
+
+EXAMPLE OUTPUT FORMAT:
+<div style="font-family: system-ui, sans-serif; padding: 20px; max-width: 600px;">
+  <h1 style="color: ${primaryColor}; margin-bottom: 5px;">${club.name}</h1>
+  <p style="color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Weekly Briefing</p>
+  <hr style="border: none; border-top: 2px solid ${primaryColor}; margin: 20px 0;">
+
+  <h2 style="color: ${primaryColor}; font-size: 18px;">📰 Headline Here</h2>
+  <p style="color: #334155; line-height: 1.6;">Content paragraph...</p>
+
+  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+  <p style="color: ${primaryColor}; font-weight: bold; text-align: center;">See you at the ground! 💪</p>
+</div>
+
+Generate the complete newsletter HTML now. Only output the HTML, no explanation.
 `;
-  return await invokeAi(club.id, prompt, 'newsletter');
+
+  const result = await invokeAi(club.id, prompt, 'newsletter');
+
+  // If AI didn't wrap in a container div, wrap it
+  if (!result.trim().startsWith('<div')) {
+    return `<div style="font-family: system-ui, sans-serif; line-height: 1.6;">${result}</div>`;
+  }
+
+  return result;
 };
 
-// --- IMAGE GENERATION (Gemini 2.5 Flash Image) ---
+// --- CONTENT TEMPLATES ---
+
+export type ContentTemplate = 'match_report' | 'player_signing' | 'training_update';
+export type ContentTone = 'normal' | 'formal' | 'casual';
+
+export interface TemplateContext {
+  // Match Report
+  opponent?: string;
+  score?: string;
+  scorers?: string[];
+  venue?: string;
+  competition?: string;
+  highlights?: string;
+  manOfTheMatch?: string;
+
+  // Player Signing
+  playerName?: string;
+  position?: string;
+  previousClub?: string;
+  contractLength?: string;
+  transferFee?: string;
+  shirtNumber?: string;
+
+  // Training Update
+  sessionType?: string;
+  focusArea?: string;
+  playerUpdates?: string;
+  injuryNews?: string;
+  managerQuotes?: string;
+}
+
+const getTemplatePrompt = (
+  club: Club,
+  template: ContentTemplate,
+  context: TemplateContext,
+  tone: ContentTone = 'normal'
+): string => {
+  const toneGuide = {
+    normal: 'Professional but warm, like a club media officer writing for fans',
+    formal: 'Official and professional, suitable for press releases and formal announcements',
+    casual: 'Friendly and conversational, like chatting with supporters at the bar',
+  };
+
+  const baseContext = `
+You are the Media Officer for ${club.name} (${club.nickname}).
+Club tone: ${club.tone_context}
+Writing style: ${toneGuide[tone]}
+
+IMPORTANT RULES:
+- Write like a real grassroots/non-league football club
+- Sound authentic - like this was written by someone who works at the club
+- No futuristic language, no sci-fi references, no "systems online" speak
+- Use football terminology naturally
+- Be genuine and relatable to supporters
+`;
+
+  if (template === 'match_report') {
+    return `${baseContext}
+
+TASK: Write a match report for our official website/social media.
+
+MATCH DETAILS:
+- Opponent: ${context.opponent || '[Opponent]'}
+- Score: ${context.score || '[Score]'}
+- Scorers: ${context.scorers?.join(', ') || 'None recorded'}
+- Venue: ${context.venue || 'Home'}
+- Competition: ${context.competition || 'League'}
+${context.manOfTheMatch ? `- Man of the Match: ${context.manOfTheMatch}` : ''}
+${context.highlights ? `- Key moments: ${context.highlights}` : ''}
+
+OUTPUT FORMAT:
+Write a 200-250 word match report that:
+1. Opens with the result and overall narrative (dominant win, hard-fought draw, tough defeat, etc.)
+2. Highlights key moments and goalscorers
+3. Mentions standout performers
+4. Ends with what's next for the team
+
+Sound like a real club - not a fantasy game. Supporters should read this and feel connected to their team.
+`;
+  }
+
+  if (template === 'player_signing') {
+    return `${baseContext}
+
+TASK: Write a player signing announcement for social media and website.
+
+SIGNING DETAILS:
+- Player Name: ${context.playerName || '[Player Name]'}
+- Position: ${context.position || '[Position]'}
+- Previous Club: ${context.previousClub || 'Undisclosed'}
+${context.contractLength ? `- Contract: ${context.contractLength}` : ''}
+${context.shirtNumber ? `- Shirt Number: #${context.shirtNumber}` : ''}
+${context.transferFee ? `- Fee: ${context.transferFee}` : ''}
+
+OUTPUT FORMAT:
+Write a signing announcement (150-200 words) that:
+1. Welcomes the player to the club
+2. Briefly mentions their background/previous clubs
+3. Includes a quote from the manager about why they're excited
+4. Includes a quote from the player about joining
+5. Notes their squad number if provided
+
+Keep it professional but exciting - this is news supporters want to hear. Sound like a real club announcement, not a video game transfer.
+`;
+  }
+
+  if (template === 'training_update') {
+    return `${baseContext}
+
+TASK: Write a training ground update for social media/website.
+
+TRAINING DETAILS:
+- Session Type: ${context.sessionType || 'Regular training'}
+- Focus: ${context.focusArea || 'General preparation'}
+${context.playerUpdates ? `- Player news: ${context.playerUpdates}` : ''}
+${context.injuryNews ? `- Injury updates: ${context.injuryNews}` : ''}
+${context.managerQuotes ? `- Manager said: "${context.managerQuotes}"` : ''}
+
+OUTPUT FORMAT:
+Write a training update (100-150 words) that:
+1. Sets the scene - what the squad has been working on
+2. Mentions any returning players or fitness updates
+3. Builds anticipation for the next match
+4. Keeps fans engaged with behind-the-scenes feel
+
+This should feel like a peek behind the curtain for supporters. Authentic, not scripted.
+`;
+  }
+
+  return baseContext;
+};
+
+/**
+ * Generate content from a template with specific context
+ */
+export const generateFromTemplate = async (
+  club: Club,
+  template: ContentTemplate,
+  context: TemplateContext,
+  tone: ContentTone = 'normal'
+): Promise<string> => {
+  const prompt = getTemplatePrompt(club, template, context, tone);
+  return await invokeAi(club.id, prompt, `template:${template}`);
+};
+
+/**
+ * Get available content templates with descriptions
+ */
+export const getContentTemplates = (): { id: ContentTemplate; label: string; description: string; icon: string }[] => [
+  {
+    id: 'match_report',
+    label: 'Match Report',
+    description: 'Full-time report for website and social media',
+    icon: 'clipboard',
+  },
+  {
+    id: 'player_signing',
+    label: 'Player Signing',
+    description: 'New player announcement with quotes',
+    icon: 'user-plus',
+  },
+  {
+    id: 'training_update',
+    label: 'Training Update',
+    description: 'Behind-the-scenes training ground news',
+    icon: 'dumbbell',
+  },
+];
+
+// --- IMAGE GENERATION (Imagen 3) ---
 
 export interface ImageGenerationResult {
   imageBase64: string;
@@ -343,44 +864,141 @@ export interface ImageGenerationResult {
   description?: string;
 }
 
-export type ImageGenerationType = 
-  | 'matchday_graphic' 
-  | 'player_card' 
-  | 'social_post' 
-  | 'announcement' 
+export type ImageGenerationType =
+  | 'matchday_graphic'
+  | 'player_card'
+  | 'social_post'
+  | 'announcement'
   | 'celebration'
   | 'custom';
 
-// LangSmith tracing happens server-side in Edge Function
+export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+
+// Image generation timeout (60 seconds - images take longer)
+const IMAGE_TIMEOUT_MS = 60000;
+
+// Image generation via Vercel serverless function (uses Imagen 3) with timeout and retry
 const invokeImageAi = async (
   clubId: string,
   prompt: string,
   action: string,
   referenceImageBase64?: string,
-  referenceMimeType?: string
+  referenceMimeType?: string,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Image generation unavailable (Supabase not configured).');
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Add delay for retries
+      if (attempt > 0) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        console.log(`[Image AI] Retry attempt ${attempt}/${MAX_RETRIES} after ${delay}ms delay`);
+        await sleep(delay);
+      }
+
+      const response = await fetchWithTimeout(
+        '/api/ai-generate-image',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            referenceImageBase64,
+            referenceMimeType,
+            clubId,
+            action,
+            aspectRatio,
+          }),
+        },
+        IMAGE_TIMEOUT_MS
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+        const isRetryable = response.status >= 500 || response.status === 429;
+
+        throw new AIError(
+          errorMessage,
+          getImageErrorMessage(response.status, errorMessage),
+          isRetryable
+        );
+      }
+
+      const data = await response.json();
+      if (!data?.imageBase64) {
+        throw new AIError(
+          'Empty image response',
+          'Image generation returned no data. Please try again.',
+          true
+        );
+      }
+
+      return {
+        imageBase64: data.imageBase64,
+        mimeType: data.mimeType || 'image/png',
+        description: data.description,
+      };
+    } catch (error) {
+      lastError = error as Error;
+
+      // Handle timeout
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn(`[Image AI] Request timed out after ${IMAGE_TIMEOUT_MS}ms`);
+        lastError = new AIError(
+          'Image generation timed out',
+          'Image generation is taking too long. Please try a simpler design or try again later.',
+          true
+        );
+      }
+
+      // Check if retryable
+      if (error instanceof AIError && !error.isRetryable) {
+        break;
+      }
+
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[Image AI] Attempt ${attempt + 1} failed:`, error);
+      }
+    }
   }
 
-  const { data, error } = await supabase.functions.invoke('ai-generate-image', {
-    body: { clubId, prompt, referenceImageBase64, referenceMimeType, action },
-  });
+  // All retries exhausted - throw the error so callers can handle it
+  console.error('[Image AI] All retry attempts failed:', lastError);
 
-  if (error) throw error;
-  if (!data?.imageBase64) throw new Error('Failed to generate image.');
-  
-  return {
-    imageBase64: data.imageBase64,
-    mimeType: data.mimeType || 'image/png',
-    description: data.description,
-  };
+  if (lastError instanceof AIError) {
+    throw new Error(lastError.userMessage);
+  }
+
+  throw new Error('Image generation failed. Please try again.');
+};
+
+/**
+ * Get user-friendly error message for image generation failures
+ */
+const getImageErrorMessage = (status: number, errorDetails: string): string => {
+  switch (status) {
+    case 400:
+      if (errorDetails.toLowerCase().includes('safety')) {
+        return 'Image request was blocked for safety reasons. Please try different content.';
+      }
+      return 'Invalid image request. Please try different content.';
+    case 429:
+      return 'Image generation rate limit reached. Please wait and try again.';
+    case 500:
+    case 502:
+    case 503:
+      return 'Image service is temporarily unavailable. Please try again shortly.';
+    default:
+      return 'Image generation failed. Please try again.';
+  }
 };
 
 export const generateMatchdayGraphic = async (
   club: Club,
   fixture: Fixture,
-  style: 'hype' | 'minimal' | 'retro' | 'neon' = 'neon'
+  style: 'hype' | 'minimal' | 'retro' | 'neon' = 'minimal'
 ): Promise<ImageGenerationResult> => {
   const matchDate = new Date(fixture.kickoff_time);
   const formattedDate = matchDate.toLocaleDateString('en-GB', {
@@ -397,7 +1015,7 @@ export const generateMatchdayGraphic = async (
     hype: 'bold, dynamic, high-energy with dramatic lighting, motion blur effects, and intense colors',
     minimal: 'clean, modern, minimalist design with lots of white space, simple typography',
     retro: 'vintage football poster style, textured paper effect, classic typography, muted warm colors',
-    neon: 'cyberpunk aesthetic, neon glow effects, dark background with bright cyan and magenta accents, futuristic',
+    neon: 'modern sports design, bold typography, dark background with vibrant accent colors, professional',
   };
 
   const prompt = `
@@ -425,7 +1043,8 @@ Requirements:
 - Use abstract football imagery, geometric shapes, or silhouettes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`);
+  // Use 1:1 for Instagram, best for social media
+  return await invokeImageAi(club.id, prompt, `generate_matchday_graphic:${style}`, undefined, undefined, '1:1');
 };
 
 export const generateResultGraphic = async (
@@ -455,7 +1074,7 @@ ${scorersText ? `SCORERS: ${scorersText}` : ''}
 ${fixture.man_of_the_match ? `MAN OF THE MATCH: ${fixture.man_of_the_match}` : ''}
 COMPETITION: ${fixture.competition || 'League'}
 
-DESIGN STYLE: Cyberpunk/neon aesthetic with ${result === 'WIN' ? 'celebratory, triumphant' : result === 'DRAW' ? 'neutral, balanced' : 'determined, resilient'} mood.
+DESIGN STYLE: Modern sports design with ${result === 'WIN' ? 'celebratory, triumphant' : result === 'DRAW' ? 'neutral, balanced' : 'determined, resilient'} mood.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}
@@ -468,7 +1087,7 @@ Requirements:
 - NO real player faces - use silhouettes or abstract shapes
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_result_graphic');
+  return await invokeImageAi(club.id, prompt, 'generate_result_graphic', undefined, undefined, '1:1');
 };
 
 export const generatePlayerSpotlight = async (
@@ -494,7 +1113,7 @@ STATS (0-99 scale):
 
 FORM: ${player.form}/10
 
-DESIGN STYLE: Modern sports card aesthetic, cyberpunk/neon elements, dark background with glowing accents.
+DESIGN STYLE: Modern sports card aesthetic, clean design, dark background with vibrant accents.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}
@@ -507,7 +1126,8 @@ Requirements:
 - Trading card / FIFA-style layout
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight');
+  // Portrait style for player cards
+  return await invokeImageAi(club.id, prompt, 'generate_player_spotlight', undefined, undefined, '3:4');
 };
 
 export const generateAnnouncementGraphic = async (
@@ -531,7 +1151,7 @@ HEADLINE: ${title}
 SUBTEXT: ${subtitle}
 TYPE: ${type.toUpperCase()}
 
-DESIGN STYLE: ${typeStyles[type]}. Cyberpunk/modern aesthetic with neon accents.
+DESIGN STYLE: ${typeStyles[type]}. Modern professional sports aesthetic.
 
 PRIMARY COLOR: ${club.primary_color}
 SECONDARY COLOR: ${club.secondary_color}
@@ -544,13 +1164,44 @@ Requirements:
 - NO real photographs - use abstract/geometric design
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`);
+  return await invokeImageAi(club.id, prompt, `generate_announcement:${type}`, undefined, undefined, '1:1');
+};
+
+export interface ReferenceImage {
+  base64: string;
+  mimeType: string;
+}
+
+/**
+ * Convert a File or Blob to base64 for use as reference image
+ */
+export const fileToBase64 = (file: File | Blob): Promise<ReferenceImage> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.split(',')[1];
+      resolve({
+        base64,
+        mimeType: file.type || 'image/png',
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
 export const generateCustomImage = async (
   club: Club,
-  customPrompt: string
+  customPrompt: string,
+  referenceImage?: ReferenceImage,
+  aspectRatio: AspectRatio = '1:1'
 ): Promise<ImageGenerationResult> => {
+  const referenceContext = referenceImage
+    ? `\n\nREFERENCE IMAGE PROVIDED: Use the attached image as style/layout reference. Match its visual style, composition, or color scheme as specified in the user request.`
+    : '';
+
   const prompt = `
 Create a professional graphic for football club: ${club.name} (${club.nickname})
 
@@ -565,10 +1216,17 @@ Requirements:
 - Incorporate club colors
 - Professional sports media quality
 - Suitable for social media
-- NO real player faces - use silhouettes or abstract representations
+- NO real player faces - use silhouettes or abstract representations${referenceContext}
 `.trim();
 
-  return await invokeImageAi(club.id, prompt, 'generate_custom_image');
+  return await invokeImageAi(
+    club.id,
+    prompt,
+    'generate_custom_image',
+    referenceImage?.base64,
+    referenceImage?.mimeType,
+    aspectRatio
+  );
 };
 
 // Video generation is intentionally not supported in the core web app build yet.
@@ -600,8 +1258,9 @@ IMPORTANT: Return ONLY the JSON array, no other text.
 
   try {
     const response = await invokeAi(club.id, prompt, 'generate_viral_ideas');
-    // Parse the JSON response
-    const ideas = JSON.parse(response);
+    // Parse the JSON response (extract from code blocks if wrapped)
+    const jsonStr = extractJson(response);
+    const ideas = JSON.parse(jsonStr);
     if (Array.isArray(ideas) && ideas.length > 0) {
       return ideas.slice(0, 5);
     }

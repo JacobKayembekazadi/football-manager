@@ -270,10 +270,10 @@ const Layout: React.FC<LayoutProps> = ({
         </header>
 
         {/* Scrollable Area with Custom Scrollbar */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8 relative">
+          {/* Decorative Elements - smaller on mobile to prevent overflow */}
+          <div className="absolute top-0 right-0 w-[200px] md:w-[500px] h-[200px] md:h-[500px] bg-green-500/5 rounded-full blur-[80px] md:blur-[100px] pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-[200px] md:w-[500px] h-[200px] md:h-[500px] bg-purple-500/5 rounded-full blur-[80px] md:blur-[100px] pointer-events-none"></div>
 
           <div className="max-w-8xl mx-auto relative z-10 animate-fade-in h-full flex flex-col">
             {children}
