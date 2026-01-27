@@ -171,6 +171,176 @@ export interface Sponsor {
 }
 
 // ============================================================================
+// D14 Ops - Task Ownership System
+// ============================================================================
+
+/** Task status following FM-style state machine */
+export type TaskStatus = 'pending' | 'in_progress' | 'blocked' | 'completed' | 'missed';
+
+/** Task priority levels */
+export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
+
+/** Task categories for grouping and filtering */
+export type TaskCategory = 'matchday' | 'logistics' | 'content' | 'facilities' | 'medical' | 'commercial' | 'admin';
+
+/**
+ * OpsTask - Core task with single owner and due time
+ * The heart of D14's accountability system
+ */
+export interface OpsTask {
+  id: string;
+  org_id: string;
+  club_id: string;
+  fixture_id?: string;
+  runbook_id?: string;
+
+  title: string;
+  description?: string;
+  owner_user_id: string;
+  owner_name?: string; // Populated via join
+  owner_email?: string; // Populated via join
+  created_by_user_id: string;
+
+  due_at: string;
+  started_at?: string;
+  completed_at?: string;
+
+  status: TaskStatus;
+  priority: TaskPriority;
+
+  depends_on_task_id?: string;
+  depends_on_task?: OpsTask; // Populated via join
+  blocking_tasks?: OpsTask[]; // Tasks that depend on this one
+
+  category: TaskCategory;
+
+  created_at: string;
+  updated_at: string;
+}
+
+/** Filter options for querying tasks */
+export interface OpsTaskFilters {
+  status?: TaskStatus | TaskStatus[];
+  priority?: TaskPriority | TaskPriority[];
+  category?: TaskCategory | TaskCategory[];
+  owner_user_id?: string;
+  fixture_id?: string;
+  due_before?: string;
+  due_after?: string;
+}
+
+// ============================================================================
+// D14 Ops - Matchday Runbooks
+// ============================================================================
+
+/** Categories for runbook items */
+export type RunbookItemCategory = 'transport' | 'kit' | 'stadium' | 'warmup' | 'analyst' | 'medical' | 'volunteer' | 'content' | 'commercial';
+
+/**
+ * MatchdayRunbook - Reusable template for matchday operations
+ * Contains ordered items that become tasks when activated for a fixture
+ */
+export interface MatchdayRunbook {
+  id: string;
+  org_id: string;
+  club_id: string;
+  name: string;
+  description?: string;
+  is_template: boolean;
+  default_lead_hours: number;
+  items?: RunbookItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * RunbookItem - A step within a runbook
+ * relative_time_minutes: negative = before kickoff, positive = after
+ */
+export interface RunbookItem {
+  id: string;
+  runbook_id: string;
+  title: string;
+  description?: string;
+  default_role?: string;
+  relative_time_minutes: number;
+  duration_minutes: number;
+  depends_on_item_id?: string;
+  sort_order: number;
+  category: RunbookItemCategory;
+  created_at: string;
+}
+
+// ============================================================================
+// D14 Ops - Activity Log (Audit Trail)
+// ============================================================================
+
+/** Action types for activity log */
+export type ActivityAction =
+  | 'task_created' | 'task_started' | 'task_completed' | 'task_blocked' | 'task_missed' | 'task_reassigned'
+  | 'runbook_created' | 'runbook_activated' | 'runbook_completed'
+  | 'fixture_created' | 'fixture_updated'
+  | 'content_published'
+  | 'escalation_triggered';
+
+/**
+ * ActivityLogEntry - Audit trail entry
+ * Records who did what, when
+ */
+export interface ActivityLogEntry {
+  id: string;
+  org_id: string;
+  club_id?: string;
+  user_id: string;
+  user_email?: string;
+  user_name?: string;
+  action: ActivityAction;
+  entity_type: string;
+  entity_id?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+/** Filter options for activity log */
+export interface ActivityLogFilters {
+  action?: ActivityAction | ActivityAction[];
+  entity_type?: string;
+  entity_id?: string;
+  user_id?: string;
+  after?: string;
+  before?: string;
+  limit?: number;
+}
+
+// ============================================================================
+// D14 Ops - Escalation Rules
+// ============================================================================
+
+/** Trigger types for escalation rules */
+export type EscalationTrigger = 'task_overdue' | 'task_blocked' | 'task_missed';
+
+/** Notification channels */
+export type NotificationChannel = 'in_app' | 'email' | 'both';
+
+/**
+ * EscalationRule - Defines when and who to notify
+ * E.g., "If any critical task is overdue by 30 min, notify admins"
+ */
+export interface EscalationRule {
+  id: string;
+  org_id: string;
+  club_id?: string;
+  name: string;
+  trigger_type: EscalationTrigger;
+  trigger_delay_minutes: number;
+  notify_user_ids: string[];
+  notify_roles: string[];
+  notification_channel: NotificationChannel;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ============================================================================
 // MOCK DATA - 3 MONTHS INTO THE SEASON
 // Season started: September 1st, 2024
 // Current Date: December 11th, 2024 (Week 14)
@@ -186,161 +356,161 @@ export const INITIAL_PLAYERS: Player[] = [
   // GOALKEEPERS
   {
     id: generateDemoUUID('player', 1),
-    name: 'Viktor Volkov', 
-    position: 'GK', 
-    number: 1, 
-    stats: { pace: 45, shooting: 25, passing: 68, dribbling: 42, defending: 35, physical: 78 }, 
+    name: 'Viktor Volkov',
+    position: 'GK',
+    number: 1,
+    stats: { pace: 45, shooting: 25, passing: 68, dribbling: 42, defending: 35, physical: 78 },
     form: 7.8,
     analysis: 'Commanding presence between the posts. 4 clean sheets in last 6 matches. Distribution has improved significantly - long ball accuracy up to 72%. Key save ratio of 81% puts him among the league\'s elite.'
   },
   {
     id: generateDemoUUID('player', 13),
-    name: 'Alisson Becker', 
-    position: 'GK', 
-    number: 13, 
-    stats: { pace: 48, shooting: 22, passing: 75, dribbling: 38, defending: 32, physical: 82 }, 
+    name: 'Alisson Becker',
+    position: 'GK',
+    number: 13,
+    stats: { pace: 48, shooting: 22, passing: 75, dribbling: 38, defending: 32, physical: 82 },
     form: 7.2,
     analysis: 'Reliable backup option. Made 2 league appearances this season. Shot-stopping remains world-class but distribution slightly below Volkov. Cup specialist.'
   },
-  
+
   // DEFENDERS
   {
     id: generateDemoUUID('player', 2),
-    name: 'Sam Miller', 
-    position: 'DEF', 
-    number: 4, 
-    is_captain: true, 
-    stats: { pace: 72, shooting: 45, passing: 78, dribbling: 65, defending: 88, physical: 85 }, 
+    name: 'Sam Miller',
+    position: 'DEF',
+    number: 4,
+    is_captain: true,
+    stats: { pace: 72, shooting: 45, passing: 78, dribbling: 65, defending: 88, physical: 85 },
     form: 8.4,
     analysis: 'The heartbeat of our defense. Captain\'s performances driving team morale. 92% aerial duel success rate. 3 goals from set pieces - a genuine goal threat. Leadership qualities evident in tight games.'
   },
   {
     id: generateDemoUUID('player', 6),
-    name: 'Kieran Torres', 
-    position: 'DEF', 
-    number: 3, 
-    stats: { pace: 85, shooting: 52, passing: 74, dribbling: 72, defending: 79, physical: 75 }, 
+    name: 'Kieran Torres',
+    position: 'DEF',
+    number: 3,
+    stats: { pace: 85, shooting: 52, passing: 74, dribbling: 72, defending: 79, physical: 75 },
     form: 7.6,
     analysis: 'Dynamic left-back averaging 2.3 key passes per game. Overlapping runs creating width. 4 assists in league play. Defensive positioning improving under new tactical setup.'
   },
   {
     id: generateDemoUUID('player', 9),
-    name: 'Virgil Ironside', 
-    position: 'DEF', 
-    number: 5, 
-    stats: { pace: 68, shooting: 48, passing: 72, dribbling: 55, defending: 92, physical: 88 }, 
+    name: 'Virgil Ironside',
+    position: 'DEF',
+    number: 5,
+    stats: { pace: 68, shooting: 48, passing: 72, dribbling: 55, defending: 92, physical: 88 },
     form: 8.1,
     analysis: 'Colossus at the back. Partnership with Miller yielding results - only 8 goals conceded with both starting. Reading of the game is exceptional. 94% pass completion in own half.'
   },
   {
     id: generateDemoUUID('player', 12),
-    name: 'Kyle Sterling', 
-    position: 'DEF', 
-    number: 2, 
-    stats: { pace: 88, shooting: 55, passing: 76, dribbling: 75, defending: 82, physical: 78 }, 
+    name: 'Kyle Sterling',
+    position: 'DEF',
+    number: 2,
+    stats: { pace: 88, shooting: 55, passing: 76, dribbling: 75, defending: 82, physical: 78 },
     form: 7.9,
     analysis: 'Tireless right-back covering 11.8km per match average. Defensive contribution strong with 3.1 tackles per game. Could improve final ball quality - 2 assists only so far.'
   },
   {
     id: generateDemoUUID('player', 14),
-    name: 'Lucas Mendez', 
-    position: 'DEF', 
-    number: 15, 
-    stats: { pace: 65, shooting: 38, passing: 70, dribbling: 58, defending: 84, physical: 80 }, 
+    name: 'Lucas Mendez',
+    position: 'DEF',
+    number: 15,
+    stats: { pace: 65, shooting: 38, passing: 70, dribbling: 58, defending: 84, physical: 80 },
     form: 6.8,
     analysis: 'Versatile center-back providing depth. 3 league starts - solid if unspectacular. Good in air at 87% aerial success. Needs more game time to hit form.'
   },
-  
+
   // MIDFIELDERS
   {
     id: generateDemoUUID('player', 3),
-    name: 'Jay Patel', 
-    position: 'MID', 
-    number: 8, 
-    stats: { pace: 75, shooting: 72, passing: 85, dribbling: 82, defending: 65, physical: 72 }, 
+    name: 'Jay Patel',
+    position: 'MID',
+    number: 8,
+    stats: { pace: 75, shooting: 72, passing: 85, dribbling: 82, defending: 65, physical: 72 },
     form: 8.0,
     analysis: 'The metronome. 91% pass accuracy in the final third. 5 assists this campaign with eye for the killer ball. Workrate in pressing improved - 8.2 ball recoveries per 90.'
   },
   {
     id: generateDemoUUID('player', 7),
-    name: 'Luka Modrić', 
-    position: 'MID', 
-    number: 14, 
-    stats: { pace: 72, shooting: 78, passing: 92, dribbling: 88, defending: 62, physical: 68 }, 
+    name: 'Luka Modrić',
+    position: 'MID',
+    number: 14,
+    stats: { pace: 72, shooting: 78, passing: 92, dribbling: 88, defending: 62, physical: 68 },
     form: 9.0,
     analysis: 'Maestro pulling the strings. 7 goals, 6 assists - involved in 52% of our goals. Set-piece delivery is elite. At 38, still the best midfielder in the league. Pure class.'
   },
   {
     id: generateDemoUUID('player', 11),
-    name: 'Kevin De Bruyne', 
-    position: 'MID', 
-    number: 17, 
-    stats: { pace: 76, shooting: 88, passing: 95, dribbling: 85, defending: 58, physical: 75 }, 
+    name: 'Kevin De Bruyne',
+    position: 'MID',
+    number: 17,
+    stats: { pace: 76, shooting: 88, passing: 95, dribbling: 85, defending: 58, physical: 75 },
     form: 9.4,
     analysis: 'Simply unstoppable when fit. 8 assists in 10 league games - on pace for record. Vision and execution are unmatched. The assist for Thorn\'s hat-trick was pure artistry.'
   },
   {
     id: generateDemoUUID('player', 15),
-    name: 'Jude Chen', 
-    position: 'MID', 
-    number: 22, 
-    stats: { pace: 82, shooting: 75, passing: 80, dribbling: 84, defending: 70, physical: 78 }, 
+    name: 'Jude Chen',
+    position: 'MID',
+    number: 22,
+    stats: { pace: 82, shooting: 75, passing: 80, dribbling: 84, defending: 70, physical: 78 },
     form: 8.2,
     analysis: 'Box-to-box dynamo breaking out this season. 4 goals from midfield - all from outside the box. Progressive carries leading to chances. The future of this club.'
   },
   {
     id: generateDemoUUID('player', 16),
-    name: 'Marco Silva', 
-    position: 'MID', 
-    number: 6, 
-    stats: { pace: 68, shooting: 58, passing: 82, dribbling: 72, defending: 80, physical: 82 }, 
+    name: 'Marco Silva',
+    position: 'MID',
+    number: 6,
+    stats: { pace: 68, shooting: 58, passing: 82, dribbling: 72, defending: 80, physical: 82 },
     form: 7.4,
     analysis: 'Defensive midfielder providing crucial protection. 4.2 interceptions per 90 - league leading. Yellow card count (5) needs monitoring. Unsung hero of our midfield.'
   },
-  
+
   // FORWARDS
   {
     id: generateDemoUUID('player', 4),
-    name: 'Marcus Thorn', 
-    position: 'FWD', 
-    number: 9, 
-    stats: { pace: 88, shooting: 92, passing: 72, dribbling: 85, defending: 42, physical: 82 }, 
+    name: 'Marcus Thorn',
+    position: 'FWD',
+    number: 9,
+    stats: { pace: 88, shooting: 92, passing: 72, dribbling: 85, defending: 42, physical: 82 },
     form: 9.5,
     analysis: 'ELECTRIC. 14 goals in 13 league games - top scorer by 4. Hat-trick hero against Orbital. Pressing from the front creating turnovers. Clinical finishing (42% conversion). On course for Golden Boot.'
   },
   {
     id: generateDemoUUID('player', 5),
-    name: 'Billy Bones', 
-    position: 'FWD', 
-    number: 10, 
-    stats: { pace: 90, shooting: 82, passing: 78, dribbling: 88, defending: 38, physical: 72 }, 
+    name: 'Billy Bones',
+    position: 'FWD',
+    number: 10,
+    stats: { pace: 90, shooting: 82, passing: 78, dribbling: 88, defending: 38, physical: 72 },
     form: 8.7,
     analysis: 'Partnership with Thorn is lethal - 12 goal contributions as a duo. 6 goals, 5 assists. Dribbling success rate of 68%. Creates space for others. Big game player.'
   },
   {
     id: generateDemoUUID('player', 8),
-    name: 'Erling Haaland', 
-    position: 'FWD', 
-    number: 11, 
-    stats: { pace: 92, shooting: 95, passing: 65, dribbling: 78, defending: 48, physical: 90 }, 
+    name: 'Erling Haaland',
+    position: 'FWD',
+    number: 11,
+    stats: { pace: 92, shooting: 95, passing: 65, dribbling: 78, defending: 48, physical: 90 },
     form: 8.9,
     analysis: 'The super-sub. 5 goals from 420 minutes - a goal every 84 minutes. Physical presence changing games when introduced. Itching for more starts.'
   },
   {
     id: generateDemoUUID('player', 17),
-    name: 'Rico Santos', 
-    position: 'FWD', 
-    number: 19, 
-    stats: { pace: 94, shooting: 75, passing: 70, dribbling: 86, defending: 35, physical: 68 }, 
+    name: 'Rico Santos',
+    position: 'FWD',
+    number: 19,
+    stats: { pace: 94, shooting: 75, passing: 70, dribbling: 86, defending: 35, physical: 68 },
     form: 7.5,
     analysis: 'Raw pace merchant. 2 goals from the bench. Needs to improve decision-making in final third. Terrifying option against tired defenders.'
   },
   {
     id: generateDemoUUID('player', 18),
-    name: 'Tomás Vega', 
-    position: 'FWD', 
-    number: 21, 
-    stats: { pace: 78, shooting: 80, passing: 75, dribbling: 82, defending: 40, physical: 74 }, 
+    name: 'Tomás Vega',
+    position: 'FWD',
+    number: 21,
+    stats: { pace: 78, shooting: 80, passing: 75, dribbling: 82, defending: 40, physical: 74 },
     form: 7.0,
     analysis: 'Technical forward providing different option. 1 goal, 2 assists in limited minutes. Link-up play is smooth. Could be key in congested December fixtures.'
   },
@@ -600,7 +770,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     attendance: 19500,
     stats: { home_possession: 32, away_possession: 68, home_shots: 4, away_shots: 21, home_xg: 0.3, away_xg: 2.8 }
   },
-  
+
   // === UPCOMING MATCHES ===
   // Matchweek 15 - TODAY'S MATCH
   {
@@ -700,7 +870,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     status: 'PUBLISHED',
     created_at: daysAgo(10),
   },
-  
+
   // === APPROVED CONTENT (Ready to Post) ===
   {
     id: generateDemoUUID('content', 6),
@@ -733,7 +903,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
-  
+
   // === DRAFT CONTENT (Needs Review) ===
   {
     id: generateDemoUUID('content', 9),
@@ -773,63 +943,63 @@ export const INITIAL_CONTENT: ContentItem[] = [
 export const INITIAL_SPONSORS: Sponsor[] = [
   {
     id: generateDemoUUID('sponsor', 1),
-    name: 'CyberDyne Systems', 
-    sector: 'Technology', 
-    tier: 'Platinum', 
-    value: '£150,000', 
-    contract_end: '2026-06-30', 
-    status: 'Active', 
-    logo_initials: 'CD' 
+    name: 'CyberDyne Systems',
+    sector: 'Technology',
+    tier: 'Platinum',
+    value: '£150,000',
+    contract_end: '2026-06-30',
+    status: 'Active',
+    logo_initials: 'CD'
   },
   {
     id: generateDemoUUID('sponsor', 2),
-    name: 'Orbital Energy Drinks', 
-    sector: 'Beverage', 
-    tier: 'Gold', 
-    value: '£85,000', 
-    contract_end: '2025-01-31', 
-    status: 'Expiring', 
-    logo_initials: 'OE' 
+    name: 'Orbital Energy Drinks',
+    sector: 'Beverage',
+    tier: 'Gold',
+    value: '£85,000',
+    contract_end: '2025-01-31',
+    status: 'Expiring',
+    logo_initials: 'OE'
   },
   {
     id: generateDemoUUID('sponsor', 3),
-    name: 'NeoTextile Apparel', 
-    sector: 'Sportswear', 
-    tier: 'Gold', 
-    value: '£75,000', 
-    contract_end: '2025-06-30', 
-    status: 'Active', 
-    logo_initials: 'NT' 
+    name: 'NeoTextile Apparel',
+    sector: 'Sportswear',
+    tier: 'Gold',
+    value: '£75,000',
+    contract_end: '2025-06-30',
+    status: 'Active',
+    logo_initials: 'NT'
   },
   {
     id: generateDemoUUID('sponsor', 4),
-    name: 'Quantum Motors', 
-    sector: 'Automotive', 
-    tier: 'Silver', 
-    value: '£40,000', 
-    contract_end: '2025-12-31', 
-    status: 'Active', 
-    logo_initials: 'QM' 
+    name: 'Quantum Motors',
+    sector: 'Automotive',
+    tier: 'Silver',
+    value: '£40,000',
+    contract_end: '2025-12-31',
+    status: 'Active',
+    logo_initials: 'QM'
   },
   {
     id: generateDemoUUID('sponsor', 5),
-    name: 'DataStream Analytics', 
-    sector: 'Tech/Data', 
-    tier: 'Silver', 
-    value: '£35,000', 
-    contract_end: '2025-03-31', 
-    status: 'Negotiating', 
-    logo_initials: 'DS' 
+    name: 'DataStream Analytics',
+    sector: 'Tech/Data',
+    tier: 'Silver',
+    value: '£35,000',
+    contract_end: '2025-03-31',
+    status: 'Negotiating',
+    logo_initials: 'DS'
   },
   {
     id: generateDemoUUID('sponsor', 6),
-    name: 'GridBank Financial', 
-    sector: 'Finance', 
-    tier: 'Platinum', 
-    value: '£120,000', 
-    contract_end: '2027-06-30', 
-    status: 'Active', 
-    logo_initials: 'GB' 
+    name: 'GridBank Financial',
+    sector: 'Finance',
+    tier: 'Platinum',
+    value: '£120,000',
+    contract_end: '2027-06-30',
+    status: 'Active',
+    logo_initials: 'GB'
   },
 ];
 
