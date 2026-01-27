@@ -24,6 +24,7 @@ import {
   setPlayerAvailability,
   initializeAvailability,
 } from '../services/availabilityService';
+import { departmentAlerts } from '../services/notificationService';
 
 interface AvailabilityViewProps {
   club: Club;
@@ -140,6 +141,21 @@ const AvailabilityView: React.FC<AvailabilityViewProps> = ({
         }
         return [...prev, updated];
       });
+
+      // Notify departments when a player is marked as injured
+      if (status === 'injured') {
+        const player = players.find(p => p.id === playerId);
+        const fixture = fixtures.find(f => f.id === selectedFixtureId);
+        if (player) {
+          const statusText = note ? `Injured - ${note}` : 'Marked as injured';
+          departmentAlerts.injuryUpdate(
+            clubId,
+            player.name,
+            statusText,
+            fixture?.id
+          );
+        }
+      }
 
       if (notePlayerId === playerId) {
         setNotePlayerId(null);

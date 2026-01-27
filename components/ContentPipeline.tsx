@@ -4,7 +4,8 @@ import { ContentItem, Fixture, Club, ContentGenStatus } from '../types';
 import ContentCard from './ContentCard';
 import ContentEditorModal from './ContentEditorModal';
 import ImageGeneratorModal from './ImageGeneratorModal';
-import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock, Image as ImageIcon, Plus } from 'lucide-react';
+import ContentTemplateModal from './ContentTemplateModal';
+import { Sparkles, Loader2, LayoutGrid, Kanban, Filter, Zap, CheckCircle2, Send, Clock, Image as ImageIcon, Plus, FileText } from 'lucide-react';
 
 interface ContentPipelineProps {
   contentItems: ContentItem[];
@@ -16,11 +17,11 @@ interface ContentPipelineProps {
   onDeleteContent?: (contentId: string) => Promise<void>;
 }
 
-const ContentPipeline: React.FC<ContentPipelineProps> = ({ 
-  contentItems, 
-  fixtures, 
+const ContentPipeline: React.FC<ContentPipelineProps> = ({
+  contentItems,
+  fixtures,
   club,
-  generateStatus, 
+  generateStatus,
   onManualGenerate,
   onUpdateContent,
   onDeleteContent
@@ -30,6 +31,7 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
   const [filterType, setFilterType] = useState<'ALL' | 'SOCIAL' | 'WEB' | 'GRAPHICS'>('ALL');
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   // Filter Logic
   const filteredItems = contentItems.filter(item => {
@@ -63,12 +65,20 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
             {/* Title row */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white glow-text">HOLO-<span className="text-amber-500">CONTENT</span></h2>
-                    <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Automation.</p>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white glow-text">Content <span className="text-amber-500">Hub</span></h2>
+                    <p className="text-slate-400 font-mono text-xs mt-1">Content Pipeline & Workflow Management</p>
                 </div>
 
                 {/* Action buttons - moved to be on same row as title on larger screens */}
                 <div className="flex gap-2 md:gap-3 w-full sm:w-auto">
+                    <button
+                        type="button"
+                        onClick={() => setShowTemplateModal(true)}
+                        className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/50 text-green-500 px-3 md:px-5 py-3 md:py-4 rounded-xl font-display font-bold uppercase hover:bg-green-500/20 transition-all shadow-[0_0_15px_rgba(34,197,94,0.2)] hover:shadow-[0_0_25px_rgba(34,197,94,0.4)] flex-1 sm:flex-none min-h-[44px] text-xs md:text-sm"
+                    >
+                        <FileText size={18} />
+                        Templates
+                    </button>
                     <button
                         type="button"
                         onClick={() => setShowImageGenerator(true)}
@@ -113,13 +123,13 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
             </div>
 
             <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
-                <button 
+                <button
                     onClick={() => setViewMode('GRID')}
                     className={`p-2 rounded transition-all ${viewMode === 'GRID' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
                 >
                     <LayoutGrid size={16} />
                 </button>
-                <button 
+                <button
                     onClick={() => setViewMode('PIPELINE')}
                     className={`p-2 rounded transition-all ${viewMode === 'PIPELINE' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
                 >
@@ -127,10 +137,10 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 </button>
             </div>
         </div>
-        
+
         {/* Main View Area */}
         <div className="flex-1 min-h-0 relative">
-            
+
             {/* GRID VIEW */}
             {viewMode === 'GRID' && (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 overflow-y-auto h-full pr-2 custom-scrollbar content-start">
@@ -148,7 +158,7 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
             {/* PIPELINE VIEW */}
             {viewMode === 'PIPELINE' && (
                 <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 h-full min-h-[400px] md:min-h-[500px] overflow-x-auto md:overflow-visible pb-4 md:pb-0 custom-scrollbar snap-x snap-mandatory md:snap-none">
-                    
+
                     {/* Draft Column */}
                     <div className="flex flex-col bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden min-w-[280px] md:min-w-0 snap-start">
                         <div className="p-4 border-b border-white/5 bg-amber-500/5 flex justify-between items-center">
@@ -217,8 +227,8 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
 
         {/* Editor Modal */}
         {selectedItem && (
-            <ContentEditorModal 
-                item={selectedItem} 
+            <ContentEditorModal
+                item={selectedItem}
                 club={club}
                 onClose={() => setSelectedItem(null)}
                 onSave={onUpdateContent}
@@ -237,6 +247,18 @@ const ContentPipeline: React.FC<ContentPipelineProps> = ({
                 club={club}
                 fixtures={fixtures}
                 onClose={() => setShowImageGenerator(false)}
+            />
+        )}
+
+        {/* Content Template Modal */}
+        {showTemplateModal && (
+            <ContentTemplateModal
+                club={club}
+                onClose={() => setShowTemplateModal(false)}
+                onContentCreated={(newContent) => {
+                    onUpdateContent(newContent);
+                    setShowTemplateModal(false);
+                }}
             />
         )}
     </div>

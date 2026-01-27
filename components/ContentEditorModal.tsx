@@ -92,7 +92,7 @@ const ContentEditorModal: React.FC<ContentEditorModalProps> = ({ item, club, onS
                     <Wand2 size={20} />
                 </div>
                 <div>
-                    <h3 id="content-editor-title" className="font-display font-bold text-white text-lg">HOLO-EDITOR v2.0</h3>
+                    <h3 id="content-editor-title" className="font-display font-bold text-white text-lg">Content Editor</h3>
                     <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">{item.type} // {item.platform}</p>
                 </div>
             </div>

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Club, Player, Fixture, AvailabilityStatus } from '../types';
 import { getAvailabilityForFixture } from '../services/availabilityService';
+import { departmentAlerts } from '../services/notificationService';
 
 // Common formations with position coordinates (percentage-based)
 const FORMATIONS: Record<string, { name: string; positions: { x: number; y: number; role: string }[] }> = {
@@ -254,6 +255,15 @@ const FormationBuilder: React.FC<FormationBuilderProps> = ({ club, fixtures, onS
     const updated = [...savedFormations, newFormation];
     setSavedFormations(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    // Notify other departments about tactical decision
+    const fixture = fixtures.find(f => f.id === selectedFixture);
+    const fixtureInfo = fixture ? `for ${fixture.opponent} match` : '';
+    departmentAlerts.tacticalDecision(
+      club.id,
+      `Formation saved: ${formationName} (${selectedFormation}) ${fixtureInfo}. Lineup confirmed.`,
+      selectedFixture || undefined
+    );
 
     setShowSaveModal(false);
     setFormationName('');

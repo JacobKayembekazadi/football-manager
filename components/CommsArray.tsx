@@ -75,10 +75,10 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
   return (
     <div className="h-full grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
 
-        {/* PANEL 1: GLOBAL NEWS PROTOCOL */}
+        {/* PANEL 1: NEWS & ANNOUNCEMENTS */}
         <CollapsibleSection
-          title="GLOBAL NEWS"
-          titleHighlight="PROTOCOL"
+          title="News &"
+          titleHighlight="Announcements"
           subtitle="Generate official club statements and press releases."
           icon={Radio}
           iconColor="text-purple-500"
@@ -110,7 +110,7 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                 <textarea
                     value={newsDetails}
                     onChange={(e) => setNewsDetails(e.target.value)}
-                    placeholder="e.g. We have signed striker John Doe from Orbital Utd for a record fee..."
+                    placeholder="e.g. We have signed striker John Doe from City Reserves on a two-year deal..."
                     className="w-full bg-black/40 border border-white/10 rounded-xl p-3 md:p-4 text-sm text-slate-300 h-24 md:h-32 resize-none focus:border-purple-500 outline-none font-mono"
                 />
             </div>
@@ -121,7 +121,7 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                 className="w-full py-3 min-h-[44px] bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold font-display uppercase rounded-lg shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
                 {isGeneratingNews ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                <span className="text-sm md:text-base">RUN GENERATION</span>
+                <span className="text-sm md:text-base">Generate Content</span>
             </button>
 
             {generatedArticle && (
@@ -181,11 +181,11 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
           </div>
         </CollapsibleSection>
 
-        {/* PANEL 2: THE COMMS ARRAY (NEWSLETTER) */}
+        {/* PANEL 2: NEWSLETTER BUILDER */}
         <CollapsibleSection
-          title="THE COMMS"
-          titleHighlight="ARRAY"
-          subtitle="Compile weekly fan briefings."
+          title="Newsletter"
+          titleHighlight="Builder"
+          subtitle="Compile weekly fan updates."
           icon={Newspaper}
           iconColor="text-amber-500"
           borderColor="border-amber-500/20"
@@ -200,7 +200,7 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                     value={newItem}
                     onChange={(e) => setNewItem(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
-                    placeholder="Add topic (e.g. '3-1 Win vs Titan Rovers')"
+                    placeholder="Add topic (e.g. '3-1 Win vs Riverside')"
                     className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 text-sm text-white focus:border-amber-500 outline-none min-w-0"
                 />
                 <button
@@ -213,10 +213,10 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
             </div>
 
             <div className="flex-1 mb-4 md:mb-6">
-                <h3 className="text-[10px] font-mono text-slate-500 uppercase mb-2">Build Queue</h3>
+                <h3 className="text-[10px] font-mono text-slate-500 uppercase mb-2">Topics to Include</h3>
                 {newsletterItems.length === 0 ? (
                     <div className="text-center py-6 md:py-8 border border-dashed border-white/10 rounded-xl">
-                        <p className="text-slate-600 text-xs font-mono">Queue Empty.</p>
+                        <p className="text-slate-600 text-xs font-mono">No topics added yet</p>
                     </div>
                 ) : (
                     <div className="space-y-2 max-h-32 md:max-h-none overflow-y-auto">
@@ -286,7 +286,7 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                     className="w-full py-3 md:py-4 min-h-[44px] bg-amber-500 text-white font-bold font-display uppercase rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-auto"
                 >
                     {isGeneratingNewsletter ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
-                    <span className="text-sm md:text-base">COMPILE NEWSLETTER</span>
+                    <span className="text-sm md:text-base">Create Newsletter</span>
                 </button>
             )}
           </div>

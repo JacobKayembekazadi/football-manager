@@ -2,9 +2,10 @@
  * Notification Service
  *
  * Aggregates events from various sources into notifications for Dashboard and Inbox.
+ * Supports cross-department alerts for the "domino effect" workflow.
  */
 
-import { Club, Fixture, Player, AvailabilityStatus, FixtureTask } from '../types';
+import { Club, Fixture, Player, AvailabilityStatus, FixtureTask, ClubRoleName } from '../types';
 import { getDemoAvailability } from './demoStorageService';
 import { getFixtureTasks } from './fixtureTaskService';
 import { getLowStockItems, getActiveLaundry } from './equipmentService';
@@ -19,9 +20,13 @@ export type NotificationType =
   | 'laundry_pending'
   | 'content_ready'
   | 'fixture_upcoming'
+  | 'department_alert'
   | 'system';
 
 export type NotificationPriority = 'high' | 'medium' | 'low';
+
+// Department/source for cross-department notifications
+export type Department = 'coach' | 'media' | 'ops' | 'kit' | 'finance' | 'admin';
 
 export interface Notification {
   id: string;
@@ -30,12 +35,226 @@ export interface Notification {
   title: string;
   description: string;
   timestamp: Date;
-  category: 'availability' | 'tasks' | 'equipment' | 'content' | 'fixtures' | 'system';
+  category: 'availability' | 'tasks' | 'equipment' | 'content' | 'fixtures' | 'system' | 'department';
   actionLabel?: string;
   actionTab?: string;
   metadata?: Record<string, any>;
   read?: boolean;
+  // Cross-department alert fields
+  sourceDepartment?: Department;
+  targetRoles?: ClubRoleName[];
+  createdBy?: string; // user ID who created the alert
 }
+
+// Department alert types for the "domino effect" workflow
+export type DepartmentAlertType =
+  | 'tactical_decision'      // Coach made formation/lineup decision
+  | 'player_signing'         // New player signed
+  | 'player_departure'       // Player leaving
+  | 'injury_update'          // Player injury status changed
+  | 'equipment_update'       // Kit/equipment changes
+  | 'content_required'       // Content team needs to create something
+  | 'finance_approval'       // Budget/payment needs attention
+  | 'matchday_prep'          // Match day preparation update
+  | 'schedule_change';       // Fixture time/date changed
+
+export interface DepartmentAlert {
+  type: DepartmentAlertType;
+  title: string;
+  description: string;
+  sourceDepartment: Department;
+  targetRoles: ClubRoleName[];
+  priority: NotificationPriority;
+  relatedFixtureId?: string;
+  relatedPlayerId?: string;
+  actionRequired?: boolean;
+  actionLabel?: string;
+  actionTab?: string;
+}
+
+// Storage key for department alerts
+const DEPT_ALERTS_KEY = 'pitchside_department_alerts';
+
+// Map department alert types to default target roles
+const alertTargetRoles: Record<DepartmentAlertType, ClubRoleName[]> = {
+  tactical_decision: ['Media', 'Ops', 'Kit'],
+  player_signing: ['Media', 'Kit', 'Finance', 'Ops'],
+  player_departure: ['Media', 'Kit', 'Finance'],
+  injury_update: ['Coach', 'Media', 'Ops'],
+  equipment_update: ['Ops', 'Kit'],
+  content_required: ['Media'],
+  finance_approval: ['Finance', 'Admin'],
+  matchday_prep: ['Coach', 'Ops', 'Kit', 'Media'],
+  schedule_change: ['Coach', 'Ops', 'Kit', 'Media', 'Finance'],
+};
+
+/**
+ * Create a new department alert
+ */
+export const createDepartmentAlert = (
+  clubId: string,
+  alert: DepartmentAlert,
+  createdBy?: string
+): Notification => {
+  const id = `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  const notification: Notification = {
+    id,
+    type: 'department_alert',
+    priority: alert.priority,
+    title: alert.title,
+    description: alert.description,
+    timestamp: new Date(),
+    category: 'department',
+    sourceDepartment: alert.sourceDepartment,
+    targetRoles: alert.targetRoles,
+    createdBy,
+    actionLabel: alert.actionLabel,
+    actionTab: alert.actionTab,
+    metadata: {
+      alertType: alert.type,
+      relatedFixtureId: alert.relatedFixtureId,
+      relatedPlayerId: alert.relatedPlayerId,
+      actionRequired: alert.actionRequired,
+    },
+    read: false,
+  };
+
+  // Store in localStorage
+  const stored = getDepartmentAlerts(clubId);
+  stored.unshift(notification);
+  // Keep only last 50 alerts
+  const trimmed = stored.slice(0, 50);
+  localStorage.setItem(`${DEPT_ALERTS_KEY}_${clubId}`, JSON.stringify(trimmed));
+
+  return notification;
+};
+
+/**
+ * Get stored department alerts
+ */
+export const getDepartmentAlerts = (clubId: string): Notification[] => {
+  try {
+    const stored = localStorage.getItem(`${DEPT_ALERTS_KEY}_${clubId}`);
+    if (!stored) return [];
+    const alerts = JSON.parse(stored);
+    // Convert timestamps back to Date objects
+    return alerts.map((a: any) => ({
+      ...a,
+      timestamp: new Date(a.timestamp),
+    }));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Get department alerts filtered by user's role
+ */
+export const getDepartmentAlertsForRole = (
+  clubId: string,
+  userRole: ClubRoleName
+): Notification[] => {
+  const alerts = getDepartmentAlerts(clubId);
+  return alerts.filter(
+    (a) => !a.targetRoles || a.targetRoles.length === 0 || a.targetRoles.includes(userRole)
+  );
+};
+
+/**
+ * Mark a department alert as read
+ */
+export const markDepartmentAlertRead = (clubId: string, alertId: string): void => {
+  const alerts = getDepartmentAlerts(clubId);
+  const updated = alerts.map((a) => (a.id === alertId ? { ...a, read: true } : a));
+  localStorage.setItem(`${DEPT_ALERTS_KEY}_${clubId}`, JSON.stringify(updated));
+};
+
+/**
+ * Helper to create common department alerts
+ */
+export const departmentAlerts = {
+  // Coach made tactical decision (formation, lineup)
+  tacticalDecision: (clubId: string, details: string, fixtureId?: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'tactical_decision',
+      title: 'Tactical Update',
+      description: details,
+      sourceDepartment: 'coach',
+      targetRoles: alertTargetRoles.tactical_decision,
+      priority: 'medium',
+      relatedFixtureId: fixtureId,
+      actionTab: 'formation',
+    }),
+
+  // New player signed
+  playerSigning: (clubId: string, playerName: string, position: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'player_signing',
+      title: `New Signing: ${playerName}`,
+      description: `${playerName} (${position}) has joined the club. Content, kit allocation, and admin tasks required.`,
+      sourceDepartment: 'admin',
+      targetRoles: alertTargetRoles.player_signing,
+      priority: 'high',
+      actionRequired: true,
+      actionLabel: 'View Squad',
+      actionTab: 'squad',
+    }),
+
+  // Injury update
+  injuryUpdate: (clubId: string, playerName: string, status: string, fixtureId?: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'injury_update',
+      title: `Injury Update: ${playerName}`,
+      description: `${playerName} - ${status}. Affects selection and may need media communication.`,
+      sourceDepartment: 'coach',
+      targetRoles: alertTargetRoles.injury_update,
+      priority: 'high',
+      relatedFixtureId: fixtureId,
+      actionTab: 'availability',
+    }),
+
+  // Content required
+  contentRequired: (clubId: string, contentType: string, details: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'content_required',
+      title: `Content Needed: ${contentType}`,
+      description: details,
+      sourceDepartment: 'ops',
+      targetRoles: alertTargetRoles.content_required,
+      priority: 'medium',
+      actionRequired: true,
+      actionLabel: 'Create Content',
+      actionTab: 'content',
+    }),
+
+  // Match day prep update
+  matchdayPrep: (clubId: string, update: string, fixtureId: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'matchday_prep',
+      title: 'Match Day Update',
+      description: update,
+      sourceDepartment: 'ops',
+      targetRoles: alertTargetRoles.matchday_prep,
+      priority: 'high',
+      relatedFixtureId: fixtureId,
+      actionTab: 'matchday',
+    }),
+
+  // Schedule change
+  scheduleChange: (clubId: string, fixtureDetails: string, reason: string) =>
+    createDepartmentAlert(clubId, {
+      type: 'schedule_change',
+      title: 'Fixture Change',
+      description: `${fixtureDetails} - ${reason}. All departments please note.`,
+      sourceDepartment: 'admin',
+      targetRoles: alertTargetRoles.schedule_change,
+      priority: 'high',
+      actionRequired: true,
+      actionLabel: 'View Fixtures',
+      actionTab: 'matchday',
+    }),
+};
 
 /**
  * Generate notifications from availability data
@@ -325,6 +544,7 @@ export const getAllNotifications = async (
   options?: {
     limit?: number;
     categories?: Notification['category'][];
+    userRole?: ClubRoleName; // Filter department alerts by user's role
   }
 ): Promise<Notification[]> => {
   const [
@@ -339,11 +559,20 @@ export const getAllNotifications = async (
 
   const fixtureNotifs = getFixtureNotifications(fixtures);
 
+  // Get department alerts (filtered by role if specified)
+  let deptNotifs = getDepartmentAlerts(clubId);
+  if (options?.userRole) {
+    deptNotifs = deptNotifs.filter(
+      (n) => !n.targetRoles || n.targetRoles.length === 0 || n.targetRoles.includes(options.userRole!)
+    );
+  }
+
   let all = [
     ...availabilityNotifs,
     ...taskNotifs,
     ...equipmentNotifs,
     ...fixtureNotifs,
+    ...deptNotifs,
   ];
 
   // Filter by categories if specified
