@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Club } from '../types';
 import { generateNewsletter, generateNewsArticle } from '../services/geminiService';
-import { Radio, Newspaper, Sparkles, Copy, Check, FileText, Loader2, RefreshCw, X, Maximize2 } from 'lucide-react';
-import CollapsibleSection from './CollapsibleSection';
+import { Radio, Newspaper, Sparkles, Copy, Check, FileText, Loader2, RefreshCw, X, Maximize2, Minimize2 } from 'lucide-react';
 
 interface CommsArrayProps {
   club: Club;
@@ -78,19 +77,14 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
   const [generatedNewsletter, setGeneratedNewsletter] = useState('');
   const [isGeneratingNewsletter, setIsGeneratingNewsletter] = useState(false);
 
-  // Mobile accordion state - only one section expanded at a time on mobile
-  const [expandedSection, setExpandedSection] = useState<string | null>('news');
-
   // Copy feedback state
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   // Expanded modal state
   const [expandedModal, setExpandedModal] = useState<'article' | 'social' | 'newsletter' | null>(null);
 
-  const handleSectionToggle = (sectionId: string, isExpanded: boolean) => {
-    // Accordion behavior: if opening a section, close others
-    setExpandedSection(isExpanded ? sectionId : null);
-  };
+  // Full-panel expand state (for focusing on one panel)
+  const [expandedPanel, setExpandedPanel] = useState<'news' | 'newsletter' | null>(null);
 
   const handleCopy = async (text: string, itemId: string) => {
     try {
@@ -133,21 +127,39 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
 
   return (
     <>
-      <div className="h-full grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
+      <div className={`h-full grid gap-4 md:gap-8 animate-fade-in ${
+        expandedPanel ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'
+      }`}>
 
           {/* PANEL 1: NEWS & ANNOUNCEMENTS */}
-          <CollapsibleSection
-            title="News &"
-            titleHighlight="Announcements"
-            subtitle="Generate official club statements and press releases."
-            icon={Radio}
-            iconColor="text-purple-500"
-            borderColor="border-purple-500/20"
-            sectionId="news"
-            expandedSection={expandedSection}
-            onToggle={handleSectionToggle}
-            defaultExpandedMobile={true}
-          >
+          {(!expandedPanel || expandedPanel === 'news') && (
+          <div className={`glass-card rounded-2xl overflow-hidden flex flex-col border-purple-500/20 border ${
+            expandedPanel === 'news' ? 'h-full' : ''
+          }`}>
+            {/* Panel Header */}
+            <div className="p-4 md:p-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg md:text-xl font-display font-bold text-white flex items-center gap-2 md:gap-3">
+                  <Radio className="text-purple-500 flex-shrink-0 animate-pulse" size={20} />
+                  <span className="truncate">
+                    News & <span className="text-purple-500">Announcements</span>
+                  </span>
+                </h2>
+                <p className="text-slate-400 font-mono text-xs mt-1 truncate">Generate official club statements and press releases.</p>
+              </div>
+              <button
+                onClick={() => setExpandedPanel(expandedPanel === 'news' ? null : 'news')}
+                className="ml-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
+                title={expandedPanel === 'news' ? 'Minimize panel' : 'Expand panel'}
+              >
+                {expandedPanel === 'news' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </button>
+            </div>
+
+            {/* Panel Content */}
+            <div className={`p-4 md:p-6 flex-1 overflow-y-auto custom-scrollbar ${
+              expandedPanel === 'news' ? '' : ''
+            }`}>
             <div className="space-y-4 md:space-y-6">
               <div className="grid grid-cols-2 gap-2 md:gap-4">
                   {['Club Statement', 'New Signing', 'Match Postponed', 'Ticket News'].map(type => (
@@ -214,7 +226,9 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                               </div>
                           </div>
                           <div className="h-px w-full bg-white/10 mb-3"></div>
-                          <div className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-line max-h-32 overflow-y-auto custom-scrollbar">
+                          <div className={`text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-line overflow-y-auto custom-scrollbar ${
+                              expandedPanel === 'news' ? 'max-h-[50vh]' : 'max-h-32'
+                          }`}>
                               {generatedArticle.article}
                           </div>
                           <button
@@ -255,7 +269,9 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                               </div>
                           </div>
                           <div className="h-px w-full bg-white/10 mb-3"></div>
-                          <p className="text-sm text-slate-300 font-mono leading-relaxed max-h-20 overflow-y-auto custom-scrollbar">
+                          <p className={`text-sm text-slate-300 font-mono leading-relaxed overflow-y-auto custom-scrollbar ${
+                              expandedPanel === 'news' ? 'max-h-[30vh]' : 'max-h-20'
+                          }`}>
                               {generatedArticle.social}
                           </p>
                       </div>
@@ -271,20 +287,37 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                   </div>
               )}
             </div>
-          </CollapsibleSection>
+            </div>
+          </div>
+          )}
 
           {/* PANEL 2: NEWSLETTER BUILDER */}
-          <CollapsibleSection
-            title="Newsletter"
-            titleHighlight="Builder"
-            subtitle="Compile weekly fan updates."
-            icon={Newspaper}
-            iconColor="text-amber-500"
-            borderColor="border-amber-500/20"
-            sectionId="newsletter"
-            expandedSection={expandedSection}
-            onToggle={handleSectionToggle}
-          >
+          {(!expandedPanel || expandedPanel === 'newsletter') && (
+          <div className={`glass-card rounded-2xl overflow-hidden flex flex-col border-amber-500/20 border ${
+            expandedPanel === 'newsletter' ? 'h-full' : ''
+          }`}>
+            {/* Panel Header */}
+            <div className="p-4 md:p-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg md:text-xl font-display font-bold text-white flex items-center gap-2 md:gap-3">
+                  <Newspaper className="text-amber-500 flex-shrink-0" size={20} />
+                  <span className="truncate">
+                    Newsletter <span className="text-amber-500">Builder</span>
+                  </span>
+                </h2>
+                <p className="text-slate-400 font-mono text-xs mt-1 truncate">Compile weekly fan updates.</p>
+              </div>
+              <button
+                onClick={() => setExpandedPanel(expandedPanel === 'newsletter' ? null : 'newsletter')}
+                className="ml-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
+                title={expandedPanel === 'newsletter' ? 'Minimize panel' : 'Expand panel'}
+              >
+                {expandedPanel === 'newsletter' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </button>
+            </div>
+
+            {/* Panel Content */}
+            <div className={`p-4 md:p-6 flex-1 overflow-y-auto custom-scrollbar`}>
             <div className="flex flex-col h-full">
               <div className="flex gap-2 mb-4 md:mb-6">
                   <input
@@ -311,7 +344,9 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                           <p className="text-slate-600 text-xs font-mono">No topics added yet</p>
                       </div>
                   ) : (
-                      <div className="space-y-2 max-h-32 md:max-h-none overflow-y-auto">
+                      <div className={`space-y-2 overflow-y-auto ${
+                          expandedPanel === 'newsletter' ? 'max-h-none' : 'max-h-32 md:max-h-none'
+                      }`}>
                           {newsletterItems.map((item, i) => (
                               <div key={i} className="flex items-center gap-3 bg-white/5 px-3 py-2 rounded border border-white/5">
                                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
@@ -325,8 +360,10 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
               {generatedNewsletter ? (
                   <div className="flex-1 flex flex-col gap-3 animate-fade-in">
                       {/* Newsletter Preview */}
-                      <div className="relative">
-                          <div className="bg-white text-black p-4 md:p-6 rounded-xl overflow-y-auto shadow-inner max-h-40 md:max-h-48 custom-scrollbar">
+                      <div className="relative flex-1">
+                          <div className={`bg-white text-black p-4 md:p-6 rounded-xl overflow-y-auto shadow-inner custom-scrollbar ${
+                              expandedPanel === 'newsletter' ? 'max-h-[60vh]' : 'max-h-40 md:max-h-48'
+                          }`}>
                               <div className="newsletter-content" dangerouslySetInnerHTML={{__html: generatedNewsletter}}></div>
                           </div>
                           <button
@@ -392,7 +429,9 @@ const CommsArray: React.FC<CommsArrayProps> = ({ club }) => {
                   </button>
               )}
             </div>
-          </CollapsibleSection>
+            </div>
+          </div>
+          )}
       </div>
 
       {/* Expanded Content Modals */}

@@ -2279,7 +2279,7 @@ const AppAuthed: React.FC<{
               fixtures={fixtures}
             />
           )}
-          {currentClub && <AiAssistant club={currentClub} />}
+          {currentClub && <AiAssistant club={currentClub} fixtures={fixtures} contentItems={contentItems} sponsors={sponsors} />}
         </Suspense>
 
         {/* Onboarding Manager - handles welcome modal + tour */}

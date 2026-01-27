@@ -336,14 +336,68 @@ Constraints:
   return await invokeAi(club.id, prompt, 'rewrite_content');
 };
 
+/** Extended context for AI chat with full app data */
+export interface AIChatContext {
+  fixtures?: Fixture[];
+  contentItems?: { id: string; type: string; status: string; fixture_id?: string; title?: string }[];
+  sponsors?: { name: string; tier: string; status: string; value: string; sector: string }[];
+}
+
 export const chatWithAi = async (
   club: Club,
   message: string,
-  history: { role: string; content: string }[] = []
+  history: { role: string; content: string }[] = [],
+  context?: AIChatContext
 ): Promise<string> => {
   // Get current date for natural language date parsing
   const today = new Date();
   const currentDateContext = `Today is ${today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`;
+
+  // Build fixtures context
+  const upcomingFixtures = context?.fixtures
+    ?.filter(f => f.status === 'SCHEDULED')
+    ?.slice(0, 5)
+    ?.map(f => {
+      const date = new Date(f.kickoff_time);
+      return `- vs ${f.opponent} (${f.venue}) - ${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+    })
+    ?.join('\n') || 'No upcoming fixtures scheduled.';
+
+  const recentResults = context?.fixtures
+    ?.filter(f => f.status === 'COMPLETED')
+    ?.slice(0, 5)
+    ?.map(f => {
+      const isHome = f.venue === 'Home';
+      const ourScore = isHome ? f.result_home : f.result_away;
+      const theirScore = isHome ? f.result_away : f.result_home;
+      const result = (ourScore || 0) > (theirScore || 0) ? 'W' : ourScore === theirScore ? 'D' : 'L';
+      return `- ${result} ${ourScore}-${theirScore} vs ${f.opponent}${f.scorers?.length ? ` (${f.scorers.join(', ')})` : ''}`;
+    })
+    ?.join('\n') || 'No recent results.';
+
+  // Build content context
+  const contentSummary = context?.contentItems
+    ? `- Drafts: ${context.contentItems.filter(c => c.status === 'DRAFT').length}
+- Approved (ready to post): ${context.contentItems.filter(c => c.status === 'APPROVED').length}
+- Published: ${context.contentItems.filter(c => c.status === 'PUBLISHED').length}`
+    : 'Content data not available.';
+
+  const draftContent = context?.contentItems
+    ?.filter(c => c.status === 'DRAFT')
+    ?.slice(0, 5)
+    ?.map(c => `- ${c.type}${c.title ? `: ${c.title}` : ''}`)
+    ?.join('\n') || 'None';
+
+  const approvedContent = context?.contentItems
+    ?.filter(c => c.status === 'APPROVED')
+    ?.slice(0, 5)
+    ?.map(c => `- ${c.type}${c.title ? `: ${c.title}` : ''}`)
+    ?.join('\n') || 'None';
+
+  // Build sponsors context
+  const sponsorsList = context?.sponsors
+    ?.map(s => `- ${s.name} (${s.tier} tier, ${s.status}) - ${s.value}/year - ${s.sector}`)
+    ?.join('\n') || 'No sponsors data available.';
 
   const systemInstruction = `
 You are "The Gaffer" - a friendly, knowledgeable assistant for ${club.name} football club.
@@ -351,17 +405,42 @@ You are "The Gaffer" - a friendly, knowledgeable assistant for ${club.name} foot
 ${currentDateContext}
 
 YOUR PERSONALITY:
-- Speak naturally like a helpful colleague, not a robot or sci-fi character
-- Be warm, direct, and professional
+- Speak naturally like a helpful colleague at a football club
+- Be warm, direct, and professional - no robotic or sci-fi language
 - You know football inside out
 - Keep responses concise but useful
+- When asked about data, use the REAL data provided below - never make things up
 
 WHAT YOU CAN DO:
-1. ADVISE: Answer questions, write content, provide analysis
-2. EXECUTE ACTIONS: Create fixtures, add players, manage sponsors when asked
+1. ANSWER QUESTIONS: Use the real data below to answer questions about fixtures, content, sponsors, players
+2. ANALYZE: Provide insights based on actual squad, results, and content status
+3. CREATE CONTENT: Draft tweets, announcements, reports based on real data
+4. EXECUTE ACTIONS: Create fixtures, add players, manage sponsors when asked
 
-SQUAD CONTEXT:
-${club.players.map((p) => `${p.name} (#${p.number}, ${p.position}, Form: ${p.form?.toFixed(1) || '5.0'})`).join(', ')}
+=== REAL CLUB DATA (USE THIS - DO NOT INVENT DATA) ===
+
+SQUAD (${club.players.length} players):
+${club.players.map((p) => `- ${p.name} (#${p.number}, ${p.position}, Form: ${p.form?.toFixed(1) || '5.0'})`).join('\n')}
+
+UPCOMING FIXTURES:
+${upcomingFixtures}
+
+RECENT RESULTS:
+${recentResults}
+
+CONTENT STATUS:
+${contentSummary}
+
+Content in Draft:
+${draftContent}
+
+Content Approved (ready to post):
+${approvedContent}
+
+SPONSORS:
+${sponsorsList}
+
+=== END OF REAL DATA ===
 
 ACTION DETECTION:
 When the user asks you to CREATE, ADD, UPDATE, CHANGE, DELETE, or REMOVE something in the system, include an "action" object in your response.
@@ -410,20 +489,26 @@ RULES:
 3. Set confidence to "high" for clear requests, "medium" if inferring details, "low" if uncertain
 4. If details are missing or unclear, ask for clarification in your response (no action)
 5. For result updates: use opponent name to identify the fixture
+6. CRITICAL: When asked about fixtures, content, or sponsors - use the REAL DATA above. Never invent sponsors or fixtures.
+7. You CAN create tables using markdown when asked - use | for columns
+8. If data is not available (shows "not available"), say so honestly rather than making things up
 
 EXAMPLES:
 
 User: "How's the squad looking?"
-Response: {"response": "Looking solid! Marcus Thorn is in great form at 8.5, and the midfield is well-balanced..."}
+Response: {"response": "Looking solid! Based on current form, Marcus Thorn is leading the way at 8.5, and the midfield core of De Bruyne and Modrić is in excellent shape..."}
+
+User: "How many pieces of content are pending review?"
+Response: {"response": "You have 3 pieces of content in draft that need review, and 2 approved pieces ready to post. Want me to list them?"}
+
+User: "Show me our sponsors"
+Response: {"response": "Here are your current sponsors:\\n\\n| Sponsor | Tier | Status | Value |\\n|---------|------|--------|-------|\\n| TechPro Solutions | Platinum | Active | £150k |\\n..."}
 
 User: "Schedule a home game against Liverpool next Saturday at 3pm"
 Response: {"response": "I'll set that up for you.", "action": {"type": "CREATE_FIXTURE", "confidence": "high", "summary": "Home fixture vs Liverpool on Saturday 3pm", "data": {"opponent": "Liverpool", "kickoff_time": "2024-01-27T15:00:00", "venue": "Home", "competition": "League Match"}}}
 
 User: "We beat Arsenal 3-1, Thorn scored twice and Bones got one"
 Response: {"response": "Great result! Recording that now.", "action": {"type": "UPDATE_FIXTURE", "confidence": "high", "summary": "3-1 win vs Arsenal", "data": {"opponent": "Arsenal", "result_home": 3, "result_away": 1, "scorers": ["Marcus Thorn", "Marcus Thorn", "Billy Bones"]}}}
-
-User: "Add a new striker"
-Response: {"response": "I can add a striker to the squad. What's their name, and what number will they wear?"}
 `;
 
   const historyText =

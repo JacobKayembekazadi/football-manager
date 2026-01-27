@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Club } from '../types';
-import { chatWithAi } from '../services/geminiService';
+import { Club, Fixture, ContentItem, Sponsor } from '../types';
+import { chatWithAi, AIChatContext } from '../services/geminiService';
 import { getOrCreateLatestConversation, getMessages, addMessage, Message } from '../services/conversationService';
 import { executeAction } from '../services/aiActionService';
 import { AIAction, AIResponse } from '../types/aiActions';
@@ -30,9 +30,12 @@ const extractJson = (text: string): string => {
 
 interface AiAssistantProps {
   club: Club;
+  fixtures?: Fixture[];
+  contentItems?: ContentItem[];
+  sponsors?: Sponsor[];
 }
 
-const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
+const AiAssistant: React.FC<AiAssistantProps> = ({ club, fixtures, contentItems, sponsors }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
@@ -149,7 +152,26 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ club }) => {
         .slice(-10);
       historyForAI.push({ role: 'user', content: userText });
 
-      const rawResponse = await chatWithAi(club, userText, historyForAI);
+      // Build context with real app data for AI
+      const aiContext: AIChatContext = {
+        fixtures: fixtures,
+        contentItems: contentItems?.map(c => ({
+          id: c.id,
+          type: c.type,
+          status: c.status,
+          fixture_id: c.fixture_id,
+          title: c.title
+        })),
+        sponsors: sponsors?.map(s => ({
+          name: s.name,
+          tier: s.tier,
+          status: s.status,
+          value: s.value,
+          sector: s.sector
+        }))
+      };
+
+      const rawResponse = await chatWithAi(club, userText, historyForAI, aiContext);
 
       // Parse the JSON response
       let parsedResponse: AIResponse;
