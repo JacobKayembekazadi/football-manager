@@ -24,6 +24,9 @@ vi.mock('../../services/supabaseClient', () => ({
     },
   },
   isSupabaseConfigured: vi.fn(() => true),
+  TABLES: {
+    EMAIL_CONNECTIONS: 'email_connections',
+  },
 }));
 
 describe('emailConnectionService', () => {

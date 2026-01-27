@@ -395,13 +395,13 @@ export const INITIAL_PLAYERS: Player[] = [
 
 export const MOCK_CLUB: Club = {
   id: DEMO_UUIDS.club,
-  name: 'Neon City FC',
-  nickname: 'The Cyberpunks',
-  slug: 'neon-city-fc',
-  tone_context: 'Futuristic, relentless, high-tech. We use data to win. Our fans are early adopters. Bold, confident, but never arrogant. We celebrate innovation and teamwork.',
+  name: 'Riverside Athletic FC',
+  nickname: 'The Riverside',
+  slug: 'riverside-athletic-fc',
+  tone_context: 'Professional, community-focused, ambitious. We celebrate our players and fans. Clear, friendly communication that reflects our values of teamwork and local pride.',
   players: INITIAL_PLAYERS,
-  primary_color: '#00f3ff',
-  secondary_color: '#bc13fe',
+  primary_color: '#10b981',
+  secondary_color: '#1e293b',
 };
 
 // --- FIXTURES (3 Months: Sept-Dec 2024) ---
@@ -413,7 +413,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 1),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Phoenix Rising',
+    opponent: 'Eastfield United',
     kickoff_time: daysAgo(98), // Sept 1
     status: 'COMPLETED',
     result_home: 2,
@@ -422,7 +422,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 42500,
     stats: { home_possession: 58, away_possession: 42, home_shots: 14, away_shots: 8, home_xg: 2.1, away_xg: 0.9 }
   },
@@ -430,7 +430,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 2),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Steelforge United',
+    opponent: 'Oakwood Rovers',
     kickoff_time: daysAgo(91), // Sept 8
     status: 'COMPLETED',
     result_home: 0,
@@ -439,7 +439,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones', 'Luka Modrić', 'Marcus Thorn'],
     man_of_the_match: 'Kevin De Bruyne',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 28000,
     stats: { home_possession: 38, away_possession: 62, home_shots: 6, away_shots: 18, home_xg: 0.7, away_xg: 2.8 }
   },
@@ -447,7 +447,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 3),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Quantum FC',
+    opponent: 'Greendale Town',
     kickoff_time: daysAgo(84), // Sept 15
     status: 'COMPLETED',
     result_home: 2,
@@ -456,7 +456,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Sam Miller', 'Erling Haaland'],
     man_of_the_match: 'Sam Miller',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 43200,
     stats: { home_possession: 55, away_possession: 45, home_shots: 16, away_shots: 10, home_xg: 2.4, away_xg: 1.8 }
   },
@@ -464,7 +464,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 4),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Binary Stars',
+    opponent: 'Millbrook Athletic',
     kickoff_time: daysAgo(77), // Sept 22
     status: 'COMPLETED',
     result_home: 1,
@@ -473,7 +473,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Billy Bones', 'Jude Chen', 'Jay Patel'],
     man_of_the_match: 'Jude Chen',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 18500,
     stats: { home_possession: 42, away_possession: 58, home_shots: 7, away_shots: 19, home_xg: 1.2, away_xg: 3.5 }
   },
@@ -481,7 +481,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 5),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Nebula City',
+    opponent: 'Westbridge FC',
     kickoff_time: daysAgo(70), // Sept 29
     status: 'COMPLETED',
     result_home: 3,
@@ -490,7 +490,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Luka Modrić'],
     man_of_the_match: 'Viktor Volkov',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44100,
     stats: { home_possession: 62, away_possession: 38, home_shots: 20, away_shots: 4, home_xg: 3.2, away_xg: 0.4 }
   },
@@ -498,7 +498,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 6),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Metro Wanderers',
+    opponent: 'Borough City',
     kickoff_time: daysAgo(63), // Oct 6 - Cup R2
     status: 'COMPLETED',
     result_home: 4,
@@ -507,7 +507,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Erling Haaland', 'Erling Haaland', 'Rico Santos', 'Tomás Vega'],
     man_of_the_match: 'Erling Haaland',
     venue: 'Home',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
     attendance: 31000,
     stats: { home_possession: 68, away_possession: 32, home_shots: 22, away_shots: 6, home_xg: 4.1, away_xg: 1.0 }
   },
@@ -515,7 +515,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 7),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Titan Rovers',
+    opponent: 'Parkside Rangers',
     kickoff_time: daysAgo(56), // Oct 13
     status: 'COMPLETED',
     result_home: 1,
@@ -524,7 +524,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones'],
     man_of_the_match: 'Virgil Ironside',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 35000,
     stats: { home_possession: 45, away_possession: 55, home_shots: 9, away_shots: 15, home_xg: 1.1, away_xg: 2.3 }
   },
@@ -532,7 +532,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 8),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Apex Athletic',
+    opponent: 'Lakeside FC',
     kickoff_time: daysAgo(49), // Oct 20
     status: 'COMPLETED',
     result_home: 2,
@@ -541,7 +541,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Sam Miller', 'Marcus Thorn'],
     man_of_the_match: 'Kevin De Bruyne',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44800,
     stats: { home_possession: 60, away_possession: 40, home_shots: 17, away_shots: 6, home_xg: 2.5, away_xg: 0.6 }
   },
@@ -549,7 +549,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 9),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Vector Valley',
+    opponent: 'Central United',
     kickoff_time: daysAgo(42), // Oct 27
     status: 'COMPLETED',
     result_home: 0,
@@ -558,7 +558,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Kieran Torres', 'Luka Modrić'],
     man_of_the_match: 'Luka Modrić',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 22000,
     stats: { home_possession: 40, away_possession: 60, home_shots: 8, away_shots: 14, home_xg: 0.8, away_xg: 2.0 }
   },
@@ -566,7 +566,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 10),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Cipher Town',
+    opponent: 'Northgate Town',
     kickoff_time: daysAgo(35), // Nov 3
     status: 'COMPLETED',
     result_home: 5,
@@ -575,7 +575,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Marcus Thorn', 'Kevin De Bruyne', 'Jude Chen'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 45000,
     stats: { home_possession: 65, away_possession: 35, home_shots: 24, away_shots: 5, home_xg: 4.8, away_xg: 0.9 }
   },
@@ -583,7 +583,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 11),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Apex Athletic',
+    opponent: 'Lakeside FC',
     kickoff_time: daysAgo(28), // Nov 10 - Cup R3
     status: 'COMPLETED',
     result_home: 1,
@@ -592,7 +592,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Billy Bones'],
     man_of_the_match: 'Marco Silva',
     venue: 'Away',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
     attendance: 29000,
     stats: { home_possession: 48, away_possession: 52, home_shots: 11, away_shots: 13, home_xg: 1.1, away_xg: 1.3 }
   },
@@ -600,7 +600,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 12),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Orbital United',
+    opponent: 'Hillcrest FC',
     kickoff_time: daysAgo(21), // Nov 17 - BIG GAME
     status: 'COMPLETED',
     result_home: 1,
@@ -609,7 +609,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Marcus Thorn', 'Marcus Thorn', 'Marcus Thorn'],
     man_of_the_match: 'Marcus Thorn',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 52000,
     stats: { home_possession: 42, away_possession: 58, home_shots: 8, away_shots: 17, home_xg: 1.2, away_xg: 3.4 }
   },
@@ -617,7 +617,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 13),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Grid FC',
+    opponent: 'Seaside Athletic',
     kickoff_time: daysAgo(14), // Nov 24
     status: 'COMPLETED',
     result_home: 2,
@@ -626,7 +626,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: ['Luka Modrić', 'Erling Haaland'],
     man_of_the_match: 'Jay Patel',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 44500,
     stats: { home_possession: 54, away_possession: 46, home_shots: 13, away_shots: 11, home_xg: 1.9, away_xg: 1.2 }
   },
@@ -634,7 +634,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 14),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Nova Dynamic',
+    opponent: 'Meadowbrook FC',
     kickoff_time: daysAgo(7), // Dec 1
     status: 'COMPLETED',
     result_home: 0,
@@ -643,7 +643,7 @@ export const INITIAL_FIXTURES: Fixture[] = [
     scorers: [],
     man_of_the_match: 'Viktor Volkov',
     venue: 'Away',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 19500,
     stats: { home_possession: 32, away_possession: 68, home_shots: 4, away_shots: 21, home_xg: 0.3, away_xg: 2.8 }
   },
@@ -653,42 +653,42 @@ export const INITIAL_FIXTURES: Fixture[] = [
   {
     id: generateDemoUUID('fixture', 15),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Phoenix Rising',
+    opponent: 'Eastfield United',
     kickoff_time: hoursFromNow(3), // TODAY - 3 hours from now
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
     attendance: 38000,
   },
   // Matchweek 16
   {
     id: generateDemoUUID('fixture', 16),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Steelforge United',
+    opponent: 'Oakwood Rovers',
     kickoff_time: daysFromNow(10), // Dec 21
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
   },
   // Cup Quarter-Final
   {
     id: generateDemoUUID('fixture', 17),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Quantum FC',
+    opponent: 'Greendale Town',
     kickoff_time: daysFromNow(17), // Dec 28 - Cup QF
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Galaxy Cup',
+    competition: 'FA Cup',
   },
   // Matchweek 17 - New Years Day
   {
     id: generateDemoUUID('fixture', 18),
     club_id: DEMO_UUIDS.club,
-    opponent: 'Binary Stars',
+    opponent: 'Millbrook Athletic',
     kickoff_time: daysFromNow(21), // Jan 1
     status: 'SCHEDULED',
     venue: 'Home',
-    competition: 'Cyber League',
+    competition: 'League',
   },
 ];
 
@@ -702,7 +702,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'THORN HAT-TRICK SINKS ORBITAL IN TITLE SIX-POINTER',
-    body: `# NEON CITY 3-1 ORBITAL UNITED\n\nMarcus Thorn produced a devastating hat-trick as Neon City FC dismantled league leaders Orbital United at their own ground in the biggest win of the season.\n\nThe Cyberpunks made their intentions clear from the first whistle, with De Bruyne pulling the strings in midfield. Thorn opened the scoring on 23 minutes, latching onto a defense-splitting pass before coolly slotting past the keeper.\n\nOrbital equalized before half-time, but Neon City's response was emphatic. Thorn restored the lead with a bullet header from Torres's cross, before completing his hat-trick with a stunning chip in the 78th minute - assisted by a piece of De Bruyne wizardry.\n\n**Manager's Reaction:** "This is what we've been building towards. The players executed the plan perfectly. Marcus is in the form of his life, but this was a complete team performance."\n\n**Man of the Match:** Marcus Thorn (3 goals)`,
+    body: `# RIVERSIDE 3-1 ORBITAL UNITED\n\nMarcus Thorn produced a devastating hat-trick as Riverside Athletic FC dismantled league leaders Hillcrest FC at their own ground in the biggest win of the season.\n\nThe Riverside made their intentions clear from the first whistle, with De Bruyne pulling the strings in midfield. Thorn opened the scoring on 23 minutes, latching onto a defense-splitting pass before coolly slotting past the keeper.\n\nOrbital equalized before half-time, but Riverside Athletic's response was emphatic. Thorn restored the lead with a bullet header from Torres's cross, before completing his hat-trick with a stunning chip in the 78th minute - assisted by a piece of De Bruyne wizardry.\n\n**Manager's Reaction:** "This is what we've been building towards. The players executed the plan perfectly. Marcus is in the form of his life, but this was a complete team performance."\n\n**Man of the Match:** Marcus Thorn (3 goals)`,
     status: 'PUBLISHED',
     created_at: daysAgo(20),
   },
@@ -712,7 +712,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 12),
     type: 'SOCIAL',
     platform: 'Twitter',
-    body: `🔥 FULL TIME: Orbital 1-3 NEON CITY\n\n⚽ Thorn 23' \n⚽ Thorn 58'\n⚽ Thorn 78'\n\nStatement. Made. 💜⚡\n\n#NeonCityFC #CyberLeague #ThornOnFire`,
+    body: `🔥 FULL TIME: Orbital 1-3 RIVERSIDE\n\n⚽ Thorn 23' \n⚽ Thorn 58'\n⚽ Thorn 78'\n\nStatement. Made. 💜⚡\n\n#RiversideAFC #TheLeague #ThornOnFire`,
     status: 'PUBLISHED',
     created_at: daysAgo(21),
   },
@@ -723,7 +723,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'FIVE-STAR CYBERPUNKS CRUSH CIPHER TOWN',
-    body: `# NEON CITY 5-1 CIPHER TOWN\n\nNeon City FC produced their most complete performance of the campaign, with Marcus Thorn claiming another match ball in a comprehensive victory.\n\nThe home side were relentless from start to finish, with Thorn opening his account inside 10 minutes. De Bruyne doubled the lead with a sublime free-kick before Thorn struck twice more before the break.\n\nJude Chen capped off the scoring with his second goal of the season, continuing his impressive breakthrough campaign.\n\n**Key Stats:**\n- 24 shots (12 on target)\n- 65% possession\n- 4.8 xG\n\n**Next Up:** Galaxy Cup Round 3 vs Apex Athletic`,
+    body: `# RIVERSIDE 5-1 CIPHER TOWN\n\nRiverside Athletic FC produced their most complete performance of the campaign, with Marcus Thorn claiming another match ball in a comprehensive victory.\n\nThe home side were relentless from start to finish, with Thorn opening his account inside 10 minutes. De Bruyne doubled the lead with a sublime free-kick before Thorn struck twice more before the break.\n\nJude Chen capped off the scoring with his second goal of the season, continuing his impressive breakthrough campaign.\n\n**Key Stats:**\n- 24 shots (12 on target)\n- 65% possession\n- 4.8 xG\n\n**Next Up:** FA Cup Round 3 vs Lakeside FC`,
     status: 'PUBLISHED',
     created_at: daysAgo(34),
   },
@@ -733,7 +733,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 13),
     type: 'SOCIAL',
     platform: 'Instagram',
-    body: `Another win secured ✅\n\nModrić from the spot ⚽\nHaaland with the header 🎯\n\n2nd place LOCKED IN going into December 💪\n\n#NeonCityFC #OnTheRise`,
+    body: `Another win secured ✅\n\nModrić from the spot ⚽\nHaaland with the header 🎯\n\n2nd place LOCKED IN going into December 💪\n\n#RiversideAFC #OnTheRise`,
     status: 'PUBLISHED',
     created_at: daysAgo(13),
   },
@@ -743,7 +743,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'NEWSLETTER',
     platform: 'Email',
     title: 'November Review: Our Best Month Yet',
-    body: `Dear Cyberpunks,\n\nWhat a month November was! Here's your monthly wrap-up:\n\n📊 NOVEMBER STATS:\n- Played: 4 | Won: 3 | Drew: 1\n- Goals Scored: 11 | Goals Conceded: 3\n- League Position: 2nd (29 points)\n\n⭐ PLAYER OF THE MONTH:\nMarcus Thorn - 7 goals in 4 games. Simply unstoppable.\n\n🏆 HIGHLIGHT:\nThe 3-1 victory at Orbital was the statement win we needed. Top of the table for 48 hours before they scraped a win.\n\n🎟️ UPCOMING:\nPhoenix Rising away on December 14th - tickets on sale now!\n\nUTNC! ⚡`,
+    body: `Dear Riverside,\n\nWhat a month November was! Here's your monthly wrap-up:\n\n📊 NOVEMBER STATS:\n- Played: 4 | Won: 3 | Drew: 1\n- Goals Scored: 11 | Goals Conceded: 3\n- League Position: 2nd (29 points)\n\n⭐ PLAYER OF THE MONTH:\nMarcus Thorn - 7 goals in 4 games. Simply unstoppable.\n\n🏆 HIGHLIGHT:\nThe 3-1 victory at Orbital was the statement win we needed. Top of the table for 48 hours before they scraped a win.\n\n🎟️ UPCOMING:\nEastfield United away on December 14th - tickets on sale now!\n\nCOYRS! ⚡`,
     status: 'PUBLISHED',
     created_at: daysAgo(10),
   },
@@ -755,8 +755,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'PREVIEW',
     platform: 'Website',
-    title: 'PREVIEW: Phoenix Rising (A) - Revenge Mission',
-    body: `# PHOENIX RISING vs NEON CITY FC\n\n**When:** Saturday, December 14th - 3:00 PM\n**Where:** Flame Stadium\n**Competition:** Cyber League - Matchweek 15\n\n## THE STORY\nA return to where it all began. Phoenix Rising were our first opponents this season, and that 2-1 win set the tone for our campaign.\n\nThey'll be out for revenge on home turf, but we arrive in confident mood after beating Orbital in our last away game.\n\n## FORM GUIDE\n**Neon City:** W-D-W-W-W (13 games: W9 D2 L2)\n**Phoenix Rising:** L-W-L-D-W (Currently 8th)\n\n## KEY BATTLE\nMarcus Thorn vs their center-back pairing. They struggled to contain him in September - can they do better this time?\n\n## PREDICTED XI\nVolkov; Sterling, Miller (C), Ironside, Torres; Silva, Modrić, De Bruyne, Chen; Bones, Thorn`,
+    title: 'PREVIEW: Eastfield United (A) - Revenge Mission',
+    body: `# PHOENIX RISING vs RIVERSIDE FC\n\n**When:** Saturday, December 14th - 3:00 PM\n**Where:** Flame Stadium\n**Competition:** League - Matchweek 15\n\n## THE STORY\nA return to where it all began. Eastfield United were our first opponents this season, and that 2-1 win set the tone for our campaign.\n\nThey'll be out for revenge on home turf, but we arrive in confident mood after beating Orbital in our last away game.\n\n## FORM GUIDE\n**Riverside Athletic:** W-D-W-W-W (13 games: W9 D2 L2)\n**Eastfield United:** L-W-L-D-W (Currently 8th)\n\n## KEY BATTLE\nMarcus Thorn vs their center-back pairing. They struggled to contain him in September - can they do better this time?\n\n## PREDICTED XI\nVolkov; Sterling, Miller (C), Ironside, Torres; Silva, Modrić, De Bruyne, Chen; Bones, Thorn`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -766,7 +766,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'SOCIAL',
     platform: 'Twitter',
-    body: `🔜 MATCHDAY INCOMING\n\n🆚 Phoenix Rising\n📍 Flame Stadium\n🗓️ Saturday 3PM\n📺 Stream on CyberLeague+\n\nTime to keep the momentum going 💜⚡\n\n#NCFC #PhxNCFC`,
+    body: `🔜 MATCHDAY INCOMING\n\n🆚 Eastfield United\n📍 Flame Stadium\n🗓️ Saturday 3PM\n📺 Stream on FA Player\n\nTime to keep the momentum going 💜⚡\n\n#RAFC #EastfieldRAFC`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -776,7 +776,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 15),
     type: 'GRAPHIC_COPY',
     platform: 'Instagram',
-    body: `GAMEDAY GRAPHIC\n\n🔥 PHOENIX RISING vs NEON CITY FC 🔥\n\nSATURDAY | 3PM | FLAME STADIUM\n\n"Back where it all started"\n\n#NCFC #AwayDays`,
+    body: `GAMEDAY GRAPHIC\n\n🔥 PHOENIX RISING vs RIVERSIDE FC 🔥\n\nSATURDAY | 3PM | FLAME STADIUM\n\n"Back where it all started"\n\n#RAFC #AwayDays`,
     status: 'APPROVED',
     created_at: daysAgo(1),
   },
@@ -789,7 +789,7 @@ export const INITIAL_CONTENT: ContentItem[] = [
     type: 'REPORT',
     platform: 'Website',
     title: 'FRUSTRATION AT NOVA AS CHANCES GO BEGGING',
-    body: `# NOVA DYNAMIC 0-0 NEON CITY\n\n[DRAFT - NEEDS FINAL REVIEW]\n\nNeon City dominated but couldn't find the breakthrough in a frustrating goalless draw at Nova Dynamic.\n\nDespite enjoying 68% possession and creating chances worth 2.8 xG, the Cyberpunks were unable to break down a resolute home defense that sat deep and defended in numbers.\n\nMarcus Thorn had a goal controversially ruled out for offside in the second half, with replays suggesting the decision was marginal at best.\n\n**Talking Point:** Are we becoming too predictable? Teams are sitting deep against us.\n\n**Next Up:** Phoenix Rising (A) - December 14th`,
+    body: `# NOVA DYNAMIC 0-0 RIVERSIDE\n\n[DRAFT - NEEDS FINAL REVIEW]\n\nRiverside Athletic dominated but couldn't find the breakthrough in a frustrating goalless draw at Meadowbrook FC.\n\nDespite enjoying 68% possession and creating chances worth 2.8 xG, the Riverside were unable to break down a resolute home defense that sat deep and defended in numbers.\n\nMarcus Thorn had a goal controversially ruled out for offside in the second half, with replays suggesting the decision was marginal at best.\n\n**Talking Point:** Are we becoming too predictable? Teams are sitting deep against us.\n\n**Next Up:** Eastfield United (A) - December 14th`,
     status: 'DRAFT',
     created_at: daysAgo(6),
   },
@@ -809,8 +809,8 @@ export const INITIAL_CONTENT: ContentItem[] = [
     fixture_id: generateDemoUUID('fixture', 17),
     type: 'PREVIEW',
     platform: 'Website',
-    title: 'CUP QUARTER-FINAL PREVIEW: Quantum FC',
-    body: `[EARLY DRAFT - Cup QF Preview]\n\n# GALAXY CUP QUARTER-FINAL\n## NEON CITY vs QUANTUM FC\n\n**Date:** December 28th\n**Venue:** Neon Arena\n\nA chance for cup glory continues as we host Quantum FC in the last eight.\n\nWe drew 2-2 with them in the league back in September - a game where we came from behind twice. They'll be a tough test.\n\n[TODO: Add team news, ticket info, historical record]`,
+    title: 'CUP QUARTER-FINAL PREVIEW: Greendale Town',
+    body: `[EARLY DRAFT - Cup QF Preview]\n\n# GALAXY CUP QUARTER-FINAL\n## RIVERSIDE vs QUANTUM FC\n\n**Date:** December 28th\n**Venue:** Neon Arena\n\nA chance for cup glory continues as we host Greendale Town in the last eight.\n\nWe drew 2-2 with them in the league back in September - a game where we came from behind twice. They'll be a tough test.\n\n[TODO: Add team news, ticket info, historical record]`,
     status: 'DRAFT',
     created_at: daysAgo(2),
   },
@@ -820,63 +820,63 @@ export const INITIAL_CONTENT: ContentItem[] = [
 export const INITIAL_SPONSORS: Sponsor[] = [
   {
     id: generateDemoUUID('sponsor', 1),
-    name: 'CyberDyne Systems', 
-    sector: 'Technology', 
-    tier: 'Platinum', 
-    value: '£150,000', 
-    contract_end: '2026-06-30', 
-    status: 'Active', 
-    logo_initials: 'CD' 
+    name: 'TechPro Solutions',
+    sector: 'Technology',
+    tier: 'Platinum',
+    value: '£150,000',
+    contract_end: '2026-06-30',
+    status: 'Active',
+    logo_initials: 'TP' 
   },
   {
     id: generateDemoUUID('sponsor', 2),
-    name: 'Orbital Energy Drinks', 
-    sector: 'Beverage', 
-    tier: 'Gold', 
-    value: '£85,000', 
-    contract_end: '2025-01-31', 
-    status: 'Expiring', 
-    logo_initials: 'OE' 
+    name: 'FreshStart Drinks',
+    sector: 'Beverage',
+    tier: 'Gold',
+    value: '£85,000',
+    contract_end: '2025-01-31',
+    status: 'Expiring',
+    logo_initials: 'FS' 
   },
   {
     id: generateDemoUUID('sponsor', 3),
-    name: 'NeoTextile Apparel', 
-    sector: 'Sportswear', 
-    tier: 'Gold', 
-    value: '£75,000', 
-    contract_end: '2025-06-30', 
-    status: 'Active', 
-    logo_initials: 'NT' 
+    name: 'SportGear Direct',
+    sector: 'Sportswear',
+    tier: 'Gold',
+    value: '£75,000',
+    contract_end: '2025-06-30',
+    status: 'Active',
+    logo_initials: 'SG' 
   },
   {
     id: generateDemoUUID('sponsor', 4),
-    name: 'Quantum Motors', 
-    sector: 'Automotive', 
-    tier: 'Silver', 
-    value: '£40,000', 
-    contract_end: '2025-12-31', 
-    status: 'Active', 
-    logo_initials: 'QM' 
+    name: 'LocalAuto Group',
+    sector: 'Automotive',
+    tier: 'Silver',
+    value: '£40,000',
+    contract_end: '2025-12-31',
+    status: 'Active',
+    logo_initials: 'LA' 
   },
   {
     id: generateDemoUUID('sponsor', 5),
-    name: 'DataStream Analytics', 
-    sector: 'Tech/Data', 
-    tier: 'Silver', 
-    value: '£35,000', 
-    contract_end: '2025-03-31', 
-    status: 'Negotiating', 
-    logo_initials: 'DS' 
+    name: 'Insight Analytics',
+    sector: 'Tech/Data',
+    tier: 'Silver',
+    value: '£35,000',
+    contract_end: '2025-03-31',
+    status: 'Negotiating',
+    logo_initials: 'IA' 
   },
   {
     id: generateDemoUUID('sponsor', 6),
-    name: 'GridBank Financial', 
-    sector: 'Finance', 
-    tier: 'Platinum', 
-    value: '£120,000', 
-    contract_end: '2027-06-30', 
-    status: 'Active', 
-    logo_initials: 'GB' 
+    name: 'Community Bank',
+    sector: 'Finance',
+    tier: 'Platinum',
+    value: '£120,000',
+    contract_end: '2027-06-30',
+    status: 'Active',
+    logo_initials: 'CB' 
   },
 ];
 

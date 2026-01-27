@@ -24,8 +24,7 @@ interface MyTasksProps {
   clubId: string;
   currentUser: ClubUser;
   onTaskComplete?: () => void;
-  onTaskSelect?: (task: FixtureTask) => void;
-  onAllComplete?: () => void;
+  onNavigateToTask?: (fixtureId: string, taskId: string) => void;
 }
 
 interface TaskWithFixture extends FixtureTask {
@@ -36,12 +35,12 @@ const MyTasks: React.FC<MyTasksProps> = ({
   clubId,
   currentUser,
   onTaskComplete,
-  onTaskSelect,
-  onAllComplete,
+  onNavigateToTask,
 }) => {
   const [tasks, setTasks] = useState<TaskWithFixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadMyTasks();
@@ -104,6 +103,7 @@ const MyTasks: React.FC<MyTasksProps> = ({
       setTasks(prev =>
         prev.map(t => (t.id === task.id ? { ...updated, fixture: task.fixture } : t))
       );
+      setRefreshTrigger(prev => prev + 1); // Trigger continue button refresh
       onTaskComplete?.();
     } catch (error) {
       console.error('Error toggling task:', error);
@@ -194,14 +194,13 @@ const MyTasks: React.FC<MyTasksProps> = ({
           {tasks.map(task => (
             <div
               key={task.id}
-              className={`p-3 rounded-lg border transition-all cursor-pointer ${
+              className={`p-3 rounded-lg border transition-all ${
                 task.is_completed
                   ? 'bg-green-500/5 border-green-500/20'
                   : isBackup(task)
                   ? 'bg-amber-500/5 border-amber-500/20'
                   : 'bg-slate-800/50 border-white/10 hover:border-white/20'
               }`}
-              onClick={() => onTaskSelect?.(task)}
             >
               <div className="flex items-start gap-3">
                 {/* Checkbox */}
@@ -268,13 +267,16 @@ const MyTasks: React.FC<MyTasksProps> = ({
         </div>
       </div>
 
-      {/* Persistent Continue Button */}
-      {tasks.length > 0 && (
-        <ContinueButton
-          tasks={tasks}
-          onContinue={(nextTask) => onTaskSelect?.(nextTask as FixtureTask)}
-          onAllComplete={onAllComplete}
-        />
+      {/* Continue Button */}
+      {onNavigateToTask && (
+        <div className="mt-4">
+          <ContinueButton
+            clubId={clubId}
+            onNavigate={onNavigateToTask}
+            refreshTrigger={refreshTrigger}
+            variant="default"
+          />
+        </div>
       )}
     </div>
   );

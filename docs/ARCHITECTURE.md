@@ -316,3 +316,63 @@ try {
 - Permission checks in services (defense in depth)
 - Audit logging for sensitive operations
 - Rate limiting on AI endpoints
+
+---
+
+## AI Image Generation Architecture
+
+### Multi-Provider System (Added 2026-01-22)
+
+The image generation system uses intelligent routing to select the best provider for each graphic type:
+
+```
+Frontend (geminiService.ts)
+         ↓
+    /api/ai-generate-image (Vercel Serverless)
+         ↓
+    Provider Router
+         ↓
+  ┌──────┼──────┐
+  ↓      ↓      ↓
+Ideogram Imagen3 Gemini
+(text)  (quality) (fallback)
+```
+
+### Routing Strategy
+
+| Image Type | Primary Provider | Reason |
+|------------|------------------|--------|
+| Result Graphics | Ideogram | Best text rendering for scores |
+| Matchday Graphics | Ideogram | Accurate team names, dates |
+| Player Spotlights | Imagen 3 | Visual quality |
+| Announcements | Imagen 3 | Balance of text + visuals |
+| Custom Images | Imagen 3 | General purpose |
+
+### Provider Files
+
+```
+api/
+├── ai-generate-image.ts     # Main endpoint
+└── lib/
+    └── imageProviders/
+        ├── types.ts          # Shared interfaces
+        ├── router.ts         # Routing logic + fallback
+        ├── imagen.ts         # Google Imagen 3
+        ├── ideogram.ts       # Ideogram 2.0
+        ├── gemini.ts         # Gemini 2.0 Flash (fallback)
+        └── index.ts          # Exports
+```
+
+### Environment Variables (Vercel Dashboard)
+
+```
+GEMINI_API_KEY      # Required - Imagen 3 + Gemini
+IDEOGRAM_API_KEY    # Optional - Enables Ideogram for text-heavy graphics
+```
+
+### Fallback Behavior
+
+If a provider fails, the router automatically tries the next provider in the chain:
+1. Primary provider fails → Try fallback
+2. If Ideogram key not configured → Skip to Imagen 3
+3. All providers fail → Return error with last error message

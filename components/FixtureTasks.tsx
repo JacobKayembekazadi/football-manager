@@ -40,8 +40,7 @@ interface FixtureTasksProps {
   currentUserId?: string;
   showOwnership?: boolean;
   onTasksChange?: () => void;
-  onTaskSelect?: (task: FixtureTask) => void;
-  onAllComplete?: () => void;
+  onNavigateToTask?: (fixtureId: string, taskId: string) => void;
   showContinueButton?: boolean;
 }
 
@@ -51,8 +50,7 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   currentUserId,
   showOwnership = true,
   onTasksChange,
-  onTaskSelect,
-  onAllComplete,
+  onNavigateToTask,
   showContinueButton = false,
 }) => {
   const [tasks, setTasks] = useState<FixtureTask[]>([]);
@@ -62,6 +60,7 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
   const [showAddTask, setShowAddTask] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -94,6 +93,7 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
     try {
       const updated = await toggleTaskCompletion(task.id, !task.is_completed);
       setTasks(prev => prev.map(t => (t.id === task.id ? updated : t)));
+      setRefreshTrigger(prev => prev + 1); // Trigger continue button refresh
       onTasksChange?.();
     } catch (error) {
       console.error('Error toggling task:', error);
@@ -386,13 +386,14 @@ const FixtureTasks: React.FC<FixtureTasksProps> = ({
         </button>
       )}
 
-      {/* Persistent Continue Button */}
-      {showContinueButton && tasks.length > 0 && (
+      {/* Continue Button */}
+      {showContinueButton && onNavigateToTask && (
         <ContinueButton
-          tasks={tasks}
-          onContinue={(nextTask) => onTaskSelect?.(nextTask as FixtureTask)}
-          onAllComplete={onAllComplete}
-          className="mt-4"
+          clubId={clubId}
+          currentFixtureId={fixture.id}
+          onNavigate={onNavigateToTask}
+          refreshTrigger={refreshTrigger}
+          variant="default"
         />
       )}
     </div>

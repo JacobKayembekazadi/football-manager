@@ -100,12 +100,11 @@ export const updateTemplatePack = async (
   packId: string,
   updates: Partial<Omit<TemplatePack, 'id' | 'club_id'>>
 ): Promise<TemplatePack> => {
-  if (!supabase || !isSupabaseConfigured()) {
-    // Demo mode: toggle enabled state in localStorage
+  // Helper function for demo mode updates
+  const updateDemoPack = () => {
     if (updates.is_enabled !== undefined) {
       toggleDemoTemplatePack(packId);
     }
-    // Return updated pack
     const idx = parseInt(packId.replace('demo-pack-', ''));
     const enabledIds = getDemoEnabledTemplatePacks();
     return {
@@ -114,26 +113,42 @@ export const updateTemplatePack = async (
       club_id: 'demo',
       is_enabled: enabledIds.includes(packId),
     };
+  };
+
+  // Demo mode check
+  if (!supabase || !isSupabaseConfigured()) {
+    return updateDemoPack();
   }
 
-  const { data, error } = await supabase
-    .from(TABLES.TEMPLATE_PACKS)
-    .update({
-      name: updates.name,
-      description: updates.description,
-      is_enabled: updates.is_enabled,
-      tasks: updates.tasks,
-    })
-    .eq('id', packId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating template pack:', error);
-    throw error;
+  // Check if packId is a demo pack - use demo storage directly
+  if (packId.startsWith('demo-pack-')) {
+    return updateDemoPack();
   }
 
-  return mapTemplatePackFromDb(data);
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.TEMPLATE_PACKS)
+      .update({
+        name: updates.name,
+        description: updates.description,
+        is_enabled: updates.is_enabled,
+        tasks: updates.tasks,
+      })
+      .eq('id', packId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating template pack, falling back to demo:', error);
+      // Fall back to demo mode if table doesn't exist
+      return updateDemoPack();
+    }
+
+    return mapTemplatePackFromDb(data);
+  } catch (error) {
+    console.error('Error updating template pack, falling back to demo:', error);
+    return updateDemoPack();
+  }
 };
 
 /**
@@ -553,6 +568,79 @@ export const updateFixtureTask = async (
     console.error('Error updating task, falling back to demo:', error);
     return updateDemoTask();
   }
+};
+
+// ============================================================================
+// Continue Button Support
+// ============================================================================
+
+/**
+ * Get the next incomplete task across upcoming fixtures
+ * Returns the task with its fixture context for navigation
+ */
+export interface NextTaskResult {
+  task: FixtureTask;
+  fixture: import('../types').Fixture;
+}
+
+export const getNextIncompleteTask = async (
+  clubId: string,
+  currentFixtureId?: string
+): Promise<NextTaskResult | null> => {
+  // Import fixture service dynamically to avoid circular dependency
+  const { getFixtures } = await import('./fixtureService');
+
+  // Get upcoming fixtures sorted by kickoff time
+  const fixtures = await getFixtures(clubId);
+  const now = new Date();
+  const upcomingFixtures = fixtures
+    .filter(f => new Date(f.kickoff_time) >= now && f.status === 'SCHEDULED')
+    .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
+
+  if (upcomingFixtures.length === 0) {
+    return null;
+  }
+
+  // Get all tasks for upcoming fixtures
+  const fixtureIds = upcomingFixtures.map(f => f.id);
+  const allTasks = await getTasksForFixtures(fixtureIds);
+
+  // Filter to incomplete tasks
+  const incompleteTasks = allTasks.filter(t => !t.is_completed);
+
+  if (incompleteTasks.length === 0) {
+    return null;
+  }
+
+  // Sort tasks: prioritize current fixture, then by fixture kickoff time, then sort_order
+  const sortedTasks = incompleteTasks.sort((a, b) => {
+    // If currentFixtureId provided, prioritize tasks in same fixture
+    if (currentFixtureId) {
+      const aIsCurrent = a.fixture_id === currentFixtureId;
+      const bIsCurrent = b.fixture_id === currentFixtureId;
+      if (aIsCurrent && !bIsCurrent) return -1;
+      if (!aIsCurrent && bIsCurrent) return 1;
+    }
+
+    // Then sort by fixture kickoff time
+    const fixtureA = upcomingFixtures.find(f => f.id === a.fixture_id);
+    const fixtureB = upcomingFixtures.find(f => f.id === b.fixture_id);
+    const timeA = fixtureA ? new Date(fixtureA.kickoff_time).getTime() : Infinity;
+    const timeB = fixtureB ? new Date(fixtureB.kickoff_time).getTime() : Infinity;
+    if (timeA !== timeB) return timeA - timeB;
+
+    // Finally sort by sort_order within same fixture
+    return a.sort_order - b.sort_order;
+  });
+
+  const nextTask = sortedTasks[0];
+  const fixture = upcomingFixtures.find(f => f.id === nextTask.fixture_id);
+
+  if (!fixture) {
+    return null;
+  }
+
+  return { task: nextTask, fixture };
 };
 
 // ============================================================================

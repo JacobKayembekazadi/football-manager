@@ -68,7 +68,9 @@ D14 (branded as PitchSide) is a **football operations command centre** for grass
 | Styling | Tailwind CSS (dark theme, glass-card pattern) |
 | State | React hooks + context |
 | Backend | Supabase (or localStorage demo mode) |
-| AI | Google Gemini API |
+| API Routes | Vercel Serverless Functions |
+| AI Text | Google Gemini API |
+| AI Images | Multi-provider (Ideogram, Imagen 3, Gemini) |
 | Build | Vite |
 
 ---
