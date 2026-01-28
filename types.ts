@@ -1055,18 +1055,18 @@ export const INITIAL_SPONSORS: Sponsor[] = [
 // ============================================================================
 
 export const INITIAL_ROLES: ClubRole[] = [
-  { id: generateDemoUUID('role', 1), club_id: DEMO_UUIDS.CLUB, name: 'Admin', color: 'red', is_system: true },
-  { id: generateDemoUUID('role', 2), club_id: DEMO_UUIDS.CLUB, name: 'Coach', color: 'blue', is_system: true },
-  { id: generateDemoUUID('role', 3), club_id: DEMO_UUIDS.CLUB, name: 'Ops', color: 'purple', is_system: true },
-  { id: generateDemoUUID('role', 4), club_id: DEMO_UUIDS.CLUB, name: 'Media', color: 'pink', is_system: true },
-  { id: generateDemoUUID('role', 5), club_id: DEMO_UUIDS.CLUB, name: 'Kit', color: 'amber', is_system: true },
-  { id: generateDemoUUID('role', 6), club_id: DEMO_UUIDS.CLUB, name: 'Finance', color: 'green', is_system: false },
+  { id: generateDemoUUID('role', 1), club_id: DEMO_UUIDS.club, name: 'Admin', color: 'red', is_system: true },
+  { id: generateDemoUUID('role', 2), club_id: DEMO_UUIDS.club, name: 'Coach', color: 'blue', is_system: true },
+  { id: generateDemoUUID('role', 3), club_id: DEMO_UUIDS.club, name: 'Ops', color: 'purple', is_system: true },
+  { id: generateDemoUUID('role', 4), club_id: DEMO_UUIDS.club, name: 'Media', color: 'pink', is_system: true },
+  { id: generateDemoUUID('role', 5), club_id: DEMO_UUIDS.club, name: 'Kit', color: 'amber', is_system: true },
+  { id: generateDemoUUID('role', 6), club_id: DEMO_UUIDS.club, name: 'Finance', color: 'green', is_system: false },
 ];
 
 export const INITIAL_CLUB_USERS: ClubUser[] = [
   {
     id: generateDemoUUID('clubuser', 1),
-    club_id: DEMO_UUIDS.CLUB,
+    club_id: DEMO_UUIDS.club,
     email: 'jacob@pitchside.ai',
     name: 'Jacob Kayembe',
     avatar_url: undefined,
@@ -1077,7 +1077,7 @@ export const INITIAL_CLUB_USERS: ClubUser[] = [
   },
   {
     id: generateDemoUUID('clubuser', 2),
-    club_id: DEMO_UUIDS.CLUB,
+    club_id: DEMO_UUIDS.club,
     email: 'sarah@example.com',
     name: 'Sarah Mitchell',
     avatar_url: undefined,
@@ -1088,7 +1088,7 @@ export const INITIAL_CLUB_USERS: ClubUser[] = [
   },
   {
     id: generateDemoUUID('clubuser', 3),
-    club_id: DEMO_UUIDS.CLUB,
+    club_id: DEMO_UUIDS.club,
     email: 'mike@example.com',
     name: 'Mike Thompson',
     avatar_url: undefined,
@@ -1099,7 +1099,7 @@ export const INITIAL_CLUB_USERS: ClubUser[] = [
   },
   {
     id: generateDemoUUID('clubuser', 4),
-    club_id: DEMO_UUIDS.CLUB,
+    club_id: DEMO_UUIDS.club,
     email: 'emma@example.com',
     name: 'Emma Wilson',
     avatar_url: undefined,
@@ -1110,7 +1110,7 @@ export const INITIAL_CLUB_USERS: ClubUser[] = [
   },
   {
     id: generateDemoUUID('clubuser', 5),
-    club_id: DEMO_UUIDS.CLUB,
+    club_id: DEMO_UUIDS.club,
     email: 'david@example.com',
     name: 'David Chen',
     avatar_url: undefined,

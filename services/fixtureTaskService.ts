@@ -312,16 +312,14 @@ export const generateTasksFromTemplates = async (
 
   // Phase 4: Filter packs based on auto_apply setting and venue
   const relevantPacks = enabledPacks.filter(p => {
-    // Check auto_apply setting first
-    if (p.auto_apply === 'never') return false;
-    if (p.auto_apply === 'home' && venue !== 'Home') return false;
-    if (p.auto_apply === 'away' && venue !== 'Away') return false;
-    // 'always' applies to both
+    // Default to 'always' if auto_apply is not set
+    const autoApply = p.auto_apply || 'always';
 
-    // Legacy: Also check name for backwards compatibility
-    const nameLower = p.name.toLowerCase();
-    if (nameLower.includes('(home)') && venue !== 'Home' && !p.auto_apply) return false;
-    if (nameLower.includes('(away)') && venue !== 'Away' && !p.auto_apply) return false;
+    // Check auto_apply setting
+    if (autoApply === 'never') return false;
+    if (autoApply === 'home' && venue !== 'Home') return false;
+    if (autoApply === 'away' && venue !== 'Away') return false;
+    // 'always' applies to both venues
     return true;
   });
 

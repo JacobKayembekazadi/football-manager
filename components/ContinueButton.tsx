@@ -134,7 +134,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     // If collapsed, show a small expand button instead
     if (isCollapsed && variant === 'global') {
       return (
-        <div className="fixed bottom-20 md:bottom-6 left-4 md:left-6 z-30">
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-24 z-30">
           <button
             onClick={() => setIsCollapsed(false)}
             className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-500 rounded-xl transition-all shadow-lg"
@@ -148,7 +148,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     }
 
     return (
-      <div className={`${variant === 'global' ? 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-6 md:right-auto md:w-80 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}`}>
+      <div className={`${variant === 'global' ? 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-24 md:w-80 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}`}>
         <div className={`bg-slate-900/95 backdrop-blur-xl border border-green-500/30 rounded-2xl overflow-hidden shadow-2xl ${variant === 'global' ? '' : ''}`}>
           {/* Header */}
           <div className="p-4 bg-green-500/10 border-b border-green-500/20">
@@ -195,10 +195,10 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     );
   }
 
-  // Global variant - floating button (positioned on left to avoid AI assistant on right)
+  // Global variant - floating button
   if (variant === 'global') {
     return (
-      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-6 md:right-auto md:w-80 z-30">
+      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-24 md:w-80 z-30">
         <button
           onClick={handleClick}
           className="w-full flex items-center justify-between gap-3 px-5 py-3 bg-green-500 hover:bg-green-400 text-black font-semibold rounded-xl transition-all shadow-lg shadow-green-500/30"
