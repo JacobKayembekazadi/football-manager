@@ -240,7 +240,7 @@ const Dashboard: React.FC<{
         // Auto-generate tasks from enabled templates if none exist
         if (tasks.length === 0) {
           try {
-            tasks = await generateTasksFromTemplates(club.id, nextMatch.id, nextMatch.venue);
+            tasks = await generateTasksFromTemplates(club.id, nextMatch.id, nextMatch.venue, nextMatch.kickoff_time);
           } catch (e) {
             console.log('Could not auto-generate tasks from templates');
           }
@@ -264,7 +264,7 @@ const Dashboard: React.FC<{
     };
 
     loadData();
-  }, [nextMatch?.id, club.id, fixtures]);
+  }, [nextMatch?.id, club.id, fixtures.length]);
 
   const toggleTask = async (taskId: string) => {
     const task = fixtureTasks.find(t => t.id === taskId);
@@ -2211,7 +2211,17 @@ const AppAuthed: React.FC<{
             onGenerateReport={handleMatchReportGeneration}
             onGenerateHype={runHypeProtocol}
             onCreateFixture={async (fixture) => {
-              await createFixture(currentClub.id, fixture);
+              const newFixture = await createFixture(currentClub.id, fixture);
+              // Auto-generate tasks for the new fixture and refresh continue button
+              if (newFixture) {
+                try {
+                  const { generateTasksFromTemplates } = await import('./services/fixtureTaskService');
+                  await generateTasksFromTemplates(currentClub.id, newFixture.id, newFixture.venue, newFixture.kickoff_time);
+                } catch (e) {
+                  console.log('Could not auto-generate tasks for new fixture');
+                }
+              }
+              setContinueButtonRefresh(prev => prev + 1);
             }}
             onDeleteFixture={async (fixtureId) => {
               await deleteFixture(fixtureId);

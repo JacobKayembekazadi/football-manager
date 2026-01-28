@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle2, Loader2, Calendar, Users, FileText, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Calendar, Users, FileText, TrendingUp, X, ChevronUp } from 'lucide-react';
 import { getNextIncompleteTask, NextTaskResult } from '../services/fixtureTaskService';
 
 interface ContinueButtonProps {
@@ -29,6 +29,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
   const [nextTask, setNextTask] = useState<NextTaskResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [allDone, setAllDone] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     loadNextTask();
@@ -130,19 +131,46 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     }
 
     // Default/Global variant - full card with suggestions
+    // If collapsed, show a small expand button instead
+    if (isCollapsed && variant === 'global') {
+      return (
+        <div className="fixed bottom-20 md:bottom-6 left-4 md:left-6 z-30">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-500 rounded-xl transition-all shadow-lg"
+          >
+            <CheckCircle2 size={16} />
+            <span className="text-sm font-medium">All done!</span>
+            <ChevronUp size={14} />
+          </button>
+        </div>
+      );
+    }
+
     return (
-      <div className={`${variant === 'global' ? 'fixed bottom-20 md:bottom-24 left-4 right-4 md:left-6 md:right-auto md:w-80 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}`}>
+      <div className={`${variant === 'global' ? 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-6 md:right-auto md:w-80 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}`}>
         <div className={`bg-slate-900/95 backdrop-blur-xl border border-green-500/30 rounded-2xl overflow-hidden shadow-2xl ${variant === 'global' ? '' : ''}`}>
           {/* Header */}
           <div className="p-4 bg-green-500/10 border-b border-green-500/20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle2 size={20} className="text-green-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle2 size={20} className="text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold">Done for today!</h3>
+                  <p className="text-xs text-slate-400">All tasks completed</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-white font-semibold">Done for today!</h3>
-                <p className="text-xs text-slate-400">All tasks completed</p>
-              </div>
+              {variant === 'global' && (
+                <button
+                  onClick={() => setIsCollapsed(true)}
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+                  title="Collapse"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
 
