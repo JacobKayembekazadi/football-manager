@@ -603,7 +603,19 @@ export const getNextIncompleteTask = async (
 
   // Get all tasks for upcoming fixtures
   const fixtureIds = upcomingFixtures.map(f => f.id);
-  const allTasks = await getTasksForFixtures(fixtureIds);
+  let allTasks = await getTasksForFixtures(fixtureIds);
+
+  // Auto-generate tasks for the nearest fixture if no tasks exist
+  if (allTasks.length === 0 && upcomingFixtures.length > 0) {
+    const nearestFixture = upcomingFixtures[0];
+    const generatedTasks = await generateTasksFromTemplates(
+      clubId,
+      nearestFixture.id,
+      nearestFixture.venue,
+      nearestFixture.kickoff_time
+    );
+    allTasks = generatedTasks;
+  }
 
   // Filter to incomplete tasks
   const incompleteTasks = allTasks.filter(t => !t.is_completed);
