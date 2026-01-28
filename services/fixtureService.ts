@@ -1,18 +1,62 @@
 /**
  * Fixture Service
- * 
+ *
  * Handles all fixture/match-related database operations.
  */
 
 import { supabase, TABLES, isSupabaseConfigured } from './supabaseClient';
-import { Fixture, FixtureStatus, MatchStats } from '../types';
+import { Fixture, FixtureStatus, MatchStats, INITIAL_FIXTURES } from '../types';
+
+// Demo storage key
+const DEMO_FIXTURES_KEY = 'pitchside_demo_created_fixtures';
+
+/**
+ * Generate a demo UUID
+ */
+const generateDemoId = (): string => {
+  return `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Get demo-created fixtures from localStorage
+ */
+const getDemoCreatedFixtures = (): Fixture[] => {
+  try {
+    const stored = localStorage.getItem(DEMO_FIXTURES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Save a demo fixture to localStorage
+ */
+const saveDemoFixture = (fixture: Fixture): void => {
+  const existing = getDemoCreatedFixtures();
+  existing.push(fixture);
+  localStorage.setItem(DEMO_FIXTURES_KEY, JSON.stringify(existing));
+};
+
+/**
+ * Delete a demo fixture from localStorage
+ */
+const deleteDemoFixture = (fixtureId: string): void => {
+  const existing = getDemoCreatedFixtures();
+  const filtered = existing.filter(f => f.id !== fixtureId);
+  localStorage.setItem(DEMO_FIXTURES_KEY, JSON.stringify(filtered));
+};
 
 /**
  * Get all fixtures for a club
  */
 export const getFixtures = async (clubId: string): Promise<Fixture[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    // Demo mode: merge initial fixtures with user-created demo fixtures
+    const demoCreated = getDemoCreatedFixtures();
+    return [...INITIAL_FIXTURES, ...demoCreated].sort(
+      (a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime()
+    );
   }
 
   const { data, error } = await supabase
@@ -37,7 +81,9 @@ export const getFixturesByStatus = async (
   status: FixtureStatus
 ): Promise<Fixture[]> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return [];
+    // Demo mode: filter by status from combined fixtures
+    const allFixtures = [...INITIAL_FIXTURES, ...getDemoCreatedFixtures()];
+    return allFixtures.filter(f => f.status === status);
   }
 
   const { data, error } = await supabase
@@ -60,7 +106,9 @@ export const getFixturesByStatus = async (
  */
 export const getFixture = async (fixtureId: string): Promise<Fixture | null> => {
   if (!supabase || !isSupabaseConfigured()) {
-    return null;
+    // Demo mode: check both initial and created fixtures
+    const allFixtures = [...INITIAL_FIXTURES, ...getDemoCreatedFixtures()];
+    return allFixtures.find(f => f.id === fixtureId) || null;
   }
 
   const { data, error } = await supabase
@@ -86,7 +134,14 @@ export const createFixture = async (
   fixture: Omit<Fixture, 'id'>
 ): Promise<Fixture> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: create fixture in localStorage
+    const newFixture: Fixture = {
+      ...fixture,
+      id: generateDemoId(),
+      club_id: clubId,
+    };
+    saveDemoFixture(newFixture);
+    return newFixture;
   }
 
   const { data, error } = await supabase
@@ -161,7 +216,9 @@ export const updateFixture = async (
  */
 export const deleteFixture = async (fixtureId: string): Promise<void> => {
   if (!supabase || !isSupabaseConfigured()) {
-    throw new Error('Supabase not configured');
+    // Demo mode: delete from localStorage (only works for user-created fixtures)
+    deleteDemoFixture(fixtureId);
+    return;
   }
 
   const { error } = await supabase
