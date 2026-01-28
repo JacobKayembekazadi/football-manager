@@ -579,7 +579,99 @@ export const updateFixtureTask = async (
 export interface NextTaskResult {
   task: FixtureTask;
   fixture: import('../types').Fixture;
+  totalTasks: number;
+  completedTasks: number;
 }
+
+/**
+ * Result when checking task status - helps distinguish "no fixtures" from "all done"
+ */
+export interface TaskStatusResult {
+  hasUpcomingFixtures: boolean;
+  totalTasks: number;
+  completedTasks: number;
+  nextTask: NextTaskResult | null;
+}
+
+/**
+ * Get complete task status including whether fixtures exist
+ */
+export const getTaskStatus = async (
+  clubId: string,
+  currentFixtureId?: string
+): Promise<TaskStatusResult> => {
+  const { getFixtures } = await import('./fixtureService');
+
+  const fixtures = await getFixtures(clubId);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const upcomingFixtures = fixtures
+    .filter(f => {
+      const kickoff = new Date(f.kickoff_time);
+      return kickoff >= startOfToday && f.status === 'SCHEDULED';
+    })
+    .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
+
+  if (upcomingFixtures.length === 0) {
+    return { hasUpcomingFixtures: false, totalTasks: 0, completedTasks: 0, nextTask: null };
+  }
+
+  const fixtureIds = upcomingFixtures.map(f => f.id);
+  let allTasks = await getTasksForFixtures(fixtureIds);
+
+  // Auto-generate tasks for the nearest fixture if no tasks exist
+  if (allTasks.length === 0 && upcomingFixtures.length > 0) {
+    const nearestFixture = upcomingFixtures[0];
+    const generatedTasks = await generateTasksFromTemplates(
+      clubId,
+      nearestFixture.id,
+      nearestFixture.venue,
+      nearestFixture.kickoff_time
+    );
+    allTasks = generatedTasks;
+  }
+
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(t => t.is_completed).length;
+  const incompleteTasks = allTasks.filter(t => !t.is_completed);
+
+  if (incompleteTasks.length === 0) {
+    return { hasUpcomingFixtures: true, totalTasks, completedTasks, nextTask: null };
+  }
+
+  // Sort and find next task
+  const sortedTasks = incompleteTasks.sort((a, b) => {
+    if (currentFixtureId) {
+      const aIsCurrent = a.fixture_id === currentFixtureId;
+      const bIsCurrent = b.fixture_id === currentFixtureId;
+      if (aIsCurrent && !bIsCurrent) return -1;
+      if (!aIsCurrent && bIsCurrent) return 1;
+    }
+
+    const fixtureA = upcomingFixtures.find(f => f.id === a.fixture_id);
+    const fixtureB = upcomingFixtures.find(f => f.id === b.fixture_id);
+    const timeA = fixtureA ? new Date(fixtureA.kickoff_time).getTime() : Infinity;
+    const timeB = fixtureB ? new Date(fixtureB.kickoff_time).getTime() : Infinity;
+    if (timeA !== timeB) return timeA - timeB;
+
+    return a.sort_order - b.sort_order;
+  });
+
+  const nextTask = sortedTasks[0];
+  const fixture = upcomingFixtures.find(f => f.id === nextTask.fixture_id);
+
+  if (!fixture) {
+    return { hasUpcomingFixtures: true, totalTasks, completedTasks, nextTask: null };
+  }
+
+  return {
+    hasUpcomingFixtures: true,
+    totalTasks,
+    completedTasks,
+    nextTask: { task: nextTask, fixture, totalTasks, completedTasks }
+  };
+};
 
 export const getNextIncompleteTask = async (
   clubId: string,
@@ -589,10 +681,17 @@ export const getNextIncompleteTask = async (
   const { getFixtures } = await import('./fixtureService');
 
   // Get upcoming fixtures sorted by kickoff time
+  // Include fixtures from today (even if kickoff passed) and future scheduled fixtures
   const fixtures = await getFixtures(clubId);
   const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   const upcomingFixtures = fixtures
-    .filter(f => new Date(f.kickoff_time) >= now && f.status === 'SCHEDULED')
+    .filter(f => {
+      const kickoff = new Date(f.kickoff_time);
+      // Include: SCHEDULED fixtures from today onwards (including past kickoff times today)
+      return kickoff >= startOfToday && f.status === 'SCHEDULED';
+    })
     .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
 
   if (upcomingFixtures.length === 0) {
@@ -614,6 +713,10 @@ export const getNextIncompleteTask = async (
     );
     allTasks = generatedTasks;
   }
+
+  // Calculate task counts
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(t => t.is_completed).length;
 
   // Filter to incomplete tasks
   const incompleteTasks = allTasks.filter(t => !t.is_completed);
@@ -650,7 +753,7 @@ export const getNextIncompleteTask = async (
     return null;
   }
 
-  return { task: nextTask, fixture };
+  return { task: nextTask, fixture, totalTasks, completedTasks };
 };
 
 // ============================================================================

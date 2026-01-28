@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, CheckCircle2, Loader2, Calendar, Users, FileText, TrendingUp, X, ChevronUp } from 'lucide-react';
-import { getNextIncompleteTask, NextTaskResult } from '../services/fixtureTaskService';
+import { getTaskStatus, NextTaskResult, TaskStatusResult } from '../services/fixtureTaskService';
 
 interface ContinueButtonProps {
   clubId: string;
@@ -28,7 +28,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
 }) => {
   const [nextTask, setNextTask] = useState<NextTaskResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [allDone, setAllDone] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<TaskStatusResult | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -38,16 +38,22 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
   const loadNextTask = async () => {
     try {
       setLoading(true);
-      const result = await getNextIncompleteTask(clubId, currentFixtureId);
-      setNextTask(result);
-      setAllDone(result === null);
+      const status = await getTaskStatus(clubId, currentFixtureId);
+      setTaskStatus(status);
+      setNextTask(status.nextTask);
     } catch (error) {
       console.error('Error loading next task:', error);
-      setAllDone(true);
+      setTaskStatus({ hasUpcomingFixtures: false, totalTasks: 0, completedTasks: 0, nextTask: null });
     } finally {
       setLoading(false);
     }
   };
+
+  // Determine if all tasks are truly done (fixtures exist, tasks exist, all completed)
+  const allDone = taskStatus?.hasUpcomingFixtures && taskStatus.totalTasks > 0 && taskStatus.completedTasks === taskStatus.totalTasks;
+
+  // If no fixtures or no tasks, don't show anything for global variant (only after loading)
+  const shouldHide = !loading && variant === 'global' && (!taskStatus?.hasUpcomingFixtures || taskStatus.totalTasks === 0);
 
   const handleClick = () => {
     if (nextTask) {
@@ -75,6 +81,11 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
       );
     }
 
+    // No fixtures/tasks - show nothing for compact
+    if (!taskStatus?.hasUpcomingFixtures || taskStatus.totalTasks === 0) {
+      return null;
+    }
+
     if (allDone) {
       return (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 text-sm rounded-lg">
@@ -95,16 +106,24 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     );
   }
 
+  // For global variant, hide completely if no fixtures or no tasks
+  if (shouldHide) {
+    return null;
+  }
+
   // Default sticky footer variant
   if (loading) {
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent">
+      <div className={variant === 'global' ? 'fixed bottom-20 md:bottom-6 right-4 md:right-24 z-30' : 'sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent'}>
         <button
           disabled
-          className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-slate-700/50 text-slate-400 rounded-xl"
+          className={variant === 'global'
+            ? 'flex items-center gap-2 px-4 py-2 bg-slate-700/50 text-slate-400 rounded-xl shadow-lg'
+            : 'w-full flex items-center justify-center gap-3 px-6 py-3 bg-slate-700/50 text-slate-400 rounded-xl'
+          }
         >
-          <Loader2 size={18} className="animate-spin" />
-          <span>Finding next task...</span>
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm">Finding tasks...</span>
         </button>
       </div>
     );
@@ -118,18 +137,8 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
     { id: 'dashboard', icon: TrendingUp, label: 'View dashboard', color: 'text-green-400' },
   ];
 
-  // "Done for today" card
+  // "Done for today" card - only show when tasks exist and all are completed
   if (allDone) {
-    // Compact variant - simple inline message
-    if (variant === 'compact') {
-      return (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 text-sm rounded-lg">
-          <CheckCircle2 size={14} />
-          <span>All done!</span>
-        </div>
-      );
-    }
-
     // Default/Global variant - full card with suggestions
     // If collapsed, show a small expand button instead
     if (isCollapsed && variant === 'global') {
@@ -140,7 +149,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
             className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-500 rounded-xl transition-all shadow-lg"
           >
             <CheckCircle2 size={16} />
-            <span className="text-sm font-medium">All done!</span>
+            <span className="text-sm font-medium">{taskStatus?.completedTasks}/{taskStatus?.totalTasks} done</span>
             <ChevronUp size={14} />
           </button>
         </div>
@@ -159,7 +168,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
                 </div>
                 <div>
                   <h3 className="text-white font-semibold">Done for today!</h3>
-                  <p className="text-xs text-slate-400">All tasks completed</p>
+                  <p className="text-xs text-slate-400">{taskStatus?.completedTasks} of {taskStatus?.totalTasks} tasks completed</p>
                 </div>
               </div>
               {variant === 'global' && (
@@ -197,6 +206,7 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
 
   // Global variant - floating button
   if (variant === 'global') {
+    const remaining = (taskStatus?.totalTasks || 0) - (taskStatus?.completedTasks || 0);
     return (
       <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-24 md:w-80 z-30">
         <button
@@ -204,7 +214,9 @@ const ContinueButton: React.FC<ContinueButtonProps> = ({
           className="w-full flex items-center justify-between gap-3 px-5 py-3 bg-green-500 hover:bg-green-400 text-black font-semibold rounded-xl transition-all shadow-lg shadow-green-500/30"
         >
           <div className="flex flex-col items-start">
-            <span className="text-[10px] text-green-900/70 font-normal uppercase tracking-wide">Continue</span>
+            <span className="text-[10px] text-green-900/70 font-normal uppercase tracking-wide">
+              {remaining} task{remaining !== 1 ? 's' : ''} remaining
+            </span>
             <span className="text-sm">{formatTaskLabel(nextTask?.task.label || '', 25)}</span>
           </div>
           <div className="flex items-center gap-2">
